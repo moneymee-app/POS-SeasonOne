@@ -380,6 +380,7 @@
     <div class="rs-tab" data-mode="kitchen">🍳 ครัว/บาร์</div>
     <div class="rs-tab" data-mode="customer">🍽️ ลูกค้า</div>
   </div>
+  <button id="authBtn" onclick="fbLoginClick()" style="background:rgba(200,168,75,.15); color:var(--gold-soft); border:1px solid rgba(200,168,75,.4); padding:8px 14px; border-radius:8px; font-size:12.5px; flex-shrink:0;">🔐 เข้าสู่ระบบ</button>
   <div class="rs-note" id="rs-note">Admin เห็นได้ทุกอย่าง — สลับมุมมองเพื่อดูว่าพนักงาน/ลูกค้าเห็นหน้าจอแบบไหน</div>
 </div>
 
@@ -982,6 +983,21 @@
   </div>
 </div>
 
+<!-- ===== LOGIN MODAL ===== -->
+<div class="modal-back" id="loginModal">
+  <div class="modal">
+    <h3>🔐 เข้าสู่ระบบทีมงาน</h3>
+    <div class="sub">พนักงาน/เจ้าของร้านเท่านั้น — ลูกค้าสั่งอาหารได้เลยไม่ต้องล็อกอิน</div>
+    <input type="text" id="loginEmail" placeholder="อีเมล">
+    <input type="text" id="loginPass" placeholder="รหัสผ่าน" style="-webkit-text-security:disc;">
+    <div id="loginErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('loginModal').classList.remove('open')">ปิด</button>
+      <button class="btn-lg b-gold" id="loginGo">เข้าสู่ระบบ</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== PAY MODAL ===== -->
 <div class="modal-back" id="payModal">
   <div class="modal">
@@ -1400,5 +1416,109 @@
   }));
 </script>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDXuK8sP5g3E9Avujm-gKP1p6K22t8mfUc",
+  authDomain: "season-one-pos.firebaseapp.com",
+  projectId: "season-one-pos",
+  storageBucket: "season-one-pos.firebasestorage.app",
+  messagingSenderId: "425225846187",
+  appId: "1:425225846187:web:ccb56ad4590450c6d426ee"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+try { enableIndexedDbPersistence(db); } catch(e){}
+
+let ROLE = null;
+
+window.fbLoginClick = () => {
+  if(auth.currentUser){ if(confirm('ออกจากระบบ?')) signOut(auth); }
+  else document.getElementById('loginModal').classList.add('open');
+};
+document.getElementById('loginGo').onclick = async () => {
+  const err = document.getElementById('loginErr');
+  err.textContent = 'กำลังตรวจสอบ...';
+  try {
+    await signInWithEmailAndPassword(auth,
+      document.getElementById('loginEmail').value.trim(),
+      document.getElementById('loginPass').value);
+    err.textContent = '';
+    document.getElementById('loginModal').classList.remove('open');
+  } catch(e){ err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง'; }
+};
+
+onAuthStateChanged(auth, async (user) => {
+  const btn = document.getElementById('authBtn');
+  if(user){
+    try {
+      const snap = await getDoc(doc(db,'users',user.uid));
+      ROLE = snap.exists() ? snap.data().role : 'staff';
+    } catch(e){ ROLE = 'staff'; }
+    btn.textContent = '👤 ' + (user.email||'').split('@')[0] + ' · ออกจากระบบ';
+  } else { ROLE = null; btn.textContent = '🔐 เข้าสู่ระบบ'; }
+  applyRoleGate();
+});
+
+function applyRoleGate(){
+  const allow = { admin:['admin','staff','kitchen','customer'], staff:['staff','kitchen','customer'] };
+  const visible = ROLE ? (allow[ROLE] || allow.staff) : ['customer'];
+  document.querySelectorAll('.rs-tab').forEach(t => {
+    t.style.display = visible.includes(t.dataset.mode) ? 'flex' : 'none';
+  });
+  const active = document.querySelector('.rs-tab.active');
+  if(!active || !visible.includes(active.dataset.mode)){
+    const first = document.querySelector('.rs-tab[data-mode="'+visible[0]+'"]');
+    if(first) first.click();
+  }
+}
+
+const photoUrl = id => 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
+async function loadMenu(){
+  try {
+    const qs = await getDocs(collection(db,'menu'));
+    if(qs.empty){ if(window.toast) toast('⚠️ ยังไม่มีข้อมูลจริงใน Firebase — เปิด setup.html เพื่อโหลดข้อมูลก่อน'); return; }
+    const items = []; qs.forEach(d => items.push({id:d.id, ...d.data()}));
+    items.sort((a,b)=>a.id.localeCompare(b.id));
+
+    const grid = document.querySelector('.cust-grid');
+    if(grid){
+      grid.innerHTML = items.filter(m=>m.active).map(m =>
+        '<div class="cust-card"><div class="img" style="background-image:url(' + "'" + photoUrl(m.photoId) + "'" + '); background-size:cover; background-position:center;"></div>'+
+        '<div class="nm">'+m.name+(m.category.includes('สุรา')?' 🔞':'')+'</div><div class="pr">฿'+m.price.toLocaleString()+'</div>'+
+        '<button class="cust-add" data-price="'+m.price+'">+ เพิ่มลงตะกร้า</button></div>').join('');
+      grid.querySelectorAll('.cust-add').forEach(btn => btn.addEventListener('click', () => {
+        const nm = btn.closest('.cust-card').querySelector('.nm').textContent.replace('🔞','').trim();
+        cartAdd(CUSTCART,'custCartPanel',nm,parseInt(btn.dataset.price,10));
+        btn.textContent='✓ เพิ่มแล้ว'; setTimeout(()=>{ btn.textContent='+ เพิ่มลงตะกร้า'; },700);
+      }));
+    }
+
+    const tbody = document.querySelector('#view-menu tbody');
+    if(tbody){
+      tbody.innerHTML = items.map(m =>
+        '<tr><td><div class="cell-item"><div class="thumb" style="background-image:url(' + "'" + photoUrl(m.photoId) + "'" + '); background-size:cover; background-position:center;"></div>'+m.name+'</div></td>'+
+        '<td>'+m.category+'</td><td>฿'+m.price.toLocaleString()+'</td>'+
+        '<td><span class="status '+(m.active?'on':'off')+'">'+(m.active?'เปิดขาย':'ปิดขาย')+'</span></td>'+
+        '<td><div class="toggle '+(m.active?'on':'')+'" data-mid="'+m.id+'"></div></td>'+
+        '<td><div class="row-actions"><div class="icon-sm">✏️</div></div></td></tr>').join('');
+      tbody.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', async () => {
+        const on = t.classList.toggle('on');
+        try {
+          await updateDoc(doc(db,'menu',t.dataset.mid), {active:on});
+          if(window.toast) toast((on?'✓ เปิดขาย':'⏸ ปิดขาย')+'แล้ว — เมนูลูกค้าอัปเดตทันที');
+          loadMenu();
+        } catch(e){ t.classList.toggle('on'); if(window.toast) toast('❌ บันทึกไม่สำเร็จ: ต้องล็อกอินเป็น Admin'); }
+      }));
+    }
+    console.log('Season One: loaded '+items.length+' menu items from Firestore');
+  } catch(e){ console.warn('loadMenu failed', e); }
+}
+loadMenu();
+</script>
 </body>
 </html>
