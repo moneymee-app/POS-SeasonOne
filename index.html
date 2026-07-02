@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Season One — Admin & Staff Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#0D0D0D;
+    --night-2:#161611;
+    --forest:#2D5016;
+    --forest-2:#3E6B20;
+    --gold:#C8A84B;
+    --gold-soft:#E4CD8C;
+    --cream:#141511;
+    --paper:#1C1E18;
+    --ink:#F4F1EA;
+    --muted:#9C977F;
+    --line:rgba(200,168,75,0.22);
+    --danger:#E4483A;
+    --ok:#3EE07A;
+    --warn:#E4B23A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Sarabun', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{ font-family:'Cormorant Garamond', serif; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; border:none; }
+
+  /* ===== SHELL ===== */
+  .shell{ display:flex; min-height:100vh; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    width:240px; flex-shrink:0;
+    background:var(--night);
+    color:var(--gold-soft);
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .brand{
+    padding:28px 24px 20px;
+    border-bottom:1px solid rgba(200,168,75,0.18);
+  }
+  .brand .eyebrow{ font-size:10px; letter-spacing:.18em; color:var(--gold); text-transform:uppercase; opacity:.75;}
+  .brand .name{ font-family:'Cormorant Garamond',serif; font-size:26px; font-weight:600; color:var(--gold-soft); margin-top:4px; line-height:1.1;}
+  .brand .sub{ font-size:11px; color:rgba(228,205,140,.5); margin-top:6px; }
+
+  .nav{ flex:1; padding:18px 12px; overflow-y:auto; }
+  .nav-group-label{ font-size:10px; letter-spacing:.14em; color:rgba(228,205,140,.4); text-transform:uppercase; padding:14px 12px 6px; }
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:11px 12px; border-radius:8px;
+    font-size:14.5px; color:rgba(244,241,234,.72);
+    cursor:pointer; transition:background .15s, color .15s;
+    margin-bottom:2px;
+  }
+  .nav-item .ic{ font-size:16px; width:20px; text-align:center; }
+  .nav-item:hover{ background:rgba(200,168,75,.08); color:var(--gold-soft); }
+  .nav-item.active{ background:linear-gradient(90deg, rgba(200,168,75,.16), rgba(200,168,75,.03)); color:var(--gold-soft); border-left:2px solid var(--gold); padding-left:10px; }
+  .nav-item .badge{ margin-left:auto; background:var(--danger); color:#fff; font-size:10.5px; padding:1px 7px; border-radius:99px; }
+
+  .sidebar-foot{
+    padding:16px 20px 20px; border-top:1px solid rgba(200,168,75,.15);
+    display:flex; align-items:center; gap:10px;
+  }
+  .avatar{ width:34px; height:34px; border-radius:50%; background:var(--forest); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--gold-soft); font-weight:600; flex-shrink:0;}
+  .sidebar-foot .who{ font-size:13px; color:var(--gold-soft); }
+  .sidebar-foot .role{ font-size:11px; color:rgba(228,205,140,.5); }
+
+  /* ===== MAIN ===== */
+  .main{ flex:1; min-width:0; }
+  .topbar{
+    background:var(--paper); border-bottom:1px solid var(--line);
+    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar h1{ font-size:24px; font-weight:600; }
+  .topbar .meta{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .topbar-right{ display:flex; align-items:center; gap:14px; }
+  .pill-btn{
+    background:var(--forest); color:#fff; font-size:13px; font-weight:500;
+    padding:9px 16px; border-radius:8px; display:flex; align-items:center; gap:6px;
+  }
+  .icon-btn{ width:38px; height:38px; border-radius:50%; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:16px; position:relative; }
+  .dot{ position:absolute; top:6px; right:7px; width:7px; height:7px; background:var(--danger); border-radius:50%; }
+
+  .content{ padding:26px 28px 60px; }
+  .view{ display:none; }
+  .view.active{ display:block; animation:fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ===== KPI CARDS ===== */
+  .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .kpi{ background:linear-gradient(160deg,#1F2119,#191B15); border:1px solid var(--line); border-radius:14px; padding:18px 20px; box-shadow:0 4px 18px rgba(0,0,0,0.35); }
+  .kpi .lbl{ font-size:12.5px; color:var(--muted); }
+  .kpi .val{ font-family:'Cormorant Garamond',serif; font-size:32px; font-weight:600; margin-top:4px; color:var(--gold-soft); }
+  .kpi .delta{ font-size:12px; margin-top:6px; display:inline-flex; align-items:center; gap:4px; }
+  .delta.up{ color:var(--ok); }
+  .delta.down{ color:var(--danger); }
+
+  .grid-2{ display:grid; grid-template-columns:1.4fr 1fr; gap:18px; margin-bottom:22px; }
+  .card{ background:linear-gradient(160deg,#1F2119,#191B15); border:1px solid var(--line); border-radius:14px; padding:20px 22px; box-shadow:0 4px 18px rgba(0,0,0,0.35); }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .card-head h3{ font-size:19px; font-weight:600; }
+  .card-head .link{ font-size:12.5px; color:var(--gold); font-weight:500; }
+
+  /* bars */
+  .bar-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .bar-row .label{ width:120px; font-size:13px; color:var(--ink); flex-shrink:0; }
+  .bar-track{ flex:1; height:10px; background:var(--cream); border-radius:6px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--forest),var(--gold)); }
+  .bar-row .amt{ width:78px; text-align:right; font-size:12.5px; color:var(--muted); font-variant-numeric:tabular-nums; }
+
+  .top-item{ display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line); }
+  .top-item:last-child{ border-bottom:none; }
+  .top-item .rank{ width:22px; height:22px; border-radius:6px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:600; color:var(--gold); flex-shrink:0;}
+  .top-item .nm{ flex:1; font-size:13.5px; }
+  .top-item .ct{ font-size:12px; color:var(--muted); }
+  .top-item .rv{ font-size:13px; font-weight:600; color:var(--ink); font-variant-numeric:tabular-nums; }
+
+  /* ===== TABLE COMMON ===== */
+  .toolbar{ display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .search{ flex:1; min-width:200px; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:10px 14px; font-size:13.5px; display:flex; align-items:center; gap:8px; color:var(--muted); }
+  .search input{ border:none; background:none; outline:none; font-size:13.5px; color:var(--ink); flex:1; font-family:inherit; }
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ padding:8px 14px; border-radius:99px; font-size:12.5px; background:var(--paper); border:1px solid var(--line); color:var(--muted); }
+  .chip.active{ background:var(--forest); color:#fff; border-color:var(--forest); }
+
+  table{ width:100%; border-collapse:collapse; background:var(--paper); border-radius:14px; overflow:hidden; border:1px solid var(--line); }
+  thead th{ text-align:left; font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:13px 16px; background:var(--cream); font-weight:600; }
+  tbody td{ padding:13px 16px; font-size:13.5px; border-top:1px solid var(--line); vertical-align:middle; }
+  tbody tr:hover{ background:rgba(200,168,75,0.05); }
+  .cell-item{ display:flex; align-items:center; gap:10px; }
+  .thumb{ width:38px; height:38px; border-radius:8px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .status{ font-size:11.5px; padding:4px 10px; border-radius:99px; font-weight:500; display:inline-block; }
+  .status.on{ background:rgba(62,224,122,0.12); color:#3EE07A; }
+  .status.off{ background:rgba(228,72,58,0.15); color:#FF8A73; }
+  .status.wait{ background:rgba(228,178,58,0.15); color:#E4B23A; }
+  .toggle{ width:38px; height:21px; border-radius:99px; background:var(--line); position:relative; transition:.2s; }
+  .toggle.on{ background:var(--forest); }
+  .toggle::after{ content:''; position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%; background:#fff; transition:.2s; }
+  .toggle.on::after{ left:19px; }
+  .row-actions{ display:flex; gap:8px; }
+  .icon-sm{ width:30px; height:30px; border-radius:7px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .icon-sm:hover{ background:var(--line); }
+
+  /* staff */
+  .staff-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .staff-card{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; gap:12px; align-items:flex-start; }
+  .staff-card .av{ width:46px; height:46px; border-radius:50%; background:var(--forest); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:16px; flex-shrink:0; }
+  .staff-card .nm{ font-size:14.5px; font-weight:600; }
+  .staff-card .role{ font-size:12px; color:var(--muted); }
+  .staff-card .clock{ font-size:12px; margin-top:8px; display:flex; align-items:center; gap:6px; }
+
+  /* payment verify */
+  .pay-card{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px; display:flex; gap:14px; margin-bottom:12px; align-items:center; }
+  .slip-thumb{ width:64px; height:64px; border-radius:10px; background:var(--cream); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .pay-info{ flex:1; }
+  .pay-info .top{ display:flex; justify-content:space-between; }
+  .pay-info .nm{ font-size:14.5px; font-weight:600; }
+  .pay-info .amt{ font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:600; }
+  .pay-info .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .btn-mini{ font-size:12.5px; padding:8px 14px; border-radius:8px; font-weight:500; }
+  .btn-approve{ background:var(--forest); color:#fff; }
+  .btn-reject{ background:rgba(228,72,58,0.15); color:#FF8A73; }
+
+  .empty{ text-align:center; padding:50px 20px; color:var(--muted); }
+  .empty .ic{ font-size:36px; margin-bottom:10px; }
+
+  @media (max-width:980px){
+    .sidebar{ position:fixed; left:-240px; z-index:50; transition:.2s; }
+    .sidebar.open{ left:0; }
+    .kpis{ grid-template-columns:repeat(2,1fr); }
+    .grid-2{ grid-template-columns:1fr; }
+    .staff-grid{ grid-template-columns:1fr; }
+    .content{ padding:18px; }
+  }
+
+  /* ===== ROLE SWITCHER ===== */
+  .role-switcher{
+    background:var(--night); padding:10px 20px;
+    display:flex; align-items:center; gap:16px;
+    position:sticky; top:0; z-index:60;
+    border-bottom:1px solid rgba(200,168,75,.2);
+  }
+  .role-switcher .rs-label{ font-size:11px; color:rgba(228,205,140,.55); letter-spacing:.08em; text-transform:uppercase; flex-shrink:0; }
+  .rs-tabs{ display:flex; gap:6px; background:rgba(255,255,255,.05); padding:4px; border-radius:10px; }
+  .rs-tab{ padding:8px 16px; border-radius:7px; font-size:13px; color:rgba(244,241,234,.6); display:flex; align-items:center; gap:7px; }
+  .rs-tab.active{ background:var(--gold); color:var(--night); font-weight:600; }
+  .rs-note{ margin-left:auto; font-size:11.5px; color:rgba(228,205,140,.45); }
+
+  .mode-view{ display:none; }
+  .mode-view.active{ display:block; }
+
+  /* ===== CUSTOMER MODE ===== */
+  .cust-shell{ min-height:calc(100vh - 49px); background:var(--night); }
+  .cust-topbar{ padding:20px 20px 14px; text-align:center; }
+  .cust-topbar .eyebrow{ font-size:10px; letter-spacing:.2em; color:var(--gold); text-transform:uppercase; }
+  .cust-topbar .name{ font-family:'Cormorant Garamond',serif; font-size:26px; color:var(--gold-soft); font-weight:600; }
+  .cust-cats{ display:flex; gap:8px; padding:0 16px 14px; overflow-x:auto; }
+  .cust-cat{ flex-shrink:0; padding:8px 16px; border-radius:99px; background:rgba(255,255,255,.06); color:rgba(244,241,234,.65); font-size:12.5px; }
+  .cust-cat.active{ background:var(--gold); color:var(--night); font-weight:600; }
+  .cust-grid{ padding:4px 16px 100px; display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  .cust-card{ background:rgba(255,255,255,.04); border:1px solid rgba(200,168,75,.15); border-radius:14px; padding:14px; }
+  .cust-card .img{ width:100%; aspect-ratio:4/3; height:auto; display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:10px; }
+  .cust-card .nm{ font-size:13.5px; color:var(--cream); font-weight:500; }
+  .cust-card .pr{ color:var(--gold-soft); margin:6px 0 10px; font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:600;}
+  .cust-add{ width:100%; background:var(--gold); color:var(--night); padding:8px; border-radius:8px; font-size:12.5px; font-weight:600; }
+  .cust-cart-bar{ position:fixed; left:16px; right:16px; bottom:16px; background:var(--forest); color:#fff; padding:14px 18px; border-radius:14px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 8px 24px rgba(0,0,0,.35); font-size:13.5px; }
+  .cust-cart-bar b{ font-family:'Cormorant Garamond',serif; font-size:17px; }
+  .cust-cart-bar .go{ background:var(--gold); color:var(--night); padding:8px 14px; border-radius:8px; font-weight:600; font-size:12.5px; }
+
+  /* ===== STAFF MODE ===== */
+  .staff-shell{ background:var(--cream); min-height:calc(100vh - 49px); }
+  .staff-header{ background:var(--paper); border-bottom:1px solid var(--line); padding:18px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .staff-header .who{ display:flex; align-items:center; gap:12px; }
+  .staff-header .nm{ font-size:16px; font-weight:600; }
+  .staff-header .role{ font-size:12px; color:var(--muted); }
+  .clock-btn{ background:var(--forest); color:#fff; padding:10px 18px; border-radius:9px; font-size:13px; font-weight:500; }
+  .clock-btn.out{ background:var(--danger); }
+  .staff-tabs{ display:flex; gap:8px; padding:14px 24px 0; }
+  .staff-tab{ padding:10px 16px; font-size:13.5px; color:var(--muted); border-bottom:2px solid transparent; }
+  .staff-tab.active{ color:var(--forest); border-bottom-color:var(--forest); font-weight:600; }
+  .staff-content{ padding:18px 24px 40px; }
+  .staff-panel{ display:none; }
+  .staff-panel.active{ display:block; }
+  .order-card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+  .order-card .tbl{ font-size:14px; font-weight:600; }
+  .order-card .itm{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  .order-card .act{ background:var(--forest); color:#fff; padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:500; }
+  .sched-table{ width:100%; border-collapse:collapse; background:var(--paper); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .sched-table th, .sched-table td{ padding:11px 14px; font-size:13px; border-top:1px solid var(--line); text-align:left; }
+  .sched-table th{ background:var(--cream); font-size:11.5px; text-transform:uppercase; color:var(--muted); border-top:none; }
+  .perm-note{ background:rgba(228,72,58,0.12); color:#FF8A73; font-size:12px; padding:10px 14px; border-radius:9px; margin-bottom:16px; }
+
+  .order-menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+  .order-tile{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px; text-align:center; }
+  .order-tile .ic{ font-size:26px; margin-bottom:6px; }
+  .order-tile .nm{ font-size:12.5px; font-weight:600; line-height:1.3; min-height:32px; }
+  .order-tile .pr{ font-size:12px; color:var(--muted); margin:4px 0 10px; }
+  .order-add{ width:100%; background:var(--forest); color:#fff; padding:8px; border-radius:7px; font-size:12px; font-weight:500; }
+  .staff-order-bar{
+    position:sticky; bottom:0; background:var(--night); color:var(--gold-soft);
+    padding:14px 18px; border-radius:12px; display:flex; align-items:center; justify-content:space-between;
+    font-size:13.5px; box-shadow:0 8px 20px rgba(0,0,0,.2);
+  }
+  .staff-order-bar b{ font-family:'Cormorant Garamond',serif; font-size:16px; }
+  .staff-order-bar button{ background:var(--gold); color:var(--night); padding:9px 16px; border-radius:8px; font-weight:600; font-size:12.5px; }
+
+  /* ===== KITCHEN / BAR DISPLAY MODE ===== */
+  .kitchen-shell{ background:#111310; min-height:calc(100vh - 49px); color:#fff; padding:22px; }
+  .kitchen-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .kitchen-station-tabs{ display:flex; gap:8px; }
+  .kstation{ padding:11px 22px; border-radius:10px; background:rgba(255,255,255,.07); font-size:14px; font-weight:600; color:rgba(255,255,255,.55); }
+  .kstation.active{ background:var(--gold); color:var(--night); }
+  .kitchen-clock{ font-family:'Cormorant Garamond',serif; font-size:24px; color:var(--gold-soft); }
+
+  .kanban{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .kanban-col{ background:rgba(255,255,255,.035); border-radius:16px; padding:14px; min-height:420px; }
+  .kanban-col h4{ font-size:12.5px; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.5); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .dot-status{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot-new{ background:#E4483A; box-shadow:0 0 8px #E4483A; }
+  .dot-prep{ background:#E4B23A; }
+  .dot-ready{ background:#3EE07A; }
+
+  .ticket{ background:#1B1D17; border:1px solid rgba(200,168,75,.22); border-radius:13px; padding:15px; margin-bottom:12px; }
+  .ticket.late{ border-color:#E4483A; box-shadow:0 0 0 1px #E4483A inset; }
+  .ticket .top{ display:flex; justify-content:space-between; align-items:baseline; }
+  .ticket .tbl{ font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--gold-soft); }
+  .ticket .time{ font-size:11px; color:rgba(255,255,255,.4); }
+  .ticket .time.late-txt{ color:#FF8A73; font-weight:600; }
+  .ticket .items{ margin:10px 0 14px; font-size:13px; line-height:1.85; color:rgba(255,255,255,.85); list-style:none; padding:0; }
+  .ticket button{ width:100%; padding:11px; border-radius:9px; font-size:13px; font-weight:700; }
+  .btn-start{ background:var(--gold); color:var(--night); }
+  .btn-ready{ background:#3EE07A; color:#0A1F0F; }
+  .kanban-empty{ text-align:center; color:rgba(255,255,255,.3); font-size:12.5px; padding:30px 0; }
+
+  /* ===== PAY MODAL / TOAST / FLOAT BTNS ===== */
+  .modal-back{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:100; align-items:center; justify-content:center; padding:16px; }
+  .modal-back.open{ display:flex; }
+  .modal{ background:#1C1E18; border:1px solid rgba(200,168,75,.35); border-radius:16px; width:100%; max-width:420px; max-height:90vh; overflow-y:auto; padding:20px; color:var(--ink); }
+  .modal h3{ font-size:20px; color:var(--gold-soft); margin-bottom:4px; }
+  .modal .sub{ font-size:12px; color:var(--muted); margin-bottom:14px; }
+  .bill-lines{ border-top:1px dashed rgba(200,168,75,.3); border-bottom:1px dashed rgba(200,168,75,.3); padding:10px 0; margin-bottom:12px; font-size:13.5px; }
+  .bill-lines .ln{ display:flex; justify-content:space-between; padding:3px 0; }
+  .bill-total{ display:flex; justify-content:space-between; font-family:'Cormorant Garamond',serif; font-size:22px; color:var(--gold-soft); font-weight:700; margin-bottom:14px; }
+  .seg{ display:flex; gap:8px; margin-bottom:12px; }
+  .seg .opt{ flex:1; text-align:center; padding:10px; border-radius:9px; background:rgba(255,255,255,.05); border:1px solid rgba(200,168,75,.2); font-size:13px; cursor:pointer; }
+  .seg .opt.sel{ background:var(--gold); color:var(--night); font-weight:700; border-color:var(--gold); }
+  .modal .lbl2{ font-size:11.5px; color:var(--muted); margin:10px 0 6px; text-transform:uppercase; letter-spacing:.05em; }
+  .qr-box{ background:#fff; border-radius:10px; height:130px; display:flex; align-items:center; justify-content:center; color:#333; font-size:12px; margin-bottom:10px; flex-direction:column; gap:4px; }
+  .modal input[type=text]{ width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:13px; font-family:inherit; margin-bottom:8px; }
+  .btn-row{ display:flex; gap:8px; margin-top:14px; }
+  .btn-lg{ flex:1; padding:13px; border-radius:10px; font-size:13.5px; font-weight:700; }
+  .b-gold{ background:var(--gold); color:var(--night); }
+  .b-green{ background:#3EE07A; color:#0A1F0F; }
+  .b-ghost{ background:rgba(255,255,255,.07); color:var(--ink); }
+  .slip-preview{ display:none; align-items:center; gap:10px; background:rgba(62,224,122,.1); border:1px solid rgba(62,224,122,.35); border-radius:9px; padding:8px 12px; font-size:12.5px; margin-bottom:8px; }
+  .slip-preview img{ width:42px; height:42px; object-fit:cover; border-radius:6px; }
+  .toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--night); color:var(--gold-soft); border:1px solid var(--gold); padding:12px 22px; border-radius:99px; font-size:13.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,.5); animation:toastIn .25s ease; }
+  @keyframes toastIn{ from{opacity:0; transform:translateX(-50%) translateY(10px);} to{opacity:1; transform:translateX(-50%) translateY(0);} }
+  .float-stack{ position:fixed; right:16px; bottom:96px; display:flex; flex-direction:column; gap:10px; z-index:40; }
+  .float-btn{ width:54px; height:54px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:19px; box-shadow:0 6px 18px rgba(0,0,0,.45); border:1px solid rgba(200,168,75,.4); }
+  .float-btn small{ font-size:8.5px; margin-top:1px; }
+  .fb-call{ background:#1C1E18; color:var(--gold-soft); }
+  .fb-pay{ background:var(--gold); color:var(--night); font-weight:700; }
+
+  .ham{ display:none; background:rgba(200,168,75,.12); color:var(--gold-soft); width:40px; height:40px; border-radius:9px; font-size:18px; margin-right:12px; flex-shrink:0; border:1px solid rgba(200,168,75,.3); }
+  .side-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:45; }
+  @media (max-width:980px){
+    .ham{ display:block; }
+    .side-overlay.show{ display:block; }
+    .topbar{ padding:12px 16px; }
+  }
+
+  @media (max-width:980px){
+    .order-menu-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+
+  @media (max-width:980px){
+    .kanban{ grid-template-columns:1fr; }
+    .kanban-col{ min-height:auto; padding:12px; }
+    .kitchen-shell{ padding:14px; }
+    .kitchen-clock{ font-size:19px; }
+    .kstation{ padding:9px 16px; font-size:13px; }
+  }
+
+  /* ===== Customer view: phone-width column even on desktop ===== */
+  .cust-shell{ max-width:560px; margin:0 auto; }
+  .cust-cart-bar{ left:0; right:0; margin:0 auto; width:calc(100% - 32px); max-width:528px; }
+  .float-stack{ right:max(16px, calc(50% - 280px + 16px)); }
+  .cust-card .nm{ color:#F4F1EA !important; }
+
+  @media (max-width:980px){
+    .rs-note{ display:none; }
+    .role-switcher{ padding:8px 12px; gap:10px; overflow-x:auto; }
+    .content table{ display:block; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch; }
+    .content table thead th, .content table tbody td{ font-size:12px; padding:10px 12px; }
+    .kpis{ gap:10px; }
+    .kpi .val{ font-size:26px; }
+  }
+
+  .tmap{ display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:10px; }
+  .tcell{ aspect-ratio:1; border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; cursor:pointer; border:2px solid; }
+  .tcell.free{ border-color:#3EE07A; color:#3EE07A; background:rgba(62,224,122,.07); }
+  .tcell.busy{ border-color:var(--gold); color:var(--gold-soft); background:rgba(200,168,75,.1); }
+  .tcell.bill{ border-color:#FF8A73; color:#FF8A73; background:rgba(228,72,58,.1); }
+  .tcell.resv{ border-color:rgba(255,255,255,.25); color:var(--muted); background:rgba(255,255,255,.03); }
+  .cart-panel{ display:none; background:#1C1E18; border:1px solid rgba(200,168,75,.3); border-radius:13px; padding:12px 14px; margin-bottom:10px; }
+  .cart-panel.show{ display:block; }
+  .cart-row{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(200,168,75,.15); font-size:13px; }
+  .cart-row:last-child{ border-bottom:none; }
+  .cart-row .cn{ flex:1; color:var(--ink); }
+  .qbtn{ width:26px; height:26px; border-radius:7px; background:rgba(200,168,75,.15); color:var(--gold-soft); font-size:14px; font-weight:700; }
+  .xbtn{ width:26px; height:26px; border-radius:7px; background:rgba(228,72,58,.15); color:#FF8A73; font-size:12px; }
+  .cart-row .cq{ min-width:18px; text-align:center; font-weight:700; }
+  .bom-ing-list{ display:flex; flex-wrap:wrap; gap:6px; max-height:110px; overflow-y:auto; margin-bottom:10px; }
+  .bom-chip{ padding:7px 12px; border-radius:99px; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); font-size:12px; cursor:pointer; color:var(--ink); }
+  .bom-row{ display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13px; border-bottom:1px dashed rgba(200,168,75,.15); }
+  .bom-row input{ width:70px !important; margin-bottom:0 !important; text-align:center; }
+  .modal select{ width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:13px; font-family:inherit; margin-bottom:10px; }
+  .modal select option{ background:#1C1E18; }
+</style>
+</head>
+<body>
+
+<div class="role-switcher">
+  <div class="rs-label">มุมมอง</div>
+  <div class="rs-tabs">
+    <div class="rs-tab active" data-mode="admin">🛠️ Admin</div>
+    <div class="rs-tab" data-mode="staff">👤 พนักงาน</div>
+    <div class="rs-tab" data-mode="kitchen">🍳 ครัว/บาร์</div>
+    <div class="rs-tab" data-mode="customer">🍽️ ลูกค้า</div>
+  </div>
+  <div class="rs-note" id="rs-note">Admin เห็นได้ทุกอย่าง — สลับมุมมองเพื่อดูว่าพนักงาน/ลูกค้าเห็นหน้าจอแบบไหน</div>
+</div>
+
+<div class="side-overlay" id="sideOverlay" onclick="toggleSidebar(false)"></div>
+<div class="mode-view active" id="mode-admin">
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="eyebrow">Season One</div>
+      <div class="name">Back Office</div>
+      <div class="sub">Food Drink &amp; Bistro · ขอนแก่น</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-group-label">ภาพรวม</div>
+      <div class="nav-item active" data-view="dashboard"><span class="ic">📊</span> แดชบอร์ดยอดขาย</div>
+      <div class="nav-item" data-view="analytics"><span class="ic">📈</span> รายงานสรุป</div>
+
+      <div class="nav-group-label">ปฏิบัติการ</div>
+      <div class="nav-item" data-view="tables"><span class="ic">🪑</span> ผังโต๊ะ / คิว</div>
+      <div class="nav-item" data-view="menu"><span class="ic">🍽️</span> จัดการเมนู</div>
+      <div class="nav-item" data-view="stock"><span class="ic">📦</span> สต็อคสินค้า</div>
+      <div class="nav-item" data-view="payments"><span class="ic">🧾</span> ตรวจสลิป/ชำระเงิน <span class="badge" id="pay-badge">3</span></div>
+
+      <div class="nav-group-label">บุคลากร</div>
+      <div class="nav-item" data-view="staff"><span class="ic">👥</span> พนักงาน &amp; เข้างาน</div>
+
+      <div class="nav-group-label">ระบบ</div>
+      <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> ตั้งค่าร้าน</div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar">TB</div>
+      <div>
+        <div class="who">TaBon</div>
+        <div class="role">เจ้าของร้าน</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <button class="ham" id="hamBtn" onclick="toggleSidebar()">☰</button>
+      <div>
+        <h1 id="view-title">แดชบอร์ดยอดขาย</h1>
+        <div class="meta" id="view-meta">วันเสาร์ที่ 1 กรกฎาคม 2569 · อัปเดตล่าสุดเมื่อครู่</div>
+      </div>
+      <div class="topbar-right">
+        <div class="icon-btn">🔔<span class="dot"></span></div>
+        <button class="pill-btn">＋ เพิ่มรายการใหม่</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ========== DASHBOARD ========== -->
+      <section class="view active" id="view-dashboard">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="lbl">ยอดขายวันนี้</div>
+            <div class="val">฿18,420</div>
+            <div class="delta up">▲ 12% จากเมื่อวาน</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">จำนวนบิล</div>
+            <div class="val">64</div>
+            <div class="delta up">▲ 5 บิล</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">ยอดเฉลี่ย/บิล</div>
+            <div class="val">฿288</div>
+            <div class="delta down">▼ 3%</div>
+          </div>
+          <div class="kpi">
+            <div class="lbl">โต๊ะที่ใช้งาน</div>
+            <div class="val">14/22</div>
+            <div class="delta up">คิวรอ 3 กลุ่ม</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <h3>ยอดขายแยกประเภท</h3>
+              <span class="link">ดูรายสัปดาห์</span>
+            </div>
+            <div class="bar-row"><div class="label">🍖 อาหาร</div><div class="bar-track"><div class="bar-fill" style="width:64%"></div></div><div class="amt">฿11,800</div></div>
+            <div class="bar-row"><div class="label">🍺 เบียร์/เครื่องดื่ม</div><div class="bar-track"><div class="bar-fill" style="width:28%"></div></div><div class="amt">฿5,150</div></div>
+            <div class="bar-row"><div class="label">🥃 สุรา-ค็อกเทล</div><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div><div class="amt">฿1,470</div></div>
+            <div style="margin-top:14px; background:var(--cream); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--gold-soft);">
+              💡 ช่วง 17:00–19:00 ยอดเบียร์ต่ำกว่าเฉลี่ย ลองพิจารณา Happy Hour ช่วงนี้
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>เมนูขายดีวันนี้</h3></div>
+            <div class="top-item"><div class="rank">1</div><div class="nm">คอหมูย่างจิ้มแจ่ว</div><div class="ct">×32</div><div class="rv">฿4,480</div></div>
+            <div class="top-item"><div class="rank">2</div><div class="nm">ส้มตำไทย</div><div class="ct">×27</div><div class="rv">฿2,430</div></div>
+            <div class="top-item"><div class="rank">3</div><div class="nm">เบียร์ช้างเดราฟท์</div><div class="ct">×24</div><div class="rv">฿2,160</div></div>
+            <div class="top-item"><div class="rank">4</div><div class="nm">ปลาเผาเกลือ</div><div class="ct">×11</div><div class="rv">฿1,980</div></div>
+            <div class="top-item"><div class="rank">5</div><div class="nm">Set ปิ้งย่างรวม</div><div class="ct">×2</div><div class="rv">฿2,180</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>สถานะ Cash Shift วันนี้</h3>
+            <span class="link">ปิดกะ</span>
+          </div>
+          <div style="display:flex; gap:24px; flex-wrap:wrap; font-size:13.5px;">
+            <div>เปิดกะโดย <b>พี่มะลิ</b> เวลา 11:00 น. · เงินสดตั้งต้น ฿2,000</div>
+            <div>เงินสดในลิ้นชักตอนนี้ (ประมาณ) <b>฿9,340</b></div>
+            <div>รายการ Void/Refund วันนี้ <b style="color:var(--danger)">2 รายการ</b></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MENU ========== -->
+      <section class="view" id="view-menu">
+        <div class="toolbar">
+          <div class="search">🔍 <input placeholder="ค้นหาเมนู เช่น คอหมูย่าง, เบียร์ช้าง"></div>
+          <div class="chip-row">
+            <div class="chip active">ทั้งหมด</div>
+            <div class="chip">อาหารเรียกน้ำย่อย</div>
+            <div class="chip">อาหารหลัก</div>
+            <div class="chip">ย่าง-ปิ้ง</div>
+            <div class="chip">เครื่องดื่ม</div>
+            <div class="chip">เบียร์</div>
+            <div class="chip">สุรา-ค็อกเทล 🔞</div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>เมนู</th><th>หมวด</th><th>ราคา</th><th>สถานะสต็อควัตถุดิบ</th><th>แสดงในเมนูลูกค้า</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx&sz=w400'); background-size:cover; background-position:center;"></div>คอหมูย่างจิ้มแจ่ว</div></td><td>ย่าง-ปิ้ง</td><td>฿140</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU&sz=w400'); background-size:cover; background-position:center;"></div>ส้มตำไทย</div></td><td>อาหารเรียกน้ำย่อย</td><td>฿90</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ&sz=w400'); background-size:cover; background-position:center;"></div>เบียร์ช้างเดราฟท์</div></td><td>เบียร์</td><td>฿90</td><td><span class="status wait">เหลือน้อย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1PvjXFZFUzT8fCYFREkMBollR_38nNwHe&sz=w400'); background-size:cover; background-position:center;"></div>ปลาเผาเกลือ</div></td><td>อาหารหลัก</td><td>฿180</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center;"></div>Set ปิ้งย่างรวม</div></td><td>ย่าง-ปิ้ง</td><td>฿1,090</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center;"></div>เมอร์ไทน์ ค็อกเทล</div></td><td>สุรา-ค็อกเทล 🔞</td><td>฿160</td><td><span class="status off">หมดชั่วคราว</span></td><td><div class="toggle"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ========== ANALYTICS ========== -->
+      <section class="view" id="view-analytics">
+        <div class="chip-row" id="periodChips" style="margin-bottom:18px;">
+          <div class="chip active" data-p="day">รายวัน</div>
+          <div class="chip" data-p="week">รายสัปดาห์</div>
+          <div class="chip" data-p="month">รายเดือน</div>
+          <div class="chip" data-p="year">รายปี</div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">ยอดขาย</div><div class="val" id="an-sales">—</div><div class="delta up" id="an-salesd"></div></div>
+          <div class="kpi"><div class="lbl">จำนวนบิล</div><div class="val" id="an-bills">—</div></div>
+          <div class="kpi"><div class="lbl">เฉลี่ย/บิล</div><div class="val" id="an-avg">—</div></div>
+          <div class="kpi"><div class="lbl">Food Cost %</div><div class="val" id="an-fc">—</div><div class="delta" style="color:var(--muted)">เป้า ≤ 35%</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>ยอดขายแยกประเภท</h3></div>
+            <div class="bar-row"><div class="label">🍖 อาหาร</div><div class="bar-track"><div class="bar-fill" id="an-w1"></div></div><div class="amt" id="an-a1"></div></div>
+            <div class="bar-row"><div class="label">🍺 เบียร์/เครื่องดื่ม</div><div class="bar-track"><div class="bar-fill" id="an-w2"></div></div><div class="amt" id="an-a2"></div></div>
+            <div class="bar-row"><div class="label">🥃 สุรา-ค็อกเทล</div><div class="bar-track"><div class="bar-fill" id="an-w3"></div></div><div class="amt" id="an-a3"></div></div>
+            <div style="margin-top:14px; background:var(--cream); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--gold-soft);" id="an-stock">—</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Refund / Void ล่าสุด</h3></div>
+            <table style="border:none;"><thead><tr><th>เวลา</th><th>รายการ</th><th>ยอด</th><th>โดย</th></tr></thead>
+              <tbody>
+                <tr><td>19:05</td><td>Void เบียร์ช้าง ×1 (สั่งซ้ำ)</td><td>฿90</td><td>พี่มะลิ</td></tr>
+                <tr><td>13:22</td><td>Refund ส้มตำ (เผ็ดเกิน)</td><td>฿90</td><td>พี่มะลิ</td></tr>
+              </tbody></table>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">ทุกรายการบันทึกชื่อคนกด + เหตุผล ป้องกันรั่วไหล</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>ผลงานพนักงาน</h3></div>
+          <table style="border:none;"><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>ชม.ทำงาน</th><th>ออเดอร์เสิร์ฟ</th><th>ยอดขายที่รับผิดชอบ</th></tr></thead>
+            <tbody id="an-staff"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ========== TABLE MAP ========== -->
+      <section class="view" id="view-tables">
+        <div class="chip-row" style="margin-bottom:16px; font-size:12px;">
+          <div class="chip" style="border-color:#3EE07A;color:#3EE07A;">🟢 ว่าง</div>
+          <div class="chip" style="border-color:var(--gold);color:var(--gold);">🟡 นั่งอยู่</div>
+          <div class="chip" style="border-color:#FF8A73;color:#FF8A73;">🔴 รอเก็บเงิน</div>
+          <div class="chip">⚪ จองแล้ว</div>
+        </div>
+        <div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>Zone A · Indoor</h3></div>
+          <div class="tmap"><div class="tcell busy">A1</div><div class="tcell busy">A2</div><div class="tcell free">A3</div><div class="tcell free">A4</div><div class="tcell busy">A5</div><div class="tcell resv">A6</div></div></div>
+        <div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>Zone B · Outdoor Garden</h3></div>
+          <div class="tmap"><div class="tcell bill">B1</div><div class="tcell free">B2</div><div class="tcell free">B3</div><div class="tcell busy">B4</div><div class="tcell busy">B5</div><div class="tcell free">B6</div><div class="tcell busy">B7</div><div class="tcell free">B8</div></div></div>
+        <div class="card"><div class="card-head"><h3>Zone C · Camping</h3><span class="link">คิวรอ 3 กลุ่ม</span></div>
+          <div class="tmap"><div class="tcell bill">C1</div><div class="tcell busy">C2</div><div class="tcell resv">C3</div><div class="tcell free">C4</div></div></div>
+      </section>
+
+      <!-- ========== STOCK ========== -->
+      <section class="view" id="view-stock">
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">วัตถุดิบทั้งหมด</div><div class="val">38</div></div>
+          <div class="kpi"><div class="lbl">ใกล้หมด</div><div class="val" style="color:var(--warn)">5</div><div class="delta" style="color:var(--warn)">⚠️ ต้องสั่งเพิ่มเร็วๆ นี้</div></div>
+          <div class="kpi"><div class="lbl">หมดสต็อค</div><div class="val" style="color:var(--danger)">1</div><div class="delta down">🔴 กระทบเมนูขายได้</div></div>
+          <div class="kpi"><div class="lbl">มูลค่าสต็อครวม (ประมาณ)</div><div class="val">฿86,400</div></div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search">🔍 <input placeholder="ค้นหาวัตถุดิบ"></div>
+          <div class="chip-row">
+            <div class="chip active">ทั้งหมด</div>
+            <div class="chip">เนื้อสัตว์/อาหารทะเล</div>
+            <div class="chip">ผัก/เครื่องปรุง</div>
+            <div class="chip">เครื่องดื่ม/แอลกอฮอล์</div>
+            <div class="chip">บรรจุภัณฑ์</div>
+          </div>
+        </div>
+
+        <table>
+          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>รับเข้า</th><th>หมดอายุ</th></tr></thead>
+          <tbody>
+            <tr><td><div class="cell-item"><div class="thumb">🥩</div>หมูสามชั้น</div></td><td>เนื้อสัตว์</td><td>18 กก.</td><td>10 กก.</td><td><span class="status on">ปกติ</span></td><td>30 มิ.ย.</td><td><span class="status on">4 ก.ค.</span></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb">🍤</div>กุ้งสด</div></td><td>อาหารทะเล</td><td>3 กก.</td><td>5 กก.</td><td><span class="status wait">ใกล้หมด</span></td><td>1 ก.ค.</td><td><span class="status wait">พรุ่งนี้ ⚠️</span></td></tr>
+            <tr><td><div class="cell-item"><div class="thumb">🍺</div>เบียร์ช้าง (ขวด)</div></td><td>เครื่องดื่ม</td><td>0 ขวด</td><td>24 ขวด</td><td><span class="status off">หมดสต็อค</span></td><td>25 มิ.ย.</td><td>ธ.ค. 69</td></tr>
+            <tr><td><div class="cell-item"><div class="thumb">🌶️</div>พริก-มะนาว-เครื่องตำ</div></td><td>ผัก/เครื่องปรุง</td><td>ปกติ</td><td>—</td><td><span class="status on">ปกติ</span></td><td>2 ก.ค.</td><td>5 ก.ค.</td></tr>
+            <tr><td><div class="cell-item"><div class="thumb">🥤</div>แก้ว/ภาชนะใช้แล้วทิ้ง</div></td><td>บรรจุภัณฑ์</td><td>420 ใบ</td><td>200 ใบ</td><td><span class="status on">ปกติ</span></td><td>20 มิ.ย.</td><td>—</td></tr>
+            <tr><td><div class="cell-item"><div class="thumb">🧊</div>น้ำแข็ง</div></td><td>อื่นๆ</td><td>ใกล้หมด</td><td>—</td><td><span class="status wait">ใกล้หมด</span></td><td>2 ก.ค.</td><td><span class="status off">ใช้วันต่อวัน</span></td></tr>
+          </tbody>
+        </table>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card-head"><h3>สูตรอาหาร (BOM) — ตัดสต็อคอัตโนมัติเมื่อขาย</h3><button class="pill-btn" style="background:var(--gold);color:var(--night);" onclick="openBom()">＋ เพิ่ม/แก้สูตร</button></div>
+          <table style="border:none;">
+            <thead><tr><th>เมนู</th><th>วัตถุดิบที่ใช้ต่อ 1 จาน</th></tr></thead>
+            <tbody>
+              <tr><td>คอหมูย่างจิ้มแจ่ว</td><td>หมูสามชั้น 150 กรัม · น้ำจิ้มแจ่ว 30 มล.</td></tr>
+              <tr><td>ส้มตำไทย</td><td>มะละกอ 200 กรัม · พริก-มะนาว 1 ชุด</td></tr>
+              <tr><td>เบียร์ช้างเดราฟท์</td><td>เบียร์ช้าง (ขวด) 1 ขวด · แก้ว 1 ใบ</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:12px; background:var(--cream); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--gold-soft);">
+            💡 เมื่อเชื่อม Firebase จริง ทุกครั้งที่ขาย "เบียร์ช้างเดราฟท์" 1 แก้ว ระบบจะตัดสต็อค "เบียร์ช้าง (ขวด)" และ "แก้ว" อัตโนมัติตามสูตรนี้
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== PAYMENTS ========== -->
+      <section class="view" id="view-payments">
+        <div class="toolbar">
+          <div class="chip-row">
+            <div class="chip active">รอตรวจ (3)</div>
+            <div class="chip">อนุมัติแล้ว</div>
+            <div class="chip">ปฏิเสธ</div>
+          </div>
+        </div>
+        <button class="pill-btn" style="margin-bottom:16px; background:var(--gold); color:var(--night);" onclick="openPayModal('B4','admin')">💰 เก็บตัง / ปริ้นบิล</button>
+
+        <div class="pay-card">
+          <div class="slip-thumb">🧾</div>
+          <div class="pay-info">
+            <div class="top"><div class="nm">โต๊ะ B4 · คุณสมชาย</div><div class="amt">฿640</div></div>
+            <div class="sub">โอนผ่าน PromptPay · เวลา 19:42 น. · รอตรวจสลิปมา 2 นาที</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn-mini btn-reject">ปฏิเสธ</button>
+            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
+          </div>
+        </div>
+        <div class="pay-card">
+          <div class="slip-thumb">🧾</div>
+          <div class="pay-info">
+            <div class="top"><div class="nm">โต๊ะ A2 · จองล่วงหน้า</div><div class="amt">฿1,280</div></div>
+            <div class="sub">แอปเป๋าตัง (G-Wallet) · เวลา 19:38 น. · รอตรวจสลิปมา 6 นาที</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn-mini btn-reject">ปฏิเสธ</button>
+            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
+          </div>
+        </div>
+        <div class="pay-card">
+          <div class="slip-thumb">🧾</div>
+          <div class="pay-info">
+            <div class="top"><div class="nm">โต๊ะ Camping-1</div><div class="amt">฿2,180</div></div>
+            <div class="sub">โอนผ่าน PromptPay · เวลา 19:29 น. · รอตรวจสลิปมา 15 นาที ⚠️</div>
+          </div>
+          <div class="row-actions">
+            <button class="btn-mini btn-reject">ปฏิเสธ</button>
+            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== STAFF ========== -->
+      <section class="view" id="view-staff">
+        <div class="toolbar">
+          <div class="search">🔍 <input placeholder="ค้นหาพนักงาน"></div>
+          <button class="pill-btn" style="background:var(--night); color:var(--gold-soft);">＋ เพิ่มพนักงาน</button>
+        </div>
+        <div class="staff-grid">
+          <div class="staff-card">
+            <div class="av">มล</div>
+            <div>
+              <div class="nm">พี่มะลิ</div>
+              <div class="role">หัวหน้ากะ / แคชเชียร์</div>
+              <div class="clock">🟢 เข้างาน 11:02 น.</div>
+            </div>
+          </div>
+          <div class="staff-card">
+            <div class="av">ชช</div>
+            <div>
+              <div class="nm">น้องช้าง</div>
+              <div class="role">ครัว</div>
+              <div class="clock">🟢 เข้างาน 10:55 น.</div>
+            </div>
+          </div>
+          <div class="staff-card">
+            <div class="av">บส</div>
+            <div>
+              <div class="nm">บาร์เทนเดอร์โอ๊ต</div>
+              <div class="role">บาร์</div>
+              <div class="clock">🟢 เข้างาน 15:00 น.</div>
+            </div>
+          </div>
+          <div class="staff-card">
+            <div class="av">ผด</div>
+            <div>
+              <div class="nm">น้องผึ้ง</div>
+              <div class="role">เสิร์ฟ</div>
+              <div class="clock">🟡 ยังไม่เข้างาน (กะ 17:00)</div>
+            </div>
+          </div>
+          <div class="staff-card">
+            <div class="av">รป</div>
+            <div>
+              <div class="nm">พี่รุ่ง</div>
+              <div class="role">เสิร์ฟ</div>
+              <div class="clock">🟢 เข้างาน 11:00 น.</div>
+            </div>
+          </div>
+          <div class="staff-card">
+            <div class="av">ทค</div>
+            <div>
+              <div class="nm">น้องทีม</div>
+              <div class="role">ครัว (ล้างจาน)</div>
+              <div class="clock">🔴 ลาป่วยวันนี้</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== SETTINGS ========== -->
+      <section class="view" id="view-settings">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>ข้อมูลร้าน</h3></div>
+            <div style="font-size:13.5px; line-height:2;">
+              <div><b>ชื่อร้าน:</b> Season One — Food Drink &amp; Bistro</div>
+              <div><b>ที่ตั้ง:</b> ถนนมะลิวัลย์-ขอนแก่น ใกล้แยกบ้านทุ่ม</div>
+              <div><b>โทร:</b> 092-625-1541</div>
+              <div><b>เวลาเปิด:</b> 11:00–24:00 น. ทุกวัน</div>
+              <div><b>โซนที่นั่ง:</b> Zone A Indoor · Zone B Outdoor Garden · Zone C Camping</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>สิทธิ์การเข้าถึงระบบ</h3></div>
+            <table style="border:none;">
+              <thead><tr><th>ระดับ</th><th>สิทธิ์</th></tr></thead>
+              <tbody>
+                <tr><td>เจ้าของร้าน</td><td>เข้าถึงทุกเมนู + ดูรายงานการเงิน</td></tr>
+                <tr><td>หัวหน้ากะ</td><td>จัดการโต๊ะ/เมนู/ตรวจสลิป</td></tr>
+                <tr><td>พนักงาน</td><td>รับออเดอร์ + เช็คอิน-เอาท์เท่านั้น</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</div>
+<!-- ===== END mode-admin ===== -->
+
+<!-- ========== STAFF MODE (พนักงาน) ========== -->
+<div class="mode-view" id="mode-staff">
+  <div class="staff-shell">
+    <div class="staff-header">
+      <div class="who">
+        <div class="avatar" style="background:var(--forest);">รป</div>
+        <div>
+          <div class="nm">พี่รุ่ง</div>
+          <div class="role">เสิร์ฟ · กะ 11:00–19:00 น.</div>
+        </div>
+      </div>
+      <button class="clock-btn" id="clockBtn">🟢 เข้างานแล้ว 11:00 น.</button>
+    </div>
+    <div class="staff-tabs">
+      <div class="staff-tab active" data-staff-tab="orders">ออเดอร์ที่ต้องเสิร์ฟ</div>
+      <div class="staff-tab" data-staff-tab="takeorder">สั่งแทนลูกค้า</div>
+      <div class="staff-tab" data-staff-tab="schedule">ตารางกะของฉัน</div>
+    </div>
+    <div class="staff-content">
+      <div class="perm-note">⚠️ มุมมองพนักงาน: สั่งอาหารแทนลูกค้าได้ (กรณีลูกค้าไม่สะดวกสแกน QR เอง) และดูออเดอร์/ตารางกะของตัวเอง — แต่ไม่เห็นยอดขายรวม ไม่แก้เมนู ไม่ตรวจสลิปเงิน</div>
+
+      <div class="staff-panel active" id="staff-panel-orders">
+        <div class="order-card"><div><div class="tbl">โต๊ะ B4 · คอหมูย่าง + ส้มตำ</div><div class="itm">สั่งเมื่อ 5 นาทีที่แล้ว · ครัวทำเสร็จแล้ว</div></div><button class="act">✓ เสิร์ฟแล้ว</button></div>
+        <div class="order-card"><div><div class="tbl">โต๊ะ A2 · เบียร์ช้าง ×2</div><div class="itm">สั่งเมื่อ 2 นาทีที่แล้ว · บาร์กำลังทำ</div></div><button class="act" style="background:var(--warn);">⏳ รอบาร์</button></div>
+        <div class="order-card"><div><div class="tbl">Camping-1 · Set ปิ้งย่างรวม</div><div class="itm">สั่งเมื่อ 12 นาทีที่แล้ว · ครัวทำเสร็จแล้ว</div></div><button class="act">✓ เสิร์ฟแล้ว</button></div>
+      </div>
+
+      <div class="staff-panel" id="staff-panel-takeorder">
+        <div style="font-size:12.5px; color:var(--muted); margin-bottom:10px;">
+          สำหรับลูกค้าที่ไม่สะดวกสแกน QR เอง — พูดคุยแนะนำเมนู/ใช้เมนูกระดาษ แล้วพนักงานกดสั่งแทนได้เลย
+        </div>
+
+        <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">1. เลือกโต๊ะ</div>
+        <div class="chip-row" id="staffTableChips" style="margin-bottom:14px;">
+          <div class="chip active">A2</div>
+          <div class="chip">A5</div>
+          <div class="chip">B1</div>
+          <div class="chip">B4</div>
+          <div class="chip">Camping-1</div>
+          <div class="chip">Camping-2</div>
+        </div>
+
+        <div style="font-size:12px; color:var(--muted); margin-bottom:6px;">2. เลือกเมนู (แตะเพื่อเพิ่ม)</div>
+        <div class="chip-row" style="margin-bottom:14px;">
+          <div class="chip active">ทั้งหมด</div>
+          <div class="chip">อาหารเรียกน้ำย่อย</div>
+          <div class="chip">ย่าง-ปิ้ง</div>
+          <div class="chip">อาหารหลัก</div>
+          <div class="chip">เบียร์</div>
+          <div class="chip">สุรา-ค็อกเทล 🔞</div>
+        </div>
+
+        <div class="order-menu-grid">
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">คอหมูย่างจิ้มแจ่ว</div><div class="pr">฿140</div><button class="order-add" data-name="คอหมูย่างจิ้มแจ่ว" data-price="140">+ เพิ่ม</button></div>
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">ส้มตำไทย</div><div class="pr">฿90</div><button class="order-add" data-name="ส้มตำไทย" data-price="90">+ เพิ่ม</button></div>
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">เบียร์ช้างเดราฟท์</div><div class="pr">฿90</div><button class="order-add" data-name="เบียร์ช้างเดราฟท์" data-price="90">+ เพิ่ม</button></div>
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1PvjXFZFUzT8fCYFREkMBollR_38nNwHe&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">ปลาเผาเกลือ</div><div class="pr">฿180</div><button class="order-add" data-name="ปลาเผาเกลือ" data-price="180">+ เพิ่ม</button></div>
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">Set ปิ้งย่างรวม</div><div class="pr">฿1,090</div><button class="order-add" data-name="Set ปิ้งย่างรวม" data-price="1090">+ เพิ่ม</button></div>
+          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">เมอร์ไทน์ ค็อกเทล 🔞</div><div class="pr">฿160</div><button class="order-add" data-name="เมอร์ไทน์ ค็อกเทล" data-price="160">+ เพิ่ม</button></div>
+        </div>
+
+        <div class="cart-panel" id="staffCartPanel"></div>
+        <div class="staff-order-bar">
+          <div>โต๊ะ <b id="staffOrderTable">A2</b> · <b id="staffOrderCount">0</b> รายการ · <b id="staffOrderTotal">฿0</b></div>
+          <button id="staffSendOrder">ส่งเข้าครัว →</button>
+        </div>
+      </div>
+
+      <div class="staff-panel" id="staff-panel-schedule">
+        <table class="sched-table">
+          <thead><tr><th>วัน</th><th>กะ</th><th>สถานะ</th></tr></thead>
+          <tbody>
+            <tr><td>เสาร์ 1 ก.ค.</td><td>11:00–19:00</td><td><span class="status on">วันนี้</span></td></tr>
+            <tr><td>อาทิตย์ 2 ก.ค.</td><td>17:00–24:00</td><td>—</td></tr>
+            <tr><td>จันทร์ 3 ก.ค.</td><td>หยุด</td><td>—</td></tr>
+            <tr><td>อังคาร 4 ก.ค.</td><td>11:00–19:00</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KITCHEN / BAR DISPLAY MODE ========== -->
+<div class="mode-view" id="mode-kitchen">
+  <div class="kitchen-shell">
+    <div class="kitchen-header">
+      <div class="kitchen-station-tabs">
+        <div class="kstation active" data-station="kitchen">👨‍🍳 ครัว</div>
+        <div class="kstation" data-station="bar">🍺 บาร์</div>
+      </div>
+      <div class="kitchen-clock" id="kClock">19:44:12</div>
+    </div>
+
+    <div class="kanban" id="kanban-kitchen">
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-new"></span> ใหม่ (3)</h4>
+        <div class="ticket late" data-stage="new">
+          <div class="top"><div class="tbl">โต๊ะ Camping-1</div><div class="time late-txt">⏱ 15 นาที</div></div>
+          <ul class="items"><li>🍢 Set ปิ้งย่างรวม ×1</li></ul>
+          <button class="btn-start">▶ เริ่มทำ</button>
+        </div>
+        <div class="ticket" data-stage="new">
+          <div class="top"><div class="tbl">โต๊ะ B4</div><div class="time">⏱ 3 นาที</div></div>
+          <ul class="items"><li>🍖 คอหมูย่างจิ้มแจ่ว ×2</li><li>🥗 ส้มตำไทย ×1</li></ul>
+          <button class="btn-start">▶ เริ่มทำ</button>
+        </div>
+        <div class="ticket" data-stage="new">
+          <div class="top"><div class="tbl">โต๊ะ A5</div><div class="time">⏱ 1 นาที</div></div>
+          <ul class="items"><li>🐟 ปลาเผาเกลือ ×1</li></ul>
+          <button class="btn-start">▶ เริ่มทำ</button>
+        </div>
+      </div>
+
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-prep"></span> กำลังทำ (1)</h4>
+        <div class="ticket" data-stage="prep">
+          <div class="top"><div class="tbl">โต๊ะ A2</div><div class="time">⏱ 6 นาที</div></div>
+          <ul class="items"><li>🍖 คอหมูย่างจิ้มแจ่ว ×1</li></ul>
+          <button class="btn-ready">✓ เสร็จแล้ว</button>
+        </div>
+      </div>
+
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (1)</h4>
+        <div class="ticket" data-stage="ready" style="opacity:.7;">
+          <div class="top"><div class="tbl">โต๊ะ B1</div><div class="time">⏱ รอเสิร์ฟ 2 นาที</div></div>
+          <ul class="items"><li>🥗 ส้มตำไทย ×2</li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="kanban" id="kanban-bar" style="display:none;">
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-new"></span> ใหม่ (2)</h4>
+        <div class="ticket" data-stage="new">
+          <div class="top"><div class="tbl">โต๊ะ A2</div><div class="time">⏱ 2 นาที</div></div>
+          <ul class="items"><li>🍺 เบียร์ช้างเดราฟท์ ×2</li></ul>
+          <button class="btn-start">▶ เริ่มทำ</button>
+        </div>
+        <div class="ticket" data-stage="new">
+          <div class="top"><div class="tbl">โต๊ะ Camping-2</div><div class="time">⏱ 1 นาที</div></div>
+          <ul class="items"><li>🥃 เมอร์ไทน์ ค็อกเทล ×1</li></ul>
+          <button class="btn-start">▶ เริ่มทำ</button>
+        </div>
+      </div>
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-prep"></span> กำลังทำ (0)</h4>
+        <div class="kanban-empty">ยังไม่มีออเดอร์กำลังทำ</div>
+      </div>
+      <div class="kanban-col">
+        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (0)</h4>
+        <div class="kanban-empty">ยังไม่มีออเดอร์พร้อมเสิร์ฟ</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CUSTOMER MODE (ลูกค้า) ========== -->
+<div class="mode-view" id="mode-customer">
+  <div class="cust-shell">
+    <div class="cust-topbar">
+      <div style="height:150px; border-radius:16px; margin:0 0 14px; background-image:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.85)), url('https://drive.google.com/thumbnail?id=1mzdC73REUp71OzAE7J_eHDE2srDHdQpl&sz=w800'); background-size:cover; background-position:center; display:flex; align-items:flex-end; padding:14px; border:1px solid rgba(200,168,75,.25);">
+        <div style="text-align:left;">
+          <div class="eyebrow">Season One · Food Drink &amp; Bistro</div>
+          <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
+        </div>
+      </div>
+    </div>
+    <div class="cust-cats">
+      <div class="cust-cat active">ทั้งหมด</div>
+      <div class="cust-cat">อาหารเรียกน้ำย่อย</div>
+      <div class="cust-cat">ย่าง-ปิ้ง</div>
+      <div class="cust-cat">อาหารหลัก</div>
+      <div class="cust-cat">เบียร์</div>
+      <div class="cust-cat">สุรา-ค็อกเทล 🔞</div>
+    </div>
+    <div class="cust-grid">
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">คอหมูย่างจิ้มแจ่ว</div><div class="pr">฿140</div><button class="cust-add" data-price="140">+ เพิ่มลงตะกร้า</button></div>
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">ส้มตำไทย</div><div class="pr">฿90</div><button class="cust-add" data-price="90">+ เพิ่มลงตะกร้า</button></div>
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">เบียร์ช้างเดราฟท์</div><div class="pr">฿90</div><button class="cust-add" data-price="90">+ เพิ่มลงตะกร้า</button></div>
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1PvjXFZFUzT8fCYFREkMBollR_38nNwHe&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">ปลาเผาเกลือ</div><div class="pr">฿180</div><button class="cust-add" data-price="180">+ เพิ่มลงตะกร้า</button></div>
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">Set ปิ้งย่างรวม</div><div class="pr">฿1,090</div><button class="cust-add" data-price="1090">+ เพิ่มลงตะกร้า</button></div>
+      <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">เมอร์ไทน์ ค็อกเทล 🔞</div><div class="pr">฿160</div><button class="cust-add" data-price="160">+ เพิ่มลงตะกร้า</button></div>
+    </div>
+  </div>
+  <div class="float-stack">
+    <button class="float-btn fb-call" onclick="callStaff()">🔔<small>เรียกพนง.</small></button>
+    <button class="float-btn fb-pay" onclick="openPayModal('B4','customer')">💳<small>ชำระเงิน</small></button>
+  </div>
+  <div class="cart-panel" id="custCartPanel" style="position:fixed; left:0; right:0; margin:0 auto; width:calc(100% - 32px); max-width:528px; bottom:84px; z-index:41;"></div>
+  <div class="cust-cart-bar" id="custCartBar" style="display:none;">
+    <div>ตะกร้า <b id="custCartCount">0</b> รายการ · <b id="custCartTotal">฿0</b></div>
+    <div class="go">สั่งเลย →</div>
+  </div>
+</div>
+
+
+<!-- ===== BOM MODAL ===== -->
+<div class="modal-back" id="bomModal">
+  <div class="modal">
+    <h3>🧾 แก้สูตรอาหาร (BOM)</h3>
+    <div class="sub">เลือกเมนู → จิ้มวัตถุดิบเพื่อเพิ่ม → ใส่ปริมาณต่อ 1 จาน · ใส่ได้ไม่จำกัดจำนวนรายการ</div>
+    <select id="bomMenu">
+      <option>คอหมูย่างจิ้มแจ่ว</option><option>ส้มตำไทย</option><option>เบียร์ช้างเดราฟท์</option>
+      <option>ปลาเผาเกลือ</option><option>Set ปิ้งย่างรวม</option><option>เมอร์ไทน์ ค็อกเทล</option>
+    </select>
+    <input type="text" id="bomSearch" placeholder="🔍 ค้นหาวัตถุดิบ..." oninput="bomFilter()">
+    <div class="bom-ing-list" id="bomIngList"></div>
+    <div class="lbl2">สูตรปัจจุบัน</div>
+    <div id="bomRows"></div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:10px;">💡 แนะนำ: ใส่เฉพาะวัตถุดิบหลักที่แพง/ผันผวน ส่วนเครื่องปรุงจุกจิกใช้ "กลุ่มเครื่องปรุง" รายการเดียว</div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('bomModal').classList.remove('open')">ปิด</button>
+      <button class="btn-lg b-green" onclick="document.getElementById('bomModal').classList.remove('open'); toast('✓ บันทึกสูตรแล้ว (ตัวอย่าง)');">✓ บันทึกสูตร</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAY MODAL ===== -->
+<div class="modal-back" id="payModal">
+  <div class="modal">
+    <h3>💰 เก็บตัง — โต๊ะ <span id="payTable">B4</span></h3>
+    <div class="sub" id="payRoleNote"></div>
+    <div class="bill-lines" id="billLines"></div>
+    <div class="bill-total"><span>รวมทั้งสิ้น</span><span id="billTotal">฿0</span></div>
+
+    <div class="lbl2">วิธีชำระ</div>
+    <div class="seg" id="paySeg">
+      <div class="opt sel" data-pay="transfer">📲 โอน/สแกน</div>
+      <div class="opt" data-pay="cash">💵 เงินสด</div>
+    </div>
+    <div id="transferZone">
+      <div class="qr-box"><b>PromptPay QR</b><span>092-625-1541 · ยอดตามบิล</span><span style="font-size:10px;color:#888;">(QR จริงจะ generate ตอนเชื่อม Firebase)</span></div>
+      <div class="slip-preview" id="slipPreview"><img id="slipImg"><span id="slipName"></span></div>
+      <button class="btn-lg b-ghost" style="width:100%;" onclick="document.getElementById('slipInput').click()">📎 แนบรูปสลิป</button>
+    </div>
+    <div id="cashZone" style="display:none; font-size:13px; background:rgba(200,168,75,.08); border-radius:9px; padding:12px;" >💵 <span id="cashNote">รับเงินสดจากลูกค้า แล้วกดปิดบิลเพื่อบันทึกเข้ากะ</span></div>
+
+    <div class="lbl2">ใบกำกับภาษี</div>
+    <div class="seg" id="invSeg">
+      <div class="opt sel" data-inv="abb">ฉบับย่อ</div>
+      <div class="opt" data-inv="full">เต็มรูป</div>
+    </div>
+    <div id="fullInvForm" style="display:none;">
+      <div class="sub" style="margin-bottom:8px;">กรอกเอง หรือแจ้งพนักงาน/แอดมินกรอกให้ก็ได้</div>
+      <input type="text" id="invName" placeholder="ชื่อบุคคล/บริษัท">
+      <input type="text" id="invTax" placeholder="เลขประจำตัวผู้เสียภาษี 13 หลัก">
+      <input type="text" id="invAddr" placeholder="ที่อยู่ออกใบกำกับ">
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="closePayModal()">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="printBtn" onclick="printBill()">🖨️ ปริ้นบิล</button>
+      <button class="btn-lg b-green" onclick="finishBill()">✓ ปิดบิล</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="slipInput" accept="image/*" style="display:none;">
+
+<script>
+  // ===== STAFF: ORDER FOR CUSTOMER =====
+  const staffTableChips = document.getElementById('staffTableChips');
+  if(staffTableChips){
+    staffTableChips.querySelectorAll('.chip').forEach(c=>{
+      c.addEventListener('click', ()=>{
+        document.getElementById('staffOrderTable').textContent = c.textContent;
+      });
+    });
+  }
+
+  const STAFFCART = [];
+  document.querySelectorAll('.order-add').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      cartAdd(STAFFCART,'staffCartPanel',btn.dataset.name,parseInt(btn.dataset.price,10));
+      const o=btn.textContent; btn.textContent='✓ เพิ่มแล้ว'; setTimeout(()=>{ btn.textContent=o; },600);
+    });
+  });
+  const staffSendBtn = document.getElementById('staffSendOrder');
+  if(staffSendBtn){
+    staffSendBtn.addEventListener('click', ()=>{
+      if(!STAFFCART.length) return;
+      toast('✓ ส่งออเดอร์โต๊ะ '+document.getElementById('staffOrderTable').textContent+' เข้าครัวแล้ว');
+      STAFFCART.length = 0; cartRefresh('staffCartPanel');
+      document.querySelector('.staff-tab[data-staff-tab="orders"]').click();
+    });
+  }
+
+  // ===== ROLE SWITCHER =====
+  const rsNotes = {
+    admin: 'Admin เห็นได้ทุกอย่าง — สลับมุมมองเพื่อดูว่าพนักงาน/ลูกค้าเห็นหน้าจอแบบไหน',
+    staff: 'นี่คือสิ่งที่พนักงานเห็นจริงบนมือถือ — จำกัดสิทธิ์ตามตารางในหน้าตั้งค่า',
+    kitchen: 'จอแสดงผลติดหน้าครัว/บาร์ — ออกแบบให้ดูจากระยะไกลบนจอทัชสกรีนขนาดใหญ่',
+    customer: 'นี่คือสิ่งที่ลูกค้าเห็นจริงเมื่อสแกน QR ที่โต๊ะ'
+  };
+  document.querySelectorAll('.rs-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.rs-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      const mode = tab.dataset.mode;
+      document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
+      document.getElementById('mode-'+mode).classList.add('active');
+      document.getElementById('rs-note').textContent = rsNotes[mode];
+    });
+  });
+
+  // ===== STAFF TABS =====
+  document.querySelectorAll('.staff-tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.staff-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.staff-panel').forEach(p=>p.classList.remove('active'));
+      document.getElementById('staff-panel-'+tab.dataset.staffTab).classList.add('active');
+    });
+  });
+
+  const clockBtn = document.getElementById('clockBtn');
+  if(clockBtn){
+    clockBtn.addEventListener('click', ()=>{
+      const isIn = clockBtn.classList.toggle('out');
+      clockBtn.textContent = isIn ? '🔴 ออกงาน (แตะเพื่อออก)' : '🟢 เข้างานแล้ว 11:00 น.';
+    });
+  }
+
+  // staff "served" action
+  document.querySelectorAll('#mode-staff .act').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const card = e.target.closest('.order-card');
+      card.style.opacity='.4';
+      e.target.textContent='✓ เสิร์ฟแล้ว';
+      e.target.style.background='var(--muted)';
+    });
+  });
+
+  // ===== CUSTOMER CART (editable) =====
+  const CUSTCART = [];
+  function renderCart(cart, panelId, countId, totalId){
+    const p = document.getElementById(panelId);
+    if(!cart.length){ p.classList.remove('show'); }
+    else{
+      p.innerHTML = cart.map((it,i)=>
+        '<div class="cart-row"><span class="cn">'+it.n+'</span>'+
+        '<button class="qbtn" onclick="cartQty(\''+panelId+'\','+i+',-1)">−</button>'+
+        '<span class="cq">'+it.q+'</span>'+
+        '<button class="qbtn" onclick="cartQty(\''+panelId+'\','+i+',1)">＋</button>'+
+        '<span style="min-width:56px;text-align:right;">฿'+(it.q*it.p).toLocaleString()+'</span>'+
+        '<button class="xbtn" onclick="cartDel(\''+panelId+'\','+i+')">✕</button></div>').join('');
+      p.classList.add('show');
+    }
+    const c = cart.reduce((s,i)=>s+i.q,0), t = cart.reduce((s,i)=>s+i.q*i.p,0);
+    document.getElementById(countId).textContent = c;
+    document.getElementById(totalId).textContent = '฿'+t.toLocaleString();
+    return c;
+  }
+  function cartOf(panelId){ return panelId==='custCartPanel' ? CUSTCART : STAFFCART; }
+  function cartRefresh(panelId){
+    if(panelId==='custCartPanel'){
+      const c = renderCart(CUSTCART,'custCartPanel','custCartCount','custCartTotal');
+      document.getElementById('custCartBar').style.display = c>0 ? 'flex' : 'none';
+    } else renderCart(STAFFCART,'staffCartPanel','staffOrderCount','staffOrderTotal');
+  }
+  function cartQty(panelId,i,d){ const c=cartOf(panelId); c[i].q+=d; if(c[i].q<1)c.splice(i,1); cartRefresh(panelId); }
+  function cartDel(panelId,i){ cartOf(panelId).splice(i,1); cartRefresh(panelId); }
+  function cartAdd(cart,panelId,n,p){ const f=cart.find(x=>x.n===n); f?f.q++:cart.push({n,q:1,p}); cartRefresh(panelId); }
+  document.querySelectorAll('.cust-add').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const nm = btn.closest('.cust-card').querySelector('.nm').textContent.replace('🔞','').trim();
+      cartAdd(CUSTCART,'custCartPanel',nm,parseInt(btn.dataset.price,10));
+      btn.textContent='✓ เพิ่มแล้ว'; setTimeout(()=>{ btn.textContent='+ เพิ่มลงตะกร้า'; },700);
+    });
+  });
+
+  const titles = {
+    dashboard: ['แดชบอร์ดยอดขาย', 'วันเสาร์ที่ 1 กรกฎาคม 2569 · อัปเดตล่าสุดเมื่อครู่'],
+    menu: ['จัดการเมนู', 'รวม 42 เมนู · 6 หมวดหมู่'],
+    analytics: ['รายงานสรุป', 'ยอดขาย · สต็อค · พนักงาน — สลับช่วงเวลาได้'],
+    tables: ['ผังโต๊ะ / คิว', 'แตะโต๊ะเพื่อเปลี่ยนสถานะ (ตัวอย่าง)'],
+    stock: ['สต็อคสินค้า', '38 รายการวัตถุดิบ · 5 รายการใกล้หมด · 1 รายการหมด'],
+    payments: ['ตรวจสลิป / ยืนยันการชำระเงิน', '3 รายการรอตรวจสอบ'],
+    staff: ['พนักงาน & การเข้างาน', 'วันนี้เข้างานแล้ว 4 จาก 6 คน'],
+    settings: ['ตั้งค่าร้าน', 'ข้อมูลร้านและสิทธิ์การเข้าถึง']
+  };
+
+  // ===== KITCHEN / BAR DISPLAY =====
+  function kTick(){
+    const el = document.getElementById('kClock');
+    if(!el) return;
+    const n = new Date();
+    const s = t => String(t).padStart(2,'0');
+    el.textContent = s(n.getHours())+':'+s(n.getMinutes())+':'+s(n.getSeconds());
+  }
+  setInterval(kTick, 1000); kTick();
+
+  document.querySelectorAll('.kstation').forEach(st=>{
+    st.addEventListener('click', ()=>{
+      document.querySelectorAll('.kstation').forEach(s=>s.classList.remove('active'));
+      st.classList.add('active');
+      document.getElementById('kanban-kitchen').style.display = st.dataset.station === 'kitchen' ? 'grid' : 'none';
+      document.getElementById('kanban-bar').style.display = st.dataset.station === 'bar' ? 'grid' : 'none';
+    });
+  });
+
+  // ticket stage advance: new -> prep -> ready (visual only, demo)
+  document.querySelectorAll('.btn-start').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const ticket = e.target.closest('.ticket');
+      ticket.classList.remove('late');
+      ticket.querySelector('.time')?.classList.remove('late-txt');
+      btn.textContent = '✓ เสร็จแล้ว';
+      btn.className = 'btn-ready';
+      btn.replaceWith(btn.cloneNode(true)); // reset old start-listener
+      const newBtn = ticket.querySelector('button');
+      newBtn.addEventListener('click', (ev)=>{
+        const t = ev.target.closest('.ticket');
+        t.style.opacity='.7';
+        ev.target.remove();
+      });
+    });
+  });
+  document.querySelectorAll('.btn-ready').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const ticket = e.target.closest('.ticket');
+      ticket.style.opacity='.7';
+      e.target.remove();
+    });
+  });
+
+  // ===== ADMIN NAV (existing) =====
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    item.addEventListener('click', ()=>{
+      document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+      item.classList.add('active');
+      const v = item.dataset.view;
+      document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+      document.getElementById('view-'+v).classList.add('active');
+      document.getElementById('view-title').textContent = titles[v][0];
+      document.getElementById('view-meta').textContent = titles[v][1];
+    });
+  });
+
+  // toggle switches
+  document.querySelectorAll('.toggle').forEach(t=>{
+    t.addEventListener('click', ()=> t.classList.toggle('on'));
+  });
+
+  // chips
+  document.querySelectorAll('.chip-row').forEach(group=>{
+    group.querySelectorAll('.chip').forEach(c=>{
+      c.addEventListener('click', ()=>{
+        group.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+        c.classList.add('active');
+      });
+    });
+  });
+
+  // payment approve/reject demo interaction
+  document.querySelectorAll('.btn-approve, .btn-reject').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const card = e.target.closest('.pay-card');
+      card.style.transition='opacity .25s, transform .25s';
+      card.style.opacity='0';
+      card.style.transform='translateX(20px)';
+      setTimeout(()=> card.remove(), 250);
+    });
+  });
+
+  // ===== PAY MODAL / PRINT / SLIP / CALL STAFF =====
+  const BILLS = {
+    'B4':[{n:'คอหมูย่างจิ้มแจ่ว',q:2,p:140},{n:'ส้มตำไทย',q:1,p:90},{n:'เบียร์ช้างเดราฟท์',q:2,p:90}],
+    'A2':[{n:'คอหมูย่างจิ้มแจ่ว',q:1,p:140},{n:'เบียร์ช้างเดราฟท์',q:2,p:90}],
+    'Camping-1':[{n:'Set ปิ้งย่างรวม',q:1,p:1090},{n:'เบียร์ช้างเดราฟท์',q:4,p:90}]
+  };
+  let payCtx = { table:'B4', role:'admin', method:'transfer', inv:'abb' };
+
+  function toast(msg){
+    const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
+    document.body.appendChild(t); setTimeout(()=>t.remove(), 2600);
+  }
+  function callStaff(){ toast('🔔 เรียกพนักงานแล้ว — โต๊ะ B4 กรุณารอสักครู่'); }
+
+  function billOf(table){ return BILLS[table] || BILLS['B4']; }
+  function billTotal(items){ return items.reduce((s,i)=>s+i.q*i.p,0); }
+
+  function openPayModal(table, role){
+    payCtx = { table, role, method:'transfer', inv:'abb' };
+    document.getElementById('payTable').textContent = table;
+    document.getElementById('payRoleNote').textContent =
+      role==='customer' ? 'ชำระเงินด้วยตัวเอง — แนบสลิปแล้วรอพนักงานยืนยัน'
+      : 'โหมดพนักงาน/แอดมิน — ปริ้นรายการอาหารให้ลูกค้าตรวจก่อนเก็บเงินได้';
+    document.getElementById('printBtn').style.display = role==='customer' ? 'none' : 'block';
+    document.getElementById('cashNote').textContent = role==='customer'
+      ? 'พนักงานจะมาเก็บเงินสดที่โต๊ะ กดปิดบิลเพื่อแจ้งพนักงาน'
+      : 'รับเงินสดจากลูกค้า แล้วกดปิดบิลเพื่อบันทึกเข้ากะ';
+    const items = billOf(table);
+    document.getElementById('billLines').innerHTML = items.map(i=>
+      '<div class="ln"><span>'+i.n+' ×'+i.q+'</span><span>฿'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
+    document.getElementById('billTotal').textContent = '฿'+billTotal(items).toLocaleString();
+    // reset segments
+    document.querySelectorAll('#paySeg .opt').forEach(o=>o.classList.toggle('sel', o.dataset.pay==='transfer'));
+    document.querySelectorAll('#invSeg .opt').forEach(o=>o.classList.toggle('sel', o.dataset.inv==='abb'));
+    document.getElementById('transferZone').style.display='block';
+    document.getElementById('cashZone').style.display='none';
+    document.getElementById('fullInvForm').style.display='none';
+    document.getElementById('slipPreview').style.display='none';
+    document.getElementById('payModal').classList.add('open');
+  }
+  function closePayModal(){ document.getElementById('payModal').classList.remove('open'); }
+
+  document.querySelectorAll('#paySeg .opt').forEach(o=>{
+    o.addEventListener('click', ()=>{
+      document.querySelectorAll('#paySeg .opt').forEach(x=>x.classList.remove('sel'));
+      o.classList.add('sel'); payCtx.method = o.dataset.pay;
+      document.getElementById('transferZone').style.display = payCtx.method==='transfer'?'block':'none';
+      document.getElementById('cashZone').style.display = payCtx.method==='cash'?'block':'none';
+    });
+  });
+  document.querySelectorAll('#invSeg .opt').forEach(o=>{
+    o.addEventListener('click', ()=>{
+      document.querySelectorAll('#invSeg .opt').forEach(x=>x.classList.remove('sel'));
+      o.classList.add('sel'); payCtx.inv = o.dataset.inv;
+      document.getElementById('fullInvForm').style.display = payCtx.inv==='full'?'block':'none';
+    });
+  });
+  document.getElementById('slipInput').addEventListener('change', (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    document.getElementById('slipImg').src = URL.createObjectURL(f);
+    document.getElementById('slipName').textContent = '✓ แนบสลิปแล้ว: '+f.name;
+    document.getElementById('slipPreview').style.display='flex';
+  });
+
+  function printBill(){
+    const items = billOf(payCtx.table);
+    const total = billTotal(items);
+    const vat = Math.round(total*7/107);
+    const full = payCtx.inv==='full';
+    const nm = document.getElementById('invName').value;
+    const tx = document.getElementById('invTax').value;
+    const ad = document.getElementById('invAddr').value;
+    let h = '<html><head><meta charset="UTF-8"><title>บิล</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:12px;}h4{text-align:center;margin:6px 0;}hr{border:none;border-top:1px dashed #000;}.ln{display:flex;justify-content:space-between;}.tt{font-weight:bold;font-size:14px;}</style></head><body>';
+    h += '<h4>Season One<br>Food Drink & Bistro</h4><div style="text-align:center">ถ.มะลิวัลย์ ขอนแก่น · โทร 092-625-1541<br>TAX ID: 0-0000-00000-00-0</div><hr>';
+    h += '<div>'+(full?'ใบกำกับภาษี (เต็มรูป)':'ใบกำกับภาษีอย่างย่อ')+'</div>';
+    h += '<div>โต๊ะ '+payCtx.table+' · '+new Date().toLocaleString('th-TH')+'</div>';
+    if(full){ h += '<hr><div>ลูกค้า: '+(nm||'-')+'<br>เลขภาษี: '+(tx||'-')+'<br>ที่อยู่: '+(ad||'-')+'</div>'; }
+    h += '<hr>' + items.map(i=>'<div class="ln"><span>'+i.n+' x'+i.q+'</span><span>'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
+    h += '<hr><div class="ln tt"><span>รวม</span><span>฿'+total.toLocaleString()+'</span></div>';
+    h += '<div class="ln"><span>ภาษีมูลค่าเพิ่ม 7% (รวมใน)</span><span>'+vat.toLocaleString()+'</span></div>';
+    h += '<hr><div style="text-align:center">ขอบคุณที่ใช้บริการ 🌾</div></body></html>';
+    const w = window.open('','_blank','width=320,height=600');
+    w.document.write(h); w.document.close();
+    setTimeout(()=>w.print(), 300);
+  }
+
+  function finishBill(){
+    closePayModal();
+    toast(payCtx.method==='cash'
+      ? (payCtx.role==='customer' ? '💵 แจ้งพนักงานแล้ว รอเก็บเงินที่โต๊ะ '+payCtx.table : '✓ ปิดบิลโต๊ะ '+payCtx.table+' บันทึกเงินสดเข้ากะแล้ว')
+      : '✓ ส่งสลิปเข้าคิวตรวจแล้ว — โต๊ะ '+payCtx.table);
+  }
+
+  // staff order cards: add เก็บตัง button
+  document.querySelectorAll('#mode-staff .order-card').forEach(card=>{
+    const tbl = (card.querySelector('.tbl').textContent.split('·')[0]).replace('โต๊ะ','').trim();
+    const b = document.createElement('button');
+    b.className = 'act'; b.style.background='var(--gold)'; b.style.color='var(--night)'; b.style.marginLeft='8px';
+    b.textContent = '💰 เก็บตัง';
+    b.addEventListener('click', (e)=>{ e.stopPropagation(); openPayModal(tbl,'staff'); });
+    card.appendChild(b);
+  });
+
+  function toggleSidebar(force){
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('sideOverlay');
+    const open = force !== undefined ? force : !sb.classList.contains('open');
+    sb.classList.toggle('open', open);
+    ov.classList.toggle('show', open);
+  }
+  document.querySelectorAll('.nav-item').forEach(i=>i.addEventListener('click', ()=>{
+    if(window.innerWidth <= 980) toggleSidebar(false);
+  }));
+
+  // ===== ANALYTICS =====
+  const AN = {
+    day:{s:'฿18,420',d:'▲ 12% จากเมื่อวาน',b:'64',a:'฿288',fc:'32%',c:[[64,'฿11,800'],[28,'฿5,150'],[8,'฿1,470']],
+      st:'📦 วัตถุดิบใช้ไปวันนี้ ~฿5,890 · ของเสีย ฿120 (2%) · กุ้งสดหมดอายุพรุ่งนี้ ⚠️',
+      sf:[['พี่มะลิ','หัวหน้ากะ','8.5','—','฿18,420 (ปิดกะ)'],['พี่รุ่ง','เสิร์ฟ','8','34','฿9,820'],['น้องผึ้ง','เสิร์ฟ','5','21','฿6,140'],['น้องช้าง','ครัว','8.5','41 จาน','—'],['โอ๊ต','บาร์','6','38 แก้ว','—']]},
+    week:{s:'฿121,300',d:'▲ 8% จากสัปดาห์ก่อน',b:'438',a:'฿277',fc:'33%',c:[[62,'฿75,400'],[29,'฿35,200'],[9,'฿10,700']],
+      st:'📦 ใช้วัตถุดิบ ~฿40,000 · ของเสียสะสม ฿1,850 (4.6%) — สูงกว่าเป้า ตรวจตู้เย็นโซนซีฟู้ด',
+      sf:[['พี่มะลิ','หัวหน้ากะ','51','—','ปิดกะ 6 วัน'],['พี่รุ่ง','เสิร์ฟ','46','208','฿58,900'],['น้องผึ้ง','เสิร์ฟ','40','176','฿47,300'],['น้องช้าง','ครัว','50','265 จาน','—'],['โอ๊ต','บาร์','38','241 แก้ว','—']]},
+    month:{s:'฿498,000',d:'▲ 15% จากเดือนก่อน',b:'1,820',a:'฿274',fc:'34%',c:[[61,'฿304,000'],[30,'฿149,000'],[9,'฿45,000']],
+      st:'📦 ต้นทุนวัตถุดิบ ฿169,300 · Food Cost 34% ใกล้เพดาน 35% — เช็คราคาหมู/กุ้งกับ supplier',
+      sf:[['พี่มะลิ','หัวหน้ากะ','214','—','เต็มเดือน'],['พี่รุ่ง','เสิร์ฟ','198','~870','฿243,000'],['น้องผึ้ง','เสิร์ฟ','172','~740','฿198,000'],['น้องช้าง','ครัว','216','~1,100 จาน','—'],['โอ๊ต','บาร์','160','~1,000 แก้ว','—']]},
+    year:{s:'฿2.94M',d:'ปีแรก (เปิด มี.ค. 69)',b:'10,700',a:'฿275',fc:'33.5%',c:[[62,'฿1.82M'],[29,'฿0.86M'],[9,'฿0.26M']],
+      st:'📦 ต้นทุนวัตถุดิบสะสม ฿985,000 · เดือนขายดีสุด: ธ.ค. (เทศกาล) · แนะนำสต็อคเพิ่ม 30% ช่วง พ.ย.–ม.ค.',
+      sf:[['พี่มะลิ','หัวหน้ากะ','—','—','ทำงานครบทุกเดือน'],['พี่รุ่ง','เสิร์ฟ','—','—','ยอดสูงสุดของทีมเสิร์ฟ'],['น้องผึ้ง','เสิร์ฟ','—','—','—'],['น้องช้าง','ครัว','—','—','—'],['โอ๊ต','บาร์','—','—','—']]}
+  };
+  function renderAn(p){
+    const d = AN[p];
+    document.getElementById('an-sales').textContent=d.s;
+    document.getElementById('an-salesd').textContent=d.d;
+    document.getElementById('an-bills').textContent=d.b;
+    document.getElementById('an-avg').textContent=d.a;
+    document.getElementById('an-fc').textContent=d.fc;
+    for(let i=0;i<3;i++){
+      document.getElementById('an-w'+(i+1)).style.width=d.c[i][0]+'%';
+      document.getElementById('an-a'+(i+1)).textContent=d.c[i][1];
+    }
+    document.getElementById('an-stock').textContent=d.st;
+    document.getElementById('an-staff').innerHTML=d.sf.map(r=>'<tr>'+r.map(x=>'<td>'+x+'</td>').join('')+'</tr>').join('');
+  }
+  document.querySelectorAll('#periodChips .chip').forEach(c=>c.addEventListener('click',()=>renderAn(c.dataset.p)));
+  renderAn('day');
+
+  // ===== BOM EDITOR =====
+  const INGS=['หมูสามชั้น','กุ้งสด','เบียร์ช้าง (ขวด)','มะละกอ','พริก-มะนาว','ปลากะพง','เกลือ','ถ่าน','แก้วใช้แล้วทิ้ง','กลุ่มเครื่องปรุง','น้ำแข็ง','เหล้าเบส'];
+  let BOMCUR=[{n:'หมูสามชั้น',q:'0.15 กก.'},{n:'กลุ่มเครื่องปรุง',q:'1 ชุด'}];
+  function openBom(){ renderBomList(''); renderBomRows(); document.getElementById('bomModal').classList.add('open'); }
+  function renderBomList(f){
+    document.getElementById('bomIngList').innerHTML = INGS.filter(x=>x.includes(f)).map(x=>
+      '<div class="bom-chip" onclick="bomAdd(\''+x+'\')">＋ '+x+'</div>').join('') || '<span style="font-size:12px;color:var(--muted)">ไม่พบ — เพิ่มวัตถุดิบใหม่ได้ในหน้าสต็อค</span>';
+  }
+  function bomFilter(){ renderBomList(document.getElementById('bomSearch').value.trim()); }
+  function bomAdd(n){ if(!BOMCUR.find(x=>x.n===n)) BOMCUR.push({n,q:''}); renderBomRows(); }
+  function bomDel(i){ BOMCUR.splice(i,1); renderBomRows(); }
+  function renderBomRows(){
+    document.getElementById('bomRows').innerHTML = BOMCUR.map((r,i)=>
+      '<div class="bom-row"><span style="flex:1">'+r.n+'</span><input type="text" placeholder="ปริมาณ" value="'+r.q+'"><button class="xbtn" onclick="bomDel('+i+')">✕</button></div>').join('')
+      || '<div style="font-size:12px;color:var(--muted);padding:8px 0;">ยังไม่มีวัตถุดิบ — จิ้มจากด้านบนเพื่อเพิ่ม</div>';
+  }
+
+  // ===== TABLE MAP: tap to cycle status =====
+  const TSTATES=['free','busy','bill','resv'];
+  document.querySelectorAll('.tcell').forEach(t=>t.addEventListener('click',()=>{
+    const cur=TSTATES.findIndex(s=>t.classList.contains(s));
+    t.classList.remove(TSTATES[cur]); t.classList.add(TSTATES[(cur+1)%4]);
+  }));
+</script>
+
+</body>
+</html>
