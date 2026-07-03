@@ -430,7 +430,6 @@
       </div>
       <div class="topbar-right">
         <div class="icon-btn">🔔<span class="dot"></span></div>
-        <button class="pill-btn">＋ เพิ่มรายการใหม่</button>
       </div>
     </div>
 
@@ -500,27 +499,21 @@
       <!-- ========== MENU ========== -->
       <section class="view" id="view-menu">
         <div class="toolbar">
-          <div class="search">🔍 <input placeholder="ค้นหาเมนู เช่น คอหมูย่าง, เบียร์ช้าง"></div>
-          <div class="chip-row">
-            <div class="chip active">ทั้งหมด</div>
-            <div class="chip">อาหารเรียกน้ำย่อย</div>
-            <div class="chip">อาหารหลัก</div>
-            <div class="chip">ย่าง-ปิ้ง</div>
-            <div class="chip">เครื่องดื่ม</div>
-            <div class="chip">เบียร์</div>
-            <div class="chip">สุรา-ค็อกเทล 🔞</div>
+          <div class="search">🔍 <input id="menuSearchInput" placeholder="ค้นหาเมนู เช่น คอหมูย่าง, เบียร์ช้าง"></div>
+          <div class="chip-row" id="menuCatChips">
+            <div class="chip active" data-cat="ทั้งหมด">ทั้งหมด</div>
+            <div class="chip" data-cat="อาหารเรียกน้ำย่อย">อาหารเรียกน้ำย่อย</div>
+            <div class="chip" data-cat="อาหารหลัก">อาหารหลัก</div>
+            <div class="chip" data-cat="ย่าง-ปิ้ง">ย่าง-ปิ้ง</div>
+            <div class="chip" data-cat="เครื่องดื่ม">เครื่องดื่ม</div>
+            <div class="chip" data-cat="เบียร์">เบียร์</div>
+            <div class="chip" data-cat="สุรา-ค็อกเทล">สุรา-ค็อกเทล 🔞</div>
           </div>
+          <button class="pill-btn" id="btnAddMenu" style="background:var(--gold); color:var(--night);">＋ เมนูใหม่</button>
         </div>
         <table>
           <thead><tr><th>เมนู</th><th>หมวด</th><th>ราคา</th><th>สถานะสต็อควัตถุดิบ</th><th>แสดงในเมนูลูกค้า</th><th></th></tr></thead>
-          <tbody>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx&sz=w400'); background-size:cover; background-position:center;"></div>คอหมูย่างจิ้มแจ่ว</div></td><td>ย่าง-ปิ้ง</td><td>฿140</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU&sz=w400'); background-size:cover; background-position:center;"></div>ส้มตำไทย</div></td><td>อาหารเรียกน้ำย่อย</td><td>฿90</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ&sz=w400'); background-size:cover; background-position:center;"></div>เบียร์ช้างเดราฟท์</div></td><td>เบียร์</td><td>฿90</td><td><span class="status wait">เหลือน้อย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1PvjXFZFUzT8fCYFREkMBollR_38nNwHe&sz=w400'); background-size:cover; background-position:center;"></div>ปลาเผาเกลือ</div></td><td>อาหารหลัก</td><td>฿180</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center;"></div>Set ปิ้งย่างรวม</div></td><td>ย่าง-ปิ้ง</td><td>฿1,090</td><td><span class="status on">พร้อมขาย</span></td><td><div class="toggle on"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center;"></div>เมอร์ไทน์ ค็อกเทล</div></td><td>สุรา-ค็อกเทล 🔞</td><td>฿160</td><td><span class="status off">หมดชั่วคราว</span></td><td><div class="toggle"></div></td><td><div class="row-actions"><div class="icon-sm">✏️</div><div class="icon-sm">🗑️</div></div></td></tr>
-          </tbody>
+          <tbody id="menuTableBody"></tbody>
         </table>
       </section>
 
@@ -581,44 +574,36 @@
 
       <!-- ========== STOCK ========== -->
       <section class="view" id="view-stock">
-        <div class="kpis">
-          <div class="kpi"><div class="lbl">วัตถุดิบทั้งหมด</div><div class="val">38</div></div>
-          <div class="kpi"><div class="lbl">ใกล้หมด</div><div class="val" style="color:var(--warn)">5</div><div class="delta" style="color:var(--warn)">⚠️ ต้องสั่งเพิ่มเร็วๆ นี้</div></div>
-          <div class="kpi"><div class="lbl">หมดสต็อค</div><div class="val" style="color:var(--danger)">1</div><div class="delta down">🔴 กระทบเมนูขายได้</div></div>
-          <div class="kpi"><div class="lbl">มูลค่าสต็อครวม (ประมาณ)</div><div class="val">฿86,400</div></div>
+        <div class="kpis" id="stockKpis">
+          <div class="kpi"><div class="lbl">วัตถุดิบทั้งหมด</div><div class="val" id="kpi-ing-total">—</div></div>
+          <div class="kpi"><div class="lbl">ใกล้หมด</div><div class="val" id="kpi-ing-low" style="color:var(--warn)">—</div></div>
+          <div class="kpi"><div class="lbl">หมดสต็อค</div><div class="val" id="kpi-ing-out" style="color:var(--danger)">—</div></div>
+          <div class="kpi"><div class="lbl">มูลค่าสต็อครวม (ประมาณ)</div><div class="val" id="kpi-ing-value">—</div></div>
         </div>
 
         <div class="toolbar">
-          <div class="search">🔍 <input placeholder="ค้นหาวัตถุดิบ"></div>
-          <div class="chip-row">
-            <div class="chip active">ทั้งหมด</div>
-            <div class="chip">เนื้อสัตว์/อาหารทะเล</div>
-            <div class="chip">ผัก/เครื่องปรุง</div>
-            <div class="chip">เครื่องดื่ม/แอลกอฮอล์</div>
-            <div class="chip">บรรจุภัณฑ์</div>
+          <div class="search">🔍 <input id="ingSearchInput" placeholder="ค้นหาวัตถุดิบ"></div>
+          <div class="chip-row" id="ingCatChips">
+            <div class="chip active" data-cat="ทั้งหมด">ทั้งหมด</div>
+            <div class="chip" data-cat="เนื้อสัตว์">เนื้อสัตว์/อาหารทะเล</div>
+            <div class="chip" data-cat="ผัก">ผัก/เครื่องปรุง</div>
+            <div class="chip" data-cat="เครื่องดื่ม">เครื่องดื่ม/แอลกอฮอล์</div>
+            <div class="chip" data-cat="บรรจุภัณฑ์">บรรจุภัณฑ์</div>
           </div>
+          <button class="pill-btn" id="btnAddIng" style="background:var(--gold); color:var(--night);">＋ วัตถุดิบใหม่</button>
         </div>
 
         <table>
-          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>รับเข้า</th><th>หมดอายุ</th></tr></thead>
-          <tbody>
-            <tr><td><div class="cell-item"><div class="thumb">🥩</div>หมูสามชั้น</div></td><td>เนื้อสัตว์</td><td>18 กก.</td><td>10 กก.</td><td><span class="status on">ปกติ</span></td><td>30 มิ.ย.</td><td><span class="status on">4 ก.ค.</span></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb">🍤</div>กุ้งสด</div></td><td>อาหารทะเล</td><td>3 กก.</td><td>5 กก.</td><td><span class="status wait">ใกล้หมด</span></td><td>1 ก.ค.</td><td><span class="status wait">พรุ่งนี้ ⚠️</span></td></tr>
-            <tr><td><div class="cell-item"><div class="thumb">🍺</div>เบียร์ช้าง (ขวด)</div></td><td>เครื่องดื่ม</td><td>0 ขวด</td><td>24 ขวด</td><td><span class="status off">หมดสต็อค</span></td><td>25 มิ.ย.</td><td>ธ.ค. 69</td></tr>
-            <tr><td><div class="cell-item"><div class="thumb">🌶️</div>พริก-มะนาว-เครื่องตำ</div></td><td>ผัก/เครื่องปรุง</td><td>ปกติ</td><td>—</td><td><span class="status on">ปกติ</span></td><td>2 ก.ค.</td><td>5 ก.ค.</td></tr>
-            <tr><td><div class="cell-item"><div class="thumb">🥤</div>แก้ว/ภาชนะใช้แล้วทิ้ง</div></td><td>บรรจุภัณฑ์</td><td>420 ใบ</td><td>200 ใบ</td><td><span class="status on">ปกติ</span></td><td>20 มิ.ย.</td><td>—</td></tr>
-            <tr><td><div class="cell-item"><div class="thumb">🧊</div>น้ำแข็ง</div></td><td>อื่นๆ</td><td>ใกล้หมด</td><td>—</td><td><span class="status wait">ใกล้หมด</span></td><td>2 ก.ค.</td><td><span class="status off">ใช้วันต่อวัน</span></td></tr>
-          </tbody>
+          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>ราคาทุน/หน่วย</th></tr></thead>
+          <tbody id="ingTableBody"></tbody>
         </table>
 
         <div class="card" style="margin-top:18px;">
           <div class="card-head"><h3>สูตรอาหาร (BOM) — ตัดสต็อคอัตโนมัติเมื่อขาย</h3><button class="pill-btn" style="background:var(--gold);color:var(--night);" onclick="openBom()">＋ เพิ่ม/แก้สูตร</button></div>
           <table style="border:none;">
             <thead><tr><th>เมนู</th><th>วัตถุดิบที่ใช้ต่อ 1 จาน</th></tr></thead>
-            <tbody>
-              <tr><td>คอหมูย่างจิ้มแจ่ว</td><td>หมูสามชั้น 150 กรัม · น้ำจิ้มแจ่ว 30 มล.</td></tr>
-              <tr><td>ส้มตำไทย</td><td>มะละกอ 200 กรัม · พริก-มะนาว 1 ชุด</td></tr>
-              <tr><td>เบียร์ช้างเดราฟท์</td><td>เบียร์ช้าง (ขวด) 1 ขวด · แก้ว 1 ใบ</td></tr>
+            <tbody id="bomSummaryBody">
+              <tr><td colspan="2" style="color:var(--muted);">กำลังโหลด...</td></tr>
             </tbody>
           </table>
           <div style="margin-top:12px; background:var(--cream); border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--gold-soft);">
@@ -736,13 +721,13 @@
       <section class="view" id="view-settings">
         <div class="grid-2">
           <div class="card">
-            <div class="card-head"><h3>ข้อมูลร้าน</h3></div>
-            <div style="font-size:13.5px; line-height:2;">
-              <div><b>ชื่อร้าน:</b> Season One — Food Drink &amp; Bistro</div>
-              <div><b>ที่ตั้ง:</b> ถนนมะลิวัลย์-ขอนแก่น ใกล้แยกบ้านทุ่ม</div>
-              <div><b>โทร:</b> 092-625-1541</div>
-              <div><b>เวลาเปิด:</b> 11:00–24:00 น. ทุกวัน</div>
-              <div><b>โซนที่นั่ง:</b> Zone A Indoor · Zone B Outdoor Garden · Zone C Camping</div>
+            <div class="card-head"><h3>ข้อมูลร้าน</h3><button class="pill-btn" id="btnEditShop" style="background:var(--gold); color:var(--night);">✏️ แก้ไข</button></div>
+            <div style="font-size:13.5px; line-height:2;" id="shopInfoBox">
+              <div><b>ชื่อร้าน:</b> <span id="si-name">Season One — Food Drink &amp; Bistro</span></div>
+              <div><b>ที่ตั้ง:</b> <span id="si-addr">ถนนมะลิวัลย์-ขอนแก่น ใกล้แยกบ้านทุ่ม</span></div>
+              <div><b>โทร:</b> <span id="si-phone">092-625-1541</span></div>
+              <div><b>เวลาเปิด:</b> <span id="si-hours">11:00–24:00 น. ทุกวัน</span></div>
+              <div><b>โซนที่นั่ง:</b> <span id="si-zones">Zone A Indoor · Zone B Outdoor Garden · Zone C Camping</span></div>
             </div>
           </div>
           <div class="card">
@@ -787,9 +772,9 @@
       <div class="perm-note">⚠️ มุมมองพนักงาน: สั่งอาหารแทนลูกค้าได้ (กรณีลูกค้าไม่สะดวกสแกน QR เอง) และดูออเดอร์/ตารางกะของตัวเอง — แต่ไม่เห็นยอดขายรวม ไม่แก้เมนู ไม่ตรวจสลิปเงิน</div>
 
       <div class="staff-panel active" id="staff-panel-orders">
-        <div class="order-card"><div><div class="tbl">โต๊ะ B4 · คอหมูย่าง + ส้มตำ</div><div class="itm">สั่งเมื่อ 5 นาทีที่แล้ว · ครัวทำเสร็จแล้ว</div></div><button class="act">✓ เสิร์ฟแล้ว</button></div>
-        <div class="order-card"><div><div class="tbl">โต๊ะ A2 · เบียร์ช้าง ×2</div><div class="itm">สั่งเมื่อ 2 นาทีที่แล้ว · บาร์กำลังทำ</div></div><button class="act" style="background:var(--warn);">⏳ รอบาร์</button></div>
-        <div class="order-card"><div><div class="tbl">Camping-1 · Set ปิ้งย่างรวม</div><div class="itm">สั่งเมื่อ 12 นาทีที่แล้ว · ครัวทำเสร็จแล้ว</div></div><button class="act">✓ เสิร์ฟแล้ว</button></div>
+        <div id="staffOrdersLive">
+          <div class="empty"><div class="ic">📭</div>ยังไม่มีออเดอร์ที่พร้อมเสิร์ฟตอนนี้</div>
+        </div>
       </div>
 
       <div class="staff-panel" id="staff-panel-takeorder">
@@ -861,63 +846,31 @@
 
     <div class="kanban" id="kanban-kitchen">
       <div class="kanban-col">
-        <h4><span class="dot-status dot-new"></span> ใหม่ (3)</h4>
-        <div class="ticket late" data-stage="new">
-          <div class="top"><div class="tbl">โต๊ะ Camping-1</div><div class="time late-txt">⏱ 15 นาที</div></div>
-          <ul class="items"><li>🍢 Set ปิ้งย่างรวม ×1</li></ul>
-          <button class="btn-start">▶ เริ่มทำ</button>
-        </div>
-        <div class="ticket" data-stage="new">
-          <div class="top"><div class="tbl">โต๊ะ B4</div><div class="time">⏱ 3 นาที</div></div>
-          <ul class="items"><li>🍖 คอหมูย่างจิ้มแจ่ว ×2</li><li>🥗 ส้มตำไทย ×1</li></ul>
-          <button class="btn-start">▶ เริ่มทำ</button>
-        </div>
-        <div class="ticket" data-stage="new">
-          <div class="top"><div class="tbl">โต๊ะ A5</div><div class="time">⏱ 1 นาที</div></div>
-          <ul class="items"><li>🐟 ปลาเผาเกลือ ×1</li></ul>
-          <button class="btn-start">▶ เริ่มทำ</button>
-        </div>
+        <h4><span class="dot-status dot-new"></span> ใหม่ (<span id="cnt-kitchen-new">0</span>)</h4>
+        <div id="col-kitchen-new"><div class="kanban-empty">ยังไม่มีออเดอร์ใหม่</div></div>
       </div>
-
       <div class="kanban-col">
-        <h4><span class="dot-status dot-prep"></span> กำลังทำ (1)</h4>
-        <div class="ticket" data-stage="prep">
-          <div class="top"><div class="tbl">โต๊ะ A2</div><div class="time">⏱ 6 นาที</div></div>
-          <ul class="items"><li>🍖 คอหมูย่างจิ้มแจ่ว ×1</li></ul>
-          <button class="btn-ready">✓ เสร็จแล้ว</button>
-        </div>
+        <h4><span class="dot-status dot-prep"></span> กำลังทำ (<span id="cnt-kitchen-prep">0</span>)</h4>
+        <div id="col-kitchen-prep"><div class="kanban-empty">ยังไม่มีออเดอร์กำลังทำ</div></div>
       </div>
-
       <div class="kanban-col">
-        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (1)</h4>
-        <div class="ticket" data-stage="ready" style="opacity:.7;">
-          <div class="top"><div class="tbl">โต๊ะ B1</div><div class="time">⏱ รอเสิร์ฟ 2 นาที</div></div>
-          <ul class="items"><li>🥗 ส้มตำไทย ×2</li></ul>
-        </div>
+        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (<span id="cnt-kitchen-ready">0</span>)</h4>
+        <div id="col-kitchen-ready"><div class="kanban-empty">ยังไม่มีออเดอร์พร้อมเสิร์ฟ</div></div>
       </div>
     </div>
 
     <div class="kanban" id="kanban-bar" style="display:none;">
       <div class="kanban-col">
-        <h4><span class="dot-status dot-new"></span> ใหม่ (2)</h4>
-        <div class="ticket" data-stage="new">
-          <div class="top"><div class="tbl">โต๊ะ A2</div><div class="time">⏱ 2 นาที</div></div>
-          <ul class="items"><li>🍺 เบียร์ช้างเดราฟท์ ×2</li></ul>
-          <button class="btn-start">▶ เริ่มทำ</button>
-        </div>
-        <div class="ticket" data-stage="new">
-          <div class="top"><div class="tbl">โต๊ะ Camping-2</div><div class="time">⏱ 1 นาที</div></div>
-          <ul class="items"><li>🥃 เมอร์ไทน์ ค็อกเทล ×1</li></ul>
-          <button class="btn-start">▶ เริ่มทำ</button>
-        </div>
+        <h4><span class="dot-status dot-new"></span> ใหม่ (<span id="cnt-bar-new">0</span>)</h4>
+        <div id="col-bar-new"><div class="kanban-empty">ยังไม่มีออเดอร์ใหม่</div></div>
       </div>
       <div class="kanban-col">
-        <h4><span class="dot-status dot-prep"></span> กำลังทำ (0)</h4>
-        <div class="kanban-empty">ยังไม่มีออเดอร์กำลังทำ</div>
+        <h4><span class="dot-status dot-prep"></span> กำลังทำ (<span id="cnt-bar-prep">0</span>)</h4>
+        <div id="col-bar-prep"><div class="kanban-empty">ยังไม่มีออเดอร์กำลังทำ</div></div>
       </div>
       <div class="kanban-col">
-        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (0)</h4>
-        <div class="kanban-empty">ยังไม่มีออเดอร์พร้อมเสิร์ฟ</div>
+        <h4><span class="dot-status dot-ready"></span> พร้อมเสิร์ฟ (<span id="cnt-bar-ready">0</span>)</h4>
+        <div id="col-bar-ready"><div class="kanban-empty">ยังไม่มีออเดอร์พร้อมเสิร์ฟ</div></div>
       </div>
     </div>
   </div>
@@ -931,6 +884,7 @@
         <div style="text-align:left;">
           <div class="eyebrow">Season One · Food Drink &amp; Bistro</div>
           <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
+          <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
         </div>
       </div>
     </div>
@@ -958,7 +912,7 @@
   <div class="cart-panel" id="custCartPanel" style="position:fixed; left:0; right:0; margin:0 auto; width:calc(100% - 32px); max-width:528px; bottom:84px; z-index:41;"></div>
   <div class="cust-cart-bar" id="custCartBar" style="display:none;">
     <div>ตะกร้า <b id="custCartCount">0</b> รายการ · <b id="custCartTotal">฿0</b></div>
-    <div class="go">สั่งเลย →</div>
+    <div class="go" id="custCheckoutBtn" style="cursor:pointer;">สั่งเลย →</div>
   </div>
 </div>
 
@@ -968,10 +922,7 @@
   <div class="modal">
     <h3>🧾 แก้สูตรอาหาร (BOM)</h3>
     <div class="sub">เลือกเมนู → จิ้มวัตถุดิบเพื่อเพิ่ม → ใส่ปริมาณต่อ 1 จาน · ใส่ได้ไม่จำกัดจำนวนรายการ</div>
-    <select id="bomMenu">
-      <option>คอหมูย่างจิ้มแจ่ว</option><option>ส้มตำไทย</option><option>เบียร์ช้างเดราฟท์</option>
-      <option>ปลาเผาเกลือ</option><option>Set ปิ้งย่างรวม</option><option>เมอร์ไทน์ ค็อกเทล</option>
-    </select>
+    <select id="bomMenu"></select>
     <input type="text" id="bomSearch" placeholder="🔍 ค้นหาวัตถุดิบ..." oninput="bomFilter()">
     <div class="bom-ing-list" id="bomIngList"></div>
     <div class="lbl2">สูตรปัจจุบัน</div>
@@ -980,6 +931,74 @@
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('bomModal').classList.remove('open')">ปิด</button>
       <button class="btn-lg b-green" onclick="document.getElementById('bomModal').classList.remove('open'); toast('✓ บันทึกสูตรแล้ว (ตัวอย่าง)');">✓ บันทึกสูตร</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT/ADD MENU MODAL ===== -->
+<div class="modal-back" id="menuModal">
+  <div class="modal">
+    <h3 id="menuModalTitle">✏️ แก้ไขเมนู</h3>
+    <input type="text" id="mnName" placeholder="ชื่อเมนู">
+    <select id="mnCat">
+      <option value="อาหารเรียกน้ำย่อย">อาหารเรียกน้ำย่อย</option>
+      <option value="อาหารหลัก">อาหารหลัก</option>
+      <option value="ย่าง-ปิ้ง">ย่าง-ปิ้ง</option>
+      <option value="เครื่องดื่ม">เครื่องดื่ม</option>
+      <option value="เบียร์">เบียร์</option>
+      <option value="สุรา-ค็อกเทล">สุรา-ค็อกเทล 🔞</option>
+    </select>
+    <select id="mnStation">
+      <option value="kitchen">ครัว</option>
+      <option value="bar">บาร์</option>
+    </select>
+    <input type="text" id="mnPrice" placeholder="ราคา (บาท)">
+    <input type="file" id="mnPhotoFile" accept="image/*" style="margin-bottom:10px;">
+    <div id="mnErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('menuModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="mnSave">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD INGREDIENT MODAL ===== -->
+<div class="modal-back" id="ingModal">
+  <div class="modal">
+    <h3>📦 เพิ่มวัตถุดิบใหม่</h3>
+    <input type="text" id="ingName" placeholder="ชื่อวัตถุดิบ">
+    <select id="ingCat">
+      <option value="เนื้อสัตว์">เนื้อสัตว์/อาหารทะเล</option>
+      <option value="ผัก">ผัก/เครื่องปรุง</option>
+      <option value="เครื่องดื่ม">เครื่องดื่ม/แอลกอฮอล์</option>
+      <option value="บรรจุภัณฑ์">บรรจุภัณฑ์</option>
+      <option value="อื่นๆ">อื่นๆ</option>
+    </select>
+    <input type="text" id="ingUnit" placeholder="หน่วย เช่น กก. / ขวด / ใบ">
+    <input type="text" id="ingQty" placeholder="จำนวนคงเหลือ">
+    <input type="text" id="ingMin" placeholder="จำนวนขั้นต่ำ (Min)">
+    <input type="text" id="ingCost" placeholder="ราคาทุน/หน่วย (บาท)">
+    <div id="ingErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('ingModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="ingSave">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SHOP SETTINGS MODAL ===== -->
+<div class="modal-back" id="shopModal">
+  <div class="modal">
+    <h3>⚙️ แก้ไขข้อมูลร้าน</h3>
+    <input type="text" id="shName" placeholder="ชื่อร้าน">
+    <input type="text" id="shAddr" placeholder="ที่ตั้ง">
+    <input type="text" id="shPhone" placeholder="เบอร์โทร">
+    <input type="text" id="shHours" placeholder="เวลาเปิด-ปิด เช่น 11:00-24:00 น. ทุกวัน">
+    <input type="text" id="shZones" placeholder="โซนที่นั่ง เช่น Zone A · Zone B · Zone C">
+    <div id="shErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('shopModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="shSave">✓ บันทึก</button>
     </div>
   </div>
 </div>
@@ -997,7 +1016,7 @@
       <option value="หัวหน้ากะ/แคชเชียร์">หัวหน้ากะ / แคชเชียร์</option>
     </select>
     <input type="text" id="stfPhone" placeholder="เบอร์โทร 10 หลัก เช่น 0812345678" maxlength="10">
-    <input type="text" id="stfPin" placeholder="PIN 4 หลัก (ค่าเริ่มต้น = เบอร์ 4 ตัวท้าย)" maxlength="6">
+    <input type="text" id="stfPin" placeholder="PIN 6 หลัก (ค่าเริ่มต้น = เบอร์ 6 ตัวท้าย)" maxlength="10">
     <div id="stfErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('staffModal').classList.remove('open')">ยกเลิก</button>
@@ -1080,15 +1099,8 @@
       const o=btn.textContent; btn.textContent='✓ เพิ่มแล้ว'; setTimeout(()=>{ btn.textContent=o; },600);
     });
   });
-  const staffSendBtn = document.getElementById('staffSendOrder');
-  if(staffSendBtn){
-    staffSendBtn.addEventListener('click', ()=>{
-      if(!STAFFCART.length) return;
-      toast('✓ ส่งออเดอร์โต๊ะ '+document.getElementById('staffOrderTable').textContent+' เข้าครัวแล้ว');
-      STAFFCART.length = 0; cartRefresh('staffCartPanel');
-      document.querySelector('.staff-tab[data-staff-tab="orders"]').click();
-    });
-  }
+  // staffSendOrder handler is now fully owned by the Firebase module script below
+  // (writes real order to Firestore instead of just showing a toast)
 
   // ===== ROLE SWITCHER =====
   const rsNotes = {
@@ -1442,7 +1454,7 @@
 <script type="module">
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDXuK8sP5g3E9Avujm-gKP1p6K22t8mfUc",
@@ -1458,6 +1470,10 @@ const db = getFirestore(app);
 try { enableIndexedDbPersistence(db); } catch(e){}
 
 let ROLE = null;
+const urlParams = new URLSearchParams(location.search);
+let currentTable = urlParams.get('table') || 'A1';
+const custTableLabelEl = document.getElementById('custTableLabel');
+if(custTableLabelEl) custTableLabelEl.textContent = currentTable;
 
 window.fbLoginClick = () => {
   if(auth.currentUser){ if(confirm('ออกจากระบบ?')) signOut(auth); }
@@ -1508,7 +1524,11 @@ function applyRoleGate(){
   }
 }
 
-const photoUrl = id => 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
+const photoUrl = id => id && id.startsWith('data:') ? id : 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
+const fileToDataUrl = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+
+let MENU_CACHE = [];
+let ING_CACHE = [];
 
 // ===== ADD STAFF (admin only) — ใช้แอปสำรอง กันไม่ให้ admin หลุด login ตอนสร้างบัญชีใหม่ =====
 document.getElementById('btnAddStaff')?.addEventListener('click', () => {
@@ -1523,8 +1543,8 @@ document.getElementById('stfGo').onclick = async () => {
   const phone = document.getElementById('stfPhone').value.replace(/\D/g,'');
   let pin = document.getElementById('stfPin').value.trim();
   if(!name || phone.length < 9){ errEl.textContent = 'กรอกชื่อและเบอร์โทรให้ครบ'; return; }
-  if(!pin) pin = phone.slice(-4);
-  if(pin.length < 4){ errEl.textContent = 'PIN ต้องมีอย่างน้อย 4 หลัก'; return; }
+  if(!pin) pin = phone.slice(-6);
+  if(pin.length < 6){ errEl.textContent = 'PIN ต้องมีอย่างน้อย 6 หลัก (ข้อจำกัดของระบบล็อกอิน)'; return; }
   errEl.textContent = 'กำลังสร้างบัญชี...';
   const secondary = initializeApp(firebaseConfig, 'staffCreator-'+Date.now());
   const secAuth = getAuth(secondary);
@@ -1563,18 +1583,402 @@ async function loadStaff(){
   } catch(e){ console.warn('loadStaff failed', e); }
 }
 loadStaff();
+
+// ===================== เมนู (Item 7, 8) =====================
+function menuRowHtml(m){
+  return '<tr data-mid="'+m.id+'"><td><div class="cell-item"><div class="thumb" style="background-image:url(\''+photoUrl(m.photoData||m.photoId)+'\'); background-size:cover; background-position:center;"></div>'+m.name+'</div></td>'+
+    '<td>'+m.category+'</td><td>฿'+Number(m.price).toLocaleString()+'</td>'+
+    '<td><span class="status '+(m.active?'on':'off')+'">'+(m.active?'เปิดขาย':'ปิดขาย')+'</span></td>'+
+    '<td><div class="toggle '+(m.active?'on':'')+'" data-mid="'+m.id+'"></div></td>'+
+    '<td><div class="row-actions"><div class="icon-sm ic-edit" data-mid="'+m.id+'">✏️</div><div class="icon-sm ic-del" data-mid="'+m.id+'">🗑️</div></div></td></tr>';
+}
+
+function renderMenuTable(){
+  const tbody = document.getElementById('menuTableBody');
+  if(!tbody) return;
+  const q = (document.getElementById('menuSearchInput')?.value || '').trim().toLowerCase();
+  const activeChip = document.querySelector('#menuCatChips .chip.active');
+  const cat = activeChip ? activeChip.dataset.cat : 'ทั้งหมด';
+  let items = MENU_CACHE.filter(m => !q || m.name.toLowerCase().includes(q));
+  if(cat !== 'ทั้งหมด') items = items.filter(m => m.category === cat || (cat==='สุรา-ค็อกเทล' && m.category.includes('สุรา')));
+  tbody.innerHTML = items.length ? items.map(menuRowHtml).join('') : '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบเมนูที่ค้นหา</td></tr>';
+
+  tbody.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', async () => {
+    const on = t.classList.toggle('on');
+    try {
+      await updateDoc(doc(db,'menu',t.dataset.mid), {active:on});
+      if(window.toast) toast((on?'✓ เปิดขาย':'⏸ ปิดขาย')+'แล้ว — เมนูลูกค้าอัปเดตทันที');
+    } catch(e){ t.classList.toggle('on'); if(window.toast) toast('❌ บันทึกไม่สำเร็จ: ต้องล็อกอินเป็น Admin'); }
+  }));
+  tbody.querySelectorAll('.ic-edit').forEach(b => b.addEventListener('click', () => openMenuModal(b.dataset.mid)));
+  tbody.querySelectorAll('.ic-del').forEach(b => b.addEventListener('click', async () => {
+    const m = MENU_CACHE.find(x=>x.id===b.dataset.mid);
+    if(!confirm('ลบเมนู "'+(m?m.name:'')+'" ใช่ไหม? กู้คืนไม่ได้')) return;
+    try { await deleteDoc(doc(db,'menu',b.dataset.mid)); if(window.toast) toast('🗑️ ลบเมนูแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
+  }));
+}
+document.getElementById('menuSearchInput')?.addEventListener('input', renderMenuTable);
+document.getElementById('menuCatChips')?.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('#menuCatChips .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); renderMenuTable();
+}));
+
+let editingMenuId = null;
+function openMenuModal(mid){
+  editingMenuId = mid || null;
+  document.getElementById('menuModalTitle').textContent = mid ? '✏️ แก้ไขเมนู' : '➕ เพิ่มเมนูใหม่';
+  document.getElementById('mnErr').textContent = '';
+  document.getElementById('mnPhotoFile').value = '';
+  if(mid){
+    const m = MENU_CACHE.find(x=>x.id===mid);
+    document.getElementById('mnName').value = m?.name || '';
+    document.getElementById('mnCat').value = m?.category || 'อาหารหลัก';
+    document.getElementById('mnStation').value = m?.station || 'kitchen';
+    document.getElementById('mnPrice').value = m?.price || '';
+  } else {
+    document.getElementById('mnName').value = '';
+    document.getElementById('mnCat').value = 'อาหารหลัก';
+    document.getElementById('mnStation').value = 'kitchen';
+    document.getElementById('mnPrice').value = '';
+  }
+  document.getElementById('menuModal').classList.add('open');
+}
+document.getElementById('btnAddMenu')?.addEventListener('click', () => openMenuModal(null));
+document.getElementById('mnSave').onclick = async () => {
+  const errEl = document.getElementById('mnErr');
+  const name = document.getElementById('mnName').value.trim();
+  const category = document.getElementById('mnCat').value;
+  const station = document.getElementById('mnStation').value;
+  const price = parseFloat(document.getElementById('mnPrice').value);
+  if(!name || !price || price <= 0){ errEl.textContent = 'กรอกชื่อเมนูและราคาให้ถูกต้อง'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const data = { name, category, station, price, active: true };
+    const file = document.getElementById('mnPhotoFile').files[0];
+    if(file) data.photoData = await fileToDataUrl(file);
+    if(editingMenuId){
+      await updateDoc(doc(db,'menu',editingMenuId), data);
+    } else {
+      const newId = 'M'+Date.now();
+      await setDoc(doc(db,'menu',newId), {...data, photoId: data.photoData ? null : ''});
+    }
+    document.getElementById('menuModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกเมนูแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+};
+
+// ===================== วัตถุดิบ / สต็อก (Item 11, 12, 13) =====================
+function ingRowHtml(i){
+  const statusCls = i.qty <= 0 ? 'off' : (i.qty <= i.min ? 'wait' : 'on');
+  const statusTxt = i.qty <= 0 ? 'หมดสต็อค' : (i.qty <= i.min ? 'ใกล้หมด' : 'ปกติ');
+  return '<tr><td><div class="cell-item"><div class="thumb">📦</div>'+i.name+'</div></td>'+
+    '<td>'+i.category+'</td><td>'+i.qty+' '+i.unit+'</td><td>'+i.min+' '+i.unit+'</td>'+
+    '<td><span class="status '+statusCls+'">'+statusTxt+'</span></td><td>฿'+Number(i.cost||0).toLocaleString()+'</td></tr>';
+}
+function renderIngTable(){
+  const tbody = document.getElementById('ingTableBody');
+  if(!tbody) return;
+  const q = (document.getElementById('ingSearchInput')?.value || '').trim().toLowerCase();
+  const activeChip = document.querySelector('#ingCatChips .chip.active');
+  const cat = activeChip ? activeChip.dataset.cat : 'ทั้งหมด';
+  let items = ING_CACHE.filter(i => !q || i.name.toLowerCase().includes(q));
+  if(cat !== 'ทั้งหมด') items = items.filter(i => i.category === cat);
+  tbody.innerHTML = items.length ? items.map(ingRowHtml).join('') : '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบวัตถุดิบที่ค้นหา</td></tr>';
+
+  document.getElementById('kpi-ing-total').textContent = ING_CACHE.length;
+  document.getElementById('kpi-ing-low').textContent = ING_CACHE.filter(i=>i.qty>0 && i.qty<=i.min).length;
+  document.getElementById('kpi-ing-out').textContent = ING_CACHE.filter(i=>i.qty<=0).length;
+  const totalValue = ING_CACHE.reduce((s,i)=>s+(i.qty*(i.cost||0)),0);
+  document.getElementById('kpi-ing-value').textContent = '฿'+Math.round(totalValue).toLocaleString();
+}
+document.getElementById('ingSearchInput')?.addEventListener('input', renderIngTable);
+document.getElementById('ingCatChips')?.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('#ingCatChips .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active'); renderIngTable();
+}));
+document.getElementById('btnAddIng')?.addEventListener('click', () => {
+  ['ingName','ingUnit','ingQty','ingMin','ingCost'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ingErr').textContent = '';
+  document.getElementById('ingModal').classList.add('open');
+});
+document.getElementById('ingSave').onclick = async () => {
+  const errEl = document.getElementById('ingErr');
+  const name = document.getElementById('ingName').value.trim();
+  const category = document.getElementById('ingCat').value;
+  const unit = document.getElementById('ingUnit').value.trim();
+  const qty = parseFloat(document.getElementById('ingQty').value) || 0;
+  const min = parseFloat(document.getElementById('ingMin').value) || 0;
+  const cost = parseFloat(document.getElementById('ingCost').value) || 0;
+  if(!name || !unit){ errEl.textContent = 'กรอกชื่อและหน่วยให้ครบ'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const newId = 'I'+Date.now();
+    await setDoc(doc(db,'ingredients',newId), {name,category,unit,qty,min,cost});
+    document.getElementById('ingModal').classList.remove('open');
+    if(window.toast) toast('✓ เพิ่มวัตถุดิบแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+};
+
+// ===================== BOM (Item 13) =====================
+let BOMCUR = [];
+window.openBom = async () => {
+  renderBomMenuOptions();
+  const sel = document.getElementById('bomMenu');
+  if(sel.value) await loadBomFor(sel.value);
+  renderBomIngList('');
+  document.getElementById('bomModal').classList.add('open');
+};
+function renderBomMenuOptions(){
+  const sel = document.getElementById('bomMenu');
+  const prev = sel.value;
+  sel.innerHTML = MENU_CACHE.map(m=>'<option value="'+m.id+'">'+m.name+'</option>').join('');
+  if(prev && MENU_CACHE.some(m=>m.id===prev)) sel.value = prev;
+  sel.onchange = () => loadBomFor(sel.value);
+}
+async function loadBomFor(menuId){
+  BOMCUR = [];
+  try {
+    const qs = await getDocs(query(collection(db,'bom'), where('menuId','==',menuId)));
+    qs.forEach(d => { const v = d.data(); BOMCUR.push({ingId:v.ingId, qty:v.qty}); });
+  } catch(e){ console.warn('loadBomFor failed', e); }
+  renderBomRows();
+}
+function ingName(ingId){ const i = ING_CACHE.find(x=>x.id===ingId); return i ? i.name : ingId; }
+window.bomFilter = () => renderBomIngList(document.getElementById('bomSearch').value.trim());
+function renderBomIngList(f){
+  const list = ING_CACHE.filter(i => i.name.includes(f));
+  document.getElementById('bomIngList').innerHTML = list.length ? list.map(i =>
+    '<div class="bom-chip" data-ingid="'+i.id+'">＋ '+i.name+'</div>').join('') :
+    '<span style="font-size:12px;color:var(--muted)">ไม่พบ — เพิ่มวัตถุดิบใหม่ได้ในหน้าสต็อค</span>';
+  document.getElementById('bomIngList').querySelectorAll('.bom-chip').forEach(c=>c.addEventListener('click', ()=>{
+    const id = c.dataset.ingid;
+    if(!BOMCUR.find(x=>x.ingId===id)) BOMCUR.push({ingId:id, qty:''});
+    renderBomRows();
+  }));
+}
+window.bomDel = (i) => { BOMCUR.splice(i,1); renderBomRows(); };
+function renderBomRows(){
+  document.getElementById('bomRows').innerHTML = BOMCUR.length ? BOMCUR.map((r,i)=>
+    '<div class="bom-row"><span style="flex:1">'+ingName(r.ingId)+'</span>'+
+    '<input type="text" placeholder="ปริมาณ" value="'+r.qty+'" data-idx="'+i+'" class="bom-qty-input">'+
+    '<button class="xbtn" onclick="bomDel('+i+')">✕</button></div>').join('')
+    : '<div style="font-size:12px;color:var(--muted);padding:8px 0;">ยังไม่มีวัตถุดิบ — จิ้มจากด้านบนเพื่อเพิ่ม</div>';
+  document.querySelectorAll('.bom-qty-input').forEach(inp => inp.addEventListener('input', () => {
+    BOMCUR[parseInt(inp.dataset.idx,10)].qty = inp.value;
+  }));
+}
+document.querySelector('#bomModal .b-green').onclick = async () => {
+  const menuId = document.getElementById('bomMenu').value;
+  if(!menuId) return;
+  try {
+    const old = await getDocs(query(collection(db,'bom'), where('menuId','==',menuId)));
+    await Promise.all(old.docs.map(d => deleteDoc(d.ref)));
+    await Promise.all(BOMCUR.filter(r=>r.qty).map(r => setDoc(doc(db,'bom', menuId+'_'+r.ingId), {menuId, ingId:r.ingId, qty:r.qty})));
+    document.getElementById('bomModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกสูตรแล้ว');
+    renderBomSummary();
+  } catch(e){ if(window.toast) toast('❌ บันทึกไม่สำเร็จ: '+e.message); }
+};
+async function renderBomSummary(){
+  const tbody = document.getElementById('bomSummaryBody');
+  if(!tbody) return;
+  try {
+    const qs = await getDocs(collection(db,'bom'));
+    const byMenu = {};
+    qs.forEach(d => { const v = d.data(); (byMenu[v.menuId] = byMenu[v.menuId]||[]).push(v); });
+    const rows = Object.keys(byMenu).map(mid => {
+      const menu = MENU_CACHE.find(m=>m.id===mid);
+      const line = byMenu[mid].map(r => ingName(r.ingId)+' '+r.qty).join(' · ');
+      return '<tr><td>'+(menu?menu.name:mid)+'</td><td>'+line+'</td></tr>';
+    });
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="2" style="color:var(--muted);">ยังไม่มีสูตรอาหารที่บันทึกไว้</td></tr>';
+  } catch(e){ console.warn('renderBomSummary failed', e); }
+}
+
+async function loadIngredients(){
+  try {
+    const qs = await getDocs(collection(db,'ingredients'));
+    ING_CACHE = []; qs.forEach(d => ING_CACHE.push({id:d.id, ...d.data()}));
+    renderIngTable();
+    renderBomSummary();
+  } catch(e){ console.warn('loadIngredients failed', e); }
+}
+
+// ===================== ตั้งค่าร้าน (Item 21) =====================
+async function loadShopSettings(){
+  try {
+    const snap = await getDoc(doc(db,'settings','shop'));
+    if(snap.exists()){
+      const s = snap.data();
+      if(s.name) document.getElementById('si-name').textContent = s.name;
+      if(s.addr) document.getElementById('si-addr').textContent = s.addr;
+      if(s.phone) document.getElementById('si-phone').textContent = s.phone;
+      if(s.hours) document.getElementById('si-hours').textContent = s.hours;
+      if(s.zones) document.getElementById('si-zones').textContent = s.zones;
+    }
+  } catch(e){ console.warn('loadShopSettings failed', e); }
+}
+document.getElementById('btnEditShop')?.addEventListener('click', () => {
+  if(ROLE !== 'admin'){ if(window.toast) toast('❌ เฉพาะเจ้าของร้านเท่านั้นที่แก้ไขได้'); return; }
+  document.getElementById('shName').value = document.getElementById('si-name').textContent;
+  document.getElementById('shAddr').value = document.getElementById('si-addr').textContent;
+  document.getElementById('shPhone').value = document.getElementById('si-phone').textContent;
+  document.getElementById('shHours').value = document.getElementById('si-hours').textContent;
+  document.getElementById('shZones').value = document.getElementById('si-zones').textContent;
+  document.getElementById('shErr').textContent = '';
+  document.getElementById('shopModal').classList.add('open');
+});
+document.getElementById('shSave').onclick = async () => {
+  const errEl = document.getElementById('shErr');
+  const data = {
+    name: document.getElementById('shName').value.trim(),
+    addr: document.getElementById('shAddr').value.trim(),
+    phone: document.getElementById('shPhone').value.trim(),
+    hours: document.getElementById('shHours').value.trim(),
+    zones: document.getElementById('shZones').value.trim(),
+  };
+  try {
+    await setDoc(doc(db,'settings','shop'), data, {merge:true});
+    document.getElementById('si-name').textContent = data.name;
+    document.getElementById('si-addr').textContent = data.addr;
+    document.getElementById('si-phone').textContent = data.phone;
+    document.getElementById('si-hours').textContent = data.hours;
+    document.getElementById('si-zones').textContent = data.zones;
+    document.getElementById('shopModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกข้อมูลร้านแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+};
+
+// ===================== ออเดอร์จริง: ลูกค้า → ครัว/บาร์ → เสิร์ฟ (Item 25) =====================
+function getStationOf(name){
+  const m = MENU_CACHE.find(x=>x.name===name);
+  return m ? (m.station||'kitchen') : 'kitchen';
+}
+
+document.getElementById('custCheckoutBtn')?.addEventListener('click', async () => {
+  if(!CUSTCART.length) return;
+  try {
+    const items = CUSTCART.map(it => ({name:it.n, qty:it.q, price:it.p, station:getStationOf(it.n)}));
+    const total = CUSTCART.reduce((s,i)=>s+i.q*i.p,0);
+    const newId = 'O'+Date.now();
+    await setDoc(doc(db,'orders',newId), {
+      table: currentTable, items, total, status:'new', source:'customer', createdAt: serverTimestamp()
+    });
+    CUSTCART.length = 0; cartRefresh('custCartPanel');
+    if(window.toast) toast('✓ ส่งออเดอร์เข้าครัวแล้ว — รอสักครู่นะครับ 🙏');
+  } catch(e){ if(window.toast) toast('❌ สั่งไม่สำเร็จ: '+e.message); }
+});
+
+document.getElementById('staffSendOrder')?.addEventListener('click', async () => {
+  if(!STAFFCART.length) return;
+  const table = document.getElementById('staffOrderTable').textContent;
+  try {
+    const items = STAFFCART.map(it => ({name:it.n, qty:it.q, price:it.p, station:getStationOf(it.n)}));
+    const total = STAFFCART.reduce((s,i)=>s+i.q*i.p,0);
+    const newId = 'O'+Date.now();
+    await setDoc(doc(db,'orders',newId), {
+      table, items, total, status:'new', source:'staff', createdAt: serverTimestamp()
+    });
+    toast('✓ ส่งออเดอร์โต๊ะ '+table+' เข้าครัวแล้ว');
+    STAFFCART.length = 0; cartRefresh('staffCartPanel');
+    document.querySelector('.staff-tab[data-staff-tab="orders"]').click();
+  } catch(e){ if(window.toast) toast('❌ ส่งออเดอร์ไม่สำเร็จ: '+e.message); }
+});
+
+// ---- kitchen/bar realtime kanban ----
+let ORDERS_CACHE = [];
+function timeAgo(ts){
+  if(!ts || !ts.toDate) return '';
+  const mins = Math.max(0, Math.round((Date.now() - ts.toDate().getTime())/60000));
+  return mins + ' นาที';
+}
+function ticketHtml(o, station){
+  const items = o.items.filter(i=>i.station===station);
+  if(!items.length) return '';
+  const lateClass = (o.status==='new' && o._mins>=10) ? ' late' : '';
+  const timeClass = (o.status==='new' && o._mins>=10) ? ' late-txt' : '';
+  let btn = '';
+  if(o.status==='new') btn = '<button class="btn-start" data-oid="'+o.id+'">▶ เริ่มทำ</button>';
+  else if(o.status==='preparing') btn = '<button class="btn-ready" data-oid="'+o.id+'">✓ เสร็จแล้ว</button>';
+  return '<div class="ticket'+lateClass+'"><div class="top"><div class="tbl">โต๊ะ '+o.table+'</div><div class="time'+timeClass+'">⏱ '+timeAgo(o.createdAt)+'</div></div>'+
+    '<ul class="items">'+items.map(i=>'<li>'+i.name+' ×'+i.qty+'</li>').join('')+'</ul>'+btn+'</div>';
+}
+function renderKanban(){
+  ['kitchen','bar'].forEach(station => {
+    ['new','preparing','ready'].forEach(stage => {
+      const dbStage = stage==='new' ? 'new' : (stage==='preparing' ? 'preparing' : 'ready');
+      const orders = ORDERS_CACHE.filter(o => o.status===dbStage && o.items.some(i=>i.station===station));
+      const col = document.getElementById('col-'+station+'-'+stage);
+      const cnt = document.getElementById('cnt-'+station+'-'+stage);
+      if(!col) return;
+      const html = orders.map(o=>ticketHtml(o,station)).filter(Boolean).join('');
+      col.innerHTML = html || '<div class="kanban-empty">ยังไม่มีออเดอร์'+(stage==='new'?'ใหม่':stage==='preparing'?'กำลังทำ':'พร้อมเสิร์ฟ')+'</div>';
+      if(cnt) cnt.textContent = orders.length;
+      col.querySelectorAll('.btn-start').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'preparing'})));
+      col.querySelectorAll('.btn-ready').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'ready'})));
+    });
+  });
+}
+
+function staffOrderCardHtml(o){
+  const stationNote = o.items.map(i=>i.station==='bar'?'บาร์':'ครัว').filter((v,i,a)=>a.indexOf(v)===i).join('/');
+  const itemsTxt = o.items.map(i=>i.name+' ×'+i.qty).join(' + ');
+  return '<div class="order-card"><div><div class="tbl">โต๊ะ '+o.table+' · '+itemsTxt+'</div>'+
+    '<div class="itm">สั่งเมื่อ '+timeAgo(o.createdAt)+'ที่แล้ว · '+stationNote+'ทำเสร็จแล้ว</div></div>'+
+    '<button class="act" data-oid="'+o.id+'">✓ เสิร์ฟแล้ว</button></div>';
+}
+function renderStaffOrders(){
+  const box = document.getElementById('staffOrdersLive');
+  if(!box) return;
+  const ready = ORDERS_CACHE.filter(o=>o.status==='ready');
+  box.innerHTML = ready.length ? ready.map(staffOrderCardHtml).join('') : '<div class="empty"><div class="ic">📭</div>ยังไม่มีออเดอร์ที่พร้อมเสิร์ฟตอนนี้</div>';
+  box.querySelectorAll('.act').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'served'})));
+}
+
+function startOrdersListener(){
+  onSnapshot(query(collection(db,'orders'), where('status','in',['new','preparing','ready'])), (qs) => {
+    ORDERS_CACHE = [];
+    qs.forEach(d => {
+      const v = d.data();
+      const mins = v.createdAt && v.createdAt.toDate ? Math.round((Date.now()-v.createdAt.toDate().getTime())/60000) : 0;
+      ORDERS_CACHE.push({id:d.id, ...v, _mins:mins});
+    });
+    renderKanban();
+    renderStaffOrders();
+  }, (e) => console.warn('orders listener failed', e));
+}
+startOrdersListener();
+
+// ---- เช็คอิน-เอาท์จริง (item 25) ----
+const clockBtnEl = document.getElementById('clockBtn');
+let isClockedIn = false;
+clockBtnEl?.addEventListener('click', async () => {
+  const user = auth.currentUser;
+  if(!user){ if(window.toast) toast('❌ ต้องเข้าสู่ระบบก่อน'); return; }
+  isClockedIn = !isClockedIn;
+  try {
+    const logId = 'T'+Date.now();
+    await setDoc(doc(db,'timelog',logId), {
+      uid: user.uid, type: isClockedIn ? 'in' : 'out', at: serverTimestamp()
+    });
+    if(window.toast) toast(isClockedIn ? '✓ บันทึกเวลาเข้างานแล้ว' : '✓ บันทึกเวลาออกงานแล้ว');
+  } catch(e){ if(window.toast) toast('❌ บันทึกไม่สำเร็จ: '+e.message); }
+});
+
+// ===================== โหลดเมนู (Item 7,8,13 ผูกกับข้อมูลสด) =====================
 async function loadMenu(){
   try {
     const qs = await getDocs(collection(db,'menu'));
     if(qs.empty){ if(window.toast) toast('⚠️ ยังไม่มีข้อมูลจริงใน Firebase — เปิด setup.html เพื่อโหลดข้อมูลก่อน'); return; }
-    const items = []; qs.forEach(d => items.push({id:d.id, ...d.data()}));
-    items.sort((a,b)=>a.id.localeCompare(b.id));
+    MENU_CACHE = []; qs.forEach(d => MENU_CACHE.push({id:d.id, ...d.data()}));
+    MENU_CACHE.sort((a,b)=>a.id.localeCompare(b.id));
 
     const grid = document.querySelector('.cust-grid');
     if(grid){
-      grid.innerHTML = items.filter(m=>m.active).map(m =>
-        '<div class="cust-card"><div class="img" style="background-image:url(' + "'" + photoUrl(m.photoId) + "'" + '); background-size:cover; background-position:center;"></div>'+
-        '<div class="nm">'+m.name+(m.category.includes('สุรา')?' 🔞':'')+'</div><div class="pr">฿'+m.price.toLocaleString()+'</div>'+
+      grid.innerHTML = MENU_CACHE.filter(m=>m.active).map(m =>
+        '<div class="cust-card"><div class="img" style="background-image:url(\''+photoUrl(m.photoData||m.photoId)+'\'); background-size:cover; background-position:center;"></div>'+
+        '<div class="nm">'+m.name+(m.category.includes('สุรา')?' 🔞':'')+'</div><div class="pr">฿'+Number(m.price).toLocaleString()+'</div>'+
         '<button class="cust-add" data-price="'+m.price+'">+ เพิ่มลงตะกร้า</button></div>').join('');
       grid.querySelectorAll('.cust-add').forEach(btn => btn.addEventListener('click', () => {
         const nm = btn.closest('.cust-card').querySelector('.nm').textContent.replace('🔞','').trim();
@@ -1583,27 +1987,15 @@ async function loadMenu(){
       }));
     }
 
-    const tbody = document.querySelector('#view-menu tbody');
-    if(tbody){
-      tbody.innerHTML = items.map(m =>
-        '<tr><td><div class="cell-item"><div class="thumb" style="background-image:url(' + "'" + photoUrl(m.photoId) + "'" + '); background-size:cover; background-position:center;"></div>'+m.name+'</div></td>'+
-        '<td>'+m.category+'</td><td>฿'+m.price.toLocaleString()+'</td>'+
-        '<td><span class="status '+(m.active?'on':'off')+'">'+(m.active?'เปิดขาย':'ปิดขาย')+'</span></td>'+
-        '<td><div class="toggle '+(m.active?'on':'')+'" data-mid="'+m.id+'"></div></td>'+
-        '<td><div class="row-actions"><div class="icon-sm">✏️</div></div></td></tr>').join('');
-      tbody.querySelectorAll('.toggle').forEach(t => t.addEventListener('click', async () => {
-        const on = t.classList.toggle('on');
-        try {
-          await updateDoc(doc(db,'menu',t.dataset.mid), {active:on});
-          if(window.toast) toast((on?'✓ เปิดขาย':'⏸ ปิดขาย')+'แล้ว — เมนูลูกค้าอัปเดตทันที');
-          loadMenu();
-        } catch(e){ t.classList.toggle('on'); if(window.toast) toast('❌ บันทึกไม่สำเร็จ: ต้องล็อกอินเป็น Admin'); }
-      }));
-    }
-    console.log('Season One: loaded '+items.length+' menu items from Firestore');
+    renderMenuTable();
+    renderBomMenuOptions();
+    renderBomSummary();
+    console.log('Season One: loaded '+MENU_CACHE.length+' menu items from Firestore');
   } catch(e){ console.warn('loadMenu failed', e); }
 }
 loadMenu();
+loadIngredients();
+loadShopSettings();
 </script>
 </body>
 </html>
