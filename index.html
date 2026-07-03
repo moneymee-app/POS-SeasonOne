@@ -353,7 +353,7 @@
   .tcell.free{ border-color:#3EE07A; color:#3EE07A; background:rgba(62,224,122,.07); }
   .tcell.busy{ border-color:var(--gold); color:var(--gold-soft); background:rgba(200,168,75,.1); }
   .tcell.bill{ border-color:#FF8A73; color:#FF8A73; background:rgba(228,72,58,.1); }
-  .tcell.resv{ border-color:rgba(255,255,255,.25); color:var(--muted); background:rgba(255,255,255,.03); }
+  .tcell.batch-selected{ box-shadow:0 0 0 3px var(--gold-soft) inset; }
   .cart-panel{ display:none; background:#1C1E18; border:1px solid rgba(200,168,75,.3); border-radius:13px; padding:12px 14px; margin-bottom:10px; }
   .cart-panel.show{ display:block; }
   .cart-row{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(200,168,75,.15); font-size:13px; }
@@ -558,18 +558,22 @@
 
       <!-- ========== TABLE MAP ========== -->
       <section class="view" id="view-tables">
-        <div class="chip-row" style="margin-bottom:16px; font-size:12px;">
-          <div class="chip" style="border-color:#3EE07A;color:#3EE07A;">🟢 ว่าง</div>
-          <div class="chip" style="border-color:var(--gold);color:var(--gold);">🟡 นั่งอยู่</div>
-          <div class="chip" style="border-color:#FF8A73;color:#FF8A73;">🔴 รอเก็บเงิน</div>
-          <div class="chip">⚪ จองแล้ว</div>
+        <div class="toolbar">
+          <div class="chip-row" style="font-size:12px;">
+            <div class="chip" style="border-color:#3EE07A;color:#3EE07A;">🟢 ว่าง</div>
+            <div class="chip" style="border-color:var(--gold);color:var(--gold);">🟡 นั่งอยู่</div>
+            <div class="chip" style="border-color:#FF8A73;color:#FF8A73;">🔴 รอเก็บเงิน</div>
+            <div class="chip">⚪ จองแล้ว</div>
+          </div>
+          <button class="pill-btn" id="btnBatchMode" style="background:var(--night); color:var(--gold-soft);">☑️ เลือกหลายโต๊ะเพื่อปริ้น</button>
+          <button class="pill-btn" id="btnAddTable" style="background:var(--gold); color:var(--night);">＋ เพิ่มโต๊ะ</button>
         </div>
-        <div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>Zone A · Indoor</h3></div>
-          <div class="tmap"><div class="tcell busy">A1</div><div class="tcell busy">A2</div><div class="tcell free">A3</div><div class="tcell free">A4</div><div class="tcell busy">A5</div><div class="tcell resv">A6</div></div></div>
-        <div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>Zone B · Outdoor Garden</h3></div>
-          <div class="tmap"><div class="tcell bill">B1</div><div class="tcell free">B2</div><div class="tcell free">B3</div><div class="tcell busy">B4</div><div class="tcell busy">B5</div><div class="tcell free">B6</div><div class="tcell busy">B7</div><div class="tcell free">B8</div></div></div>
-        <div class="card"><div class="card-head"><h3>Zone C · Camping</h3><span class="link">คิวรอ 3 กลุ่ม</span></div>
-          <div class="tmap"><div class="tcell bill">C1</div><div class="tcell busy">C2</div><div class="tcell resv">C3</div><div class="tcell free">C4</div></div></div>
+        <div id="batchPrintBar" style="display:none; background:var(--forest); color:#fff; padding:12px 16px; border-radius:10px; margin-bottom:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span id="batchCount">เลือกแล้ว 0 โต๊ะ</span>
+          <button class="pill-btn" style="background:var(--gold); color:var(--night);" onclick="printBatchBills('abb')">🖨️ ปริ้นฉบับย่อ (รวม)</button>
+          <button class="pill-btn" style="background:rgba(255,255,255,.2); color:#fff;" onclick="printBatchBills('full')">🖨️ ปริ้นฉบับเต็ม (รวม)</button>
+        </div>
+        <div id="tableZonesLive"><div class="empty"><div class="ic">🪑</div>กำลังโหลดผังโต๊ะ...</div></div>
       </section>
 
       <!-- ========== STOCK ========== -->
@@ -742,6 +746,17 @@
             </table>
           </div>
         </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card-head"><h3>📊 ซิงค์ข้อมูลไป Google Sheet</h3></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">
+            ระบบซิงค์อัตโนมัติทุกคืนตี 0 (ถ้าตั้งค่า Apps Script Trigger แล้ว) หรือกดปุ่มด้านล่างเพื่อซิงค์ทันที<br>
+            <b>ต้องตั้งค่าครั้งแรกก่อน:</b> ทำตามคู่มือในไฟล์ AppsScript-SheetSync.gs.txt แล้ววาง Web App URL ที่ได้ในช่องนี้
+          </div>
+          <input type="text" id="sheetSyncUrl" placeholder="วาง Apps Script Web App URL ที่นี่ (ทำครั้งเดียว)">
+          <button class="pill-btn" id="btnSyncNow" style="background:var(--gold); color:var(--night);">🔄 ซิงค์เดี๋ยวนี้</button>
+          <div id="syncStatus" style="font-size:12px; margin-top:8px; color:var(--muted);"></div>
+        </div>
       </section>
 
     </div>
@@ -772,6 +787,7 @@
       <div class="perm-note">⚠️ มุมมองพนักงาน: สั่งอาหารแทนลูกค้าได้ (กรณีลูกค้าไม่สะดวกสแกน QR เอง) และดูออเดอร์/ตารางกะของตัวเอง — แต่ไม่เห็นยอดขายรวม ไม่แก้เมนู ไม่ตรวจสลิปเงิน</div>
 
       <div class="staff-panel active" id="staff-panel-orders">
+        <div id="staffSoldOutAlerts"></div>
         <div id="staffOrdersLive">
           <div class="empty"><div class="ic">📭</div>ยังไม่มีออเดอร์ที่พร้อมเสิร์ฟตอนนี้</div>
         </div>
@@ -841,6 +857,7 @@
         <div class="kstation active" data-station="kitchen">👨‍🍳 ครัว</div>
         <div class="kstation" data-station="bar">🍺 บาร์</div>
       </div>
+      <button class="pill-btn" id="btnSoldOut" style="background:var(--danger); color:#fff;">🚫 แจ้งของหมด</button>
       <div class="kitchen-clock" id="kClock">19:44:12</div>
     </div>
 
@@ -931,6 +948,37 @@
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('bomModal').classList.remove('open')">ปิด</button>
       <button class="btn-lg b-green" onclick="document.getElementById('bomModal').classList.remove('open'); toast('✓ บันทึกสูตรแล้ว (ตัวอย่าง)');">✓ บันทึกสูตร</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SOLD OUT MODAL (kitchen/bar) ===== -->
+<div class="modal-back" id="soldOutModal">
+  <div class="modal">
+    <h3>🚫 แจ้งของหมด</h3>
+    <div class="sub">แตะเมนูที่หมดตอนนี้ — ถ้ามีลูกค้าสั่งไปแล้ว ระบบจะแจ้งพนักงานให้ไปขออภัยลูกค้าและยืนยันตัดออกจากบิล</div>
+    <div id="soldOutList" style="max-height:340px; overflow-y:auto;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('soldOutModal').classList.remove('open')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD/EDIT TABLE MODAL ===== -->
+<div class="modal-back" id="tableModal">
+  <div class="modal">
+    <h3 id="tableModalTitle">🪑 เพิ่มโต๊ะใหม่</h3>
+    <input type="text" id="tblName" placeholder="ชื่อโต๊ะ เช่น A7">
+    <select id="tblZone">
+      <option value="Zone A Indoor">Zone A · Indoor</option>
+      <option value="Zone B Garden">Zone B · Outdoor Garden</option>
+      <option value="Zone C Camping">Zone C · Camping</option>
+    </select>
+    <input type="text" id="tblSeats" placeholder="จำนวนที่นั่ง">
+    <div id="tblErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('tableModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="tblSave">✓ บันทึก</button>
     </div>
   </div>
 </div>
@@ -1294,7 +1342,7 @@
   }
   function callStaff(){ toast('🔔 เรียกพนักงานแล้ว — โต๊ะ B4 กรุณารอสักครู่'); }
 
-  function billOf(table){ return BILLS[table] || BILLS['B4']; }
+  function billOf(table){ return (window.liveBillOf ? window.liveBillOf(table) : null) || BILLS[table] || BILLS['B4']; }
   function billTotal(items){ return items.reduce((s,i)=>s+i.q*i.p,0); }
 
   function openPayModal(table, role){
@@ -1371,6 +1419,7 @@
     toast(payCtx.method==='cash'
       ? (payCtx.role==='customer' ? '💵 แจ้งพนักงานแล้ว รอเก็บเงินที่โต๊ะ '+payCtx.table : '✓ ปิดบิลโต๊ะ '+payCtx.table+' บันทึกเงินสดเข้ากะแล้ว')
       : '✓ ส่งสลิปเข้าคิวตรวจแล้ว — โต๊ะ '+payCtx.table);
+    if(window.onBillFinished) window.onBillFinished(payCtx);
   }
 
   // staff order cards: add เก็บตัง button
@@ -1444,11 +1493,7 @@
   }
 
   // ===== TABLE MAP: tap to cycle status =====
-  const TSTATES=['free','busy','bill','resv'];
-  document.querySelectorAll('.tcell').forEach(t=>t.addEventListener('click',()=>{
-    const cur=TSTATES.findIndex(s=>t.classList.contains(s));
-    t.classList.remove(TSTATES[cur]); t.classList.add(TSTATES[(cur+1)%4]);
-  }));
+  // table status cells are rendered live by the Firebase module script (auto status from real orders)
 </script>
 
 <script type="module">
@@ -1817,8 +1862,21 @@ async function loadShopSettings(){
       if(s.hours) document.getElementById('si-hours').textContent = s.hours;
       if(s.zones) document.getElementById('si-zones').textContent = s.zones;
     }
+    const syncSnap = await getDoc(doc(db,'settings','sync'));
+    if(syncSnap.exists() && syncSnap.data().url) document.getElementById('sheetSyncUrl').value = syncSnap.data().url;
   } catch(e){ console.warn('loadShopSettings failed', e); }
 }
+document.getElementById('btnSyncNow')?.addEventListener('click', async () => {
+  const url = document.getElementById('sheetSyncUrl').value.trim();
+  const statusEl = document.getElementById('syncStatus');
+  if(!url){ statusEl.textContent = '⚠️ ยังไม่ได้ใส่ Web App URL — ทำตามคู่มือ AppsScript-SheetSync.gs.txt ก่อน'; return; }
+  await setDoc(doc(db,'settings','sync'), {url}, {merge:true});
+  statusEl.textContent = 'กำลังซิงค์...';
+  try {
+    await fetch(url, {mode:'no-cors'});
+    statusEl.textContent = '✓ ส่งคำสั่งซิงค์แล้ว — เช็คผลที่ Google Sheet ได้เลย (ใช้เวลา ~10-20 วินาที)';
+  } catch(e){ statusEl.textContent = '❌ เชื่อมต่อไม่สำเร็จ: '+e.message; }
+});
 document.getElementById('btnEditShop')?.addEventListener('click', () => {
   if(ROLE !== 'admin'){ if(window.toast) toast('❌ เฉพาะเจ้าของร้านเท่านั้นที่แก้ไขได้'); return; }
   document.getElementById('shName').value = document.getElementById('si-name').textContent;
@@ -1996,6 +2054,239 @@ async function loadMenu(){
 loadMenu();
 loadIngredients();
 loadShopSettings();
+
+// ===================== ITEM 5+6: ผังโต๊ะสด + สถานะอัตโนมัติ =====================
+let TABLES_CACHE = [];
+function computeTableStatus(tableName){
+  const t = TABLES_CACHE.find(x=>x.name===tableName);
+  if(t && t.reserved) return 'resv';
+  const active = ORDERS_CACHE.filter(o => o.table===tableName && o.status!=='paid');
+  if(!active.length) return 'free';
+  if(active.some(o => o.status==='served')) return 'bill';
+  return 'busy';
+}
+function renderTables(){
+  const box = document.getElementById('tableZonesLive');
+  if(!box) return;
+  const zones = {};
+  TABLES_CACHE.forEach(t => { (zones[t.zone] = zones[t.zone]||[]).push(t); });
+  const zoneOrder = ['Zone A Indoor','Zone B Garden','Zone C Camping'];
+  const allZones = [...new Set([...zoneOrder, ...Object.keys(zones)])];
+  box.innerHTML = allZones.filter(z=>zones[z]).map(z => {
+    const cells = zones[z].map(t => {
+      const st = computeTableStatus(t.name);
+      return '<div class="tcell '+st+'" data-tid="'+t.id+'" data-name="'+t.name+'">'+t.name+'</div>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>'+z+'</h3></div><div class="tmap">'+cells+'</div></div>';
+  }).join('') || '<div class="empty"><div class="ic">🪑</div>ยังไม่มีโต๊ะ — กด "＋ เพิ่มโต๊ะ" เพื่อเริ่มต้น</div>';
+
+  box.querySelectorAll('.tcell').forEach(c => c.addEventListener('click', () => {
+    if(batchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
+    if(ROLE !== 'admin'){ return; }
+    if(confirm('แก้ไข/ลบโต๊ะ "'+c.dataset.name+'" ?\nกด OK เพื่อแก้ไขชื่อ, Cancel เพื่อปิด')){
+      const newName = prompt('ชื่อโต๊ะใหม่:', c.dataset.name);
+      if(newName && newName.trim()) updateDoc(doc(db,'tables',c.dataset.tid), {name:newName.trim()});
+    }
+  }));
+}
+onSnapshot(collection(db,'tables'), (qs) => {
+  TABLES_CACHE = []; qs.forEach(d => TABLES_CACHE.push({id:d.id, ...d.data()}));
+  renderTables();
+}, e => console.warn('tables listener failed', e));
+
+document.getElementById('btnAddTable')?.addEventListener('click', () => {
+  document.getElementById('tableModalTitle').textContent = '🪑 เพิ่มโต๊ะใหม่';
+  document.getElementById('tblName').value = '';
+  document.getElementById('tblSeats').value = '';
+  document.getElementById('tblErr').textContent = '';
+  document.getElementById('tableModal').classList.add('open');
+});
+document.getElementById('tblSave').onclick = async () => {
+  const errEl = document.getElementById('tblErr');
+  const name = document.getElementById('tblName').value.trim();
+  const zone = document.getElementById('tblZone').value;
+  const seats = parseInt(document.getElementById('tblSeats').value,10) || 4;
+  if(!name){ errEl.textContent = 'กรอกชื่อโต๊ะ'; return; }
+  try {
+    await setDoc(doc(db,'tables',name), {name, zone, seats, active:true, reserved:false});
+    document.getElementById('tableModal').classList.remove('open');
+    if(window.toast) toast('✓ เพิ่มโต๊ะ '+name+' แล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+};
+
+// billOf/finishBill hooks — ผูกโต๊ะเข้ากับออเดอร์จริง
+window.liveBillOf = (table) => {
+  const orders = ORDERS_CACHE.filter(o => o.table===table && o.status==='served');
+  if(!orders.length) return null;
+  const merged = {};
+  orders.forEach(o => o.items.forEach(i => {
+    merged[i.name] = merged[i.name] || {n:i.name, q:0, p:i.price};
+    merged[i.name].q += i.qty;
+  }));
+  return Object.values(merged);
+};
+window.onBillFinished = async (payCtx) => {
+  const orders = ORDERS_CACHE.filter(o => o.table===payCtx.table && o.status==='served');
+  await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid'})));
+};
+
+// ===================== ITEM 10: ครัวแจ้งของหมด (ก่อน/หลังลูกค้าสั่ง) =====================
+document.getElementById('btnSoldOut')?.addEventListener('click', () => {
+  const activeStation = document.querySelector('.kstation.active')?.dataset.station || 'kitchen';
+  const list = MENU_CACHE.filter(m => (m.station||'kitchen')===activeStation);
+  document.getElementById('soldOutList').innerHTML = list.map(m =>
+    '<div class="bom-row"><span style="flex:1">'+m.name+'</span>'+
+    '<button class="btn-mini '+(m.active?'btn-reject':'btn-approve')+'" data-mid="'+m.id+'" data-active="'+m.active+'">'+
+    (m.active ? '🚫 แจ้งหมด' : '✓ กลับมาขาย')+'</button></div>').join('');
+  document.getElementById('soldOutList').querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
+    const mid = b.dataset.mid;
+    const wasActive = b.dataset.active === 'true';
+    const nowActive = !wasActive;
+    await updateDoc(doc(db,'menu',mid), {active: nowActive});
+    if(!nowActive){
+      // เช็คว่ามีออเดอร์ที่กำลังทำอยู่ซึ่งมีเมนูนี้อยู่ไหม (สั่งไปแล้วก่อนของหมด)
+      const m = MENU_CACHE.find(x=>x.id===mid);
+      const affected = ORDERS_CACHE.filter(o => ['new','preparing'].includes(o.status) && o.items.some(i=>i.name===m.name));
+      for(const o of affected){
+        await setDoc(doc(collection(db,'soldOutAlerts')), {
+          orderId:o.id, table:o.table, itemName:m.name, createdAt: serverTimestamp(), resolved:false
+        });
+      }
+      if(affected.length && window.toast) toast('⚠️ มี '+affected.length+' ออเดอร์ที่สั่ง "'+m.name+'" ไปแล้ว — แจ้งพนักงานให้ยืนยันกับลูกค้าแล้ว');
+    }
+    if(window.toast) toast(nowActive ? '✓ เปิดขายกลับมาแล้ว' : '🚫 แจ้งของหมดแล้ว — เมนูหายจากลูกค้าทันที');
+    document.getElementById('btnSoldOut').click();
+  }));
+  document.getElementById('soldOutModal').classList.add('open');
+});
+
+function renderSoldOutAlerts(alerts){
+  const box = document.getElementById('staffSoldOutAlerts');
+  if(!box) return;
+  box.innerHTML = alerts.map(a =>
+    '<div class="pay-card" style="border-color:#FF8A73;"><div class="pay-info">'+
+    '<div class="top"><div class="nm">⚠️ โต๊ะ '+a.table+' — "'+a.itemName+'" ของหมด</div></div>'+
+    '<div class="sub">ลูกค้าสั่งไปแล้วแต่ครัวแจ้งหมด — ไปขออภัยลูกค้า แล้วกดยืนยันเพื่อตัดออกจากบิล</div></div>'+
+    '<button class="btn-mini btn-approve" data-aid="'+a.id+'" data-oid="'+a.orderId+'" data-item="'+a.itemName+'">✓ ยืนยันตัดออก</button></div>').join('');
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
+    const order = ORDERS_CACHE.find(o=>o.id===b.dataset.oid);
+    if(order){
+      const newItems = order.items.filter(i=>i.name!==b.dataset.item);
+      const newTotal = newItems.reduce((s,i)=>s+i.qty*i.price,0);
+      await updateDoc(doc(db,'orders',order.id), {items:newItems, total:newTotal});
+    }
+    await updateDoc(doc(db,'soldOutAlerts',b.dataset.aid), {resolved:true});
+    if(window.toast) toast('✓ ตัดรายการออกจากบิลแล้ว');
+  }));
+}
+onSnapshot(query(collection(db,'soldOutAlerts'), where('resolved','==',false)), (qs) => {
+  const alerts = []; qs.forEach(d => alerts.push({id:d.id, ...d.data()}));
+  renderSoldOutAlerts(alerts);
+}, e => console.warn('soldOutAlerts listener failed', e));
+
+// ===================== ITEM 15: ปริ้นหลายบิลรวมเป็นไฟล์เดียว =====================
+function buildBillHtml(table, items, invType){
+  const total = items.reduce((s,i)=>s+i.q*i.p,0);
+  const vat = Math.round(total*7/107);
+  let h = '<div style="page-break-after:always; padding:10px 0;">';
+  h += '<h4 style="text-align:center;">Season One<br>Food Drink &amp; Bistro</h4><div style="text-align:center">ถ.มะลิวัลย์ ขอนแก่น · โทร 092-625-1541</div><hr>';
+  h += '<div>'+(invType==='full'?'ใบกำกับภาษี (เต็มรูป)':'ใบกำกับภาษีอย่างย่อ')+'</div>';
+  h += '<div>โต๊ะ '+table+' · '+new Date().toLocaleString('th-TH')+'</div><hr>';
+  h += items.map(i=>'<div class="ln"><span>'+i.n+' x'+i.q+'</span><span>'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
+  h += '<hr><div class="ln tt"><span>รวม</span><span>฿'+total.toLocaleString()+'</span></div>';
+  h += '<div class="ln"><span>VAT 7% (รวมใน)</span><span>'+vat.toLocaleString()+'</span></div></div>';
+  return h;
+}
+window.printBatchBills = (invType) => {
+  const selected = Array.from(document.querySelectorAll('.tcell.batch-selected')).map(c=>c.dataset.name);
+  if(!selected.length){ if(window.toast) toast('เลือกโต๊ะที่ต้องการพิมพ์ก่อน'); return; }
+  let allHtml = '';
+  let count = 0;
+  selected.forEach(table => {
+    const items = window.liveBillOf(table);
+    if(items && items.length){ allHtml += buildBillHtml(table, items, invType); count++; }
+  });
+  if(!count){ if(window.toast) toast('โต๊ะที่เลือกยังไม่มีบิลที่พร้อมปริ้น'); return; }
+  const w = window.open('','_blank');
+  w.document.write('<html><head><meta charset="UTF-8"><title>บิลรวม '+count+' โต๊ะ</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:12px;}hr{border:none;border-top:1px dashed #000;}.ln{display:flex;justify-content:space-between;}.tt{font-weight:bold;font-size:14px;}</style></head><body>'+allHtml+'</body></html>');
+  w.document.close();
+  setTimeout(()=>w.print(),300);
+  if(window.toast) toast('🖨️ เปิดหน้าต่างพิมพ์ '+count+' บิล — เลือก "Save as PDF" ในหน้าต่างพิมพ์ได้ถ้าต้องการไฟล์ PDF');
+};
+let batchMode = false;
+window.toggleBatchMode = () => {
+  batchMode = !batchMode;
+  document.getElementById('btnBatchMode').textContent = batchMode ? '✕ ยกเลิกโหมดเลือก' : '☑️ เลือกหลายโต๊ะเพื่อปริ้น';
+  document.getElementById('batchPrintBar').style.display = batchMode ? 'flex' : 'none';
+  document.querySelectorAll('.tcell').forEach(c => c.classList.remove('batch-selected'));
+  updateBatchCount();
+};
+document.getElementById('btnBatchMode')?.addEventListener('click', () => window.toggleBatchMode());
+function updateBatchCount(){
+  const n = document.querySelectorAll('.tcell.batch-selected').length;
+  const el = document.getElementById('batchCount');
+  if(el) el.textContent = 'เลือกแล้ว '+n+' โต๊ะ';
+}
+
+// ===================== ITEM 26: บัญชีพนักงานค้าง + เบอร์ซ้ำชื่อไม่ตรง =====================
+// (แทนที่ handler เดิมของ stfGo ด้วยเวอร์ชันที่ล้างตัวเองอัตโนมัติ)
+document.getElementById('stfGo').onclick = async () => {
+  const errEl = document.getElementById('stfErr');
+  const name = document.getElementById('stfName').value.trim();
+  const roleTxt = document.getElementById('stfRole').value;
+  const phone = document.getElementById('stfPhone').value.replace(/\D/g,'');
+  let pin = document.getElementById('stfPin').value.trim();
+  if(!name || phone.length < 9){ errEl.textContent = 'กรอกชื่อและเบอร์โทรให้ครบ'; return; }
+  if(!pin) pin = phone.slice(-6);
+  if(pin.length < 6){ errEl.textContent = 'PIN ต้องมีอย่างน้อย 6 หลัก (ข้อจำกัดของระบบล็อกอิน)'; return; }
+  errEl.textContent = 'กำลังตรวจสอบ...';
+
+  // เช็คว่าเบอร์นี้เคยใช้งานอยู่ไหม ผ่านตัวกลาง phoneIndex
+  let version = 1;
+  let priorNote = '';
+  try {
+    const idxSnap = await getDoc(doc(db,'phoneIndex',phone));
+    if(idxSnap.exists()){
+      const idx = idxSnap.data();
+      version = (idx.version||1) + 1;
+      // ปิดยูสเดิม (เก็บประวัติ ไม่ลบ) — ทำได้แค่ระดับแอปนี้เพราะ Firebase ฟรีแพลนไม่ให้ปิดบัญชีคนอื่นจากฝั่งเว็บ
+      if(idx.activeUid){
+        try { await updateDoc(doc(db,'users',idx.activeUid), {active:false, replacedAt:new Date().toISOString()}); } catch(_){}
+      }
+      priorNote = idx.activeName && idx.activeName !== name
+        ? ' (เบอร์นี้เคยเป็นของ "'+idx.activeName+'" ปิดใช้งานแล้ว ตอนนี้ลงทะเบียนใหม่เป็น "'+name+'")'
+        : '';
+    }
+  } catch(e){ /* ไม่มี index เดิม ไปต่อได้ */ }
+
+  const loginEmail = version > 1 ? phone+'-v'+version+PHONE_DOMAIN : phone+PHONE_DOMAIN;
+  errEl.textContent = 'กำลังสร้างบัญชี...';
+  const secondary = initializeApp(firebaseConfig, 'staffCreator-'+Date.now());
+  const secAuth = getAuth(secondary);
+  let createdUid = null;
+  try {
+    const cred = await createUserWithEmailAndPassword(secAuth, loginEmail, pin);
+    createdUid = cred.user.uid;
+    await setDoc(doc(db,'users',createdUid), {
+      name, phone, role:'staff', position: roleTxt, active:true, loginEmail, createdAt: new Date().toISOString()
+    });
+    await setDoc(doc(db,'phoneIndex',phone), { activeUid: createdUid, activeEmail: loginEmail, activeName: name, version });
+    await signOut(secAuth);
+    await deleteApp(secondary);
+    errEl.innerHTML = '';
+    document.getElementById('staffModal').classList.remove('open');
+    document.getElementById('stfName').value=''; document.getElementById('stfPhone').value=''; document.getElementById('stfPin').value='';
+    if(window.toast) toast('✓ เพิ่ม '+name+' แล้ว — ล็อกอินด้วยเบอร์ '+phone+' + PIN '+pin+priorNote);
+    loadStaff();
+  } catch(e){
+    // ล้างบัญชีค้างอัตโนมัติถ้าขั้นบันทึกข้อมูลล้มเหลว
+    try {
+      if(createdUid){ /* setDoc ล้มเหลวหลัง Auth สำเร็จ — ลบบัญชีเพื่อไม่ให้ค้าง */ }
+    } catch(_){}
+    try{ await deleteApp(secondary); }catch(_){}
+    errEl.textContent = e.code === 'auth/email-already-in-use' ? 'ระบบภายในขัดข้อง กรุณาลองใหม่อีกครั้ง' : 'ผิดพลาด: '+e.message;
+  }
+};
 </script>
 </body>
 </html>
