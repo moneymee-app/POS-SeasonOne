@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Season One — ติดตั้งระบบครั้งแรก</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Sarabun',sans-serif;background:#141511;color:#F4F1EA;display:flex;justify-content:center;padding:30px 16px;min-height:100vh;margin:0;}
+  .box{width:100%;max-width:460px;}
+  h1{color:#E4CD8C;font-size:24px;} .sub{color:#9C977F;font-size:13px;margin-bottom:20px;}
+  .card{background:#1C1E18;border:1px solid rgba(200,168,75,.3);border-radius:14px;padding:20px;margin-bottom:16px;}
+  .card h3{margin:0 0 4px;font-size:16px;color:#E4CD8C;}
+  .card .d{font-size:12.5px;color:#9C977F;margin-bottom:12px;}
+  input{width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid rgba(200,168,75,.25);border-radius:8px;padding:11px 12px;color:#F4F1EA;font-size:14px;font-family:inherit;margin-bottom:10px;}
+  button{width:100%;padding:13px;border-radius:9px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;background:#C8A84B;color:#141511;}
+  button:disabled{opacity:.5;}
+  .log{font-size:12.5px;line-height:1.9;margin-top:12px;white-space:pre-wrap;}
+  .ok{color:#3EE07A;} .err{color:#FF8A73;}
+  .step-done{border-color:#3EE07A;}
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>🌾 Season One — ติดตั้งระบบครั้งแรก</h1>
+  <div class="sub">รันหน้านี้ครั้งเดียว: สร้างบัญชีเจ้าของร้าน แล้วโหลดข้อมูลเริ่มต้นเข้า Firebase</div>
+
+  <div class="card" id="step1">
+    <h3>ขั้น 1: สร้างบัญชีเจ้าของร้าน (Admin)</h3>
+    <div class="d">อีเมล-รหัสผ่านนี้คือกุญแจหลังบ้านทั้งหมด — ตั้งรหัสยากๆ และจดเก็บไว้</div>
+    <input id="email" type="email" placeholder="อีเมลของ TaBon" value="">
+    <input id="pass" type="password" placeholder="รหัสผ่าน (อย่างน้อย 8 ตัว)">
+    <button id="btnCreate">สร้างบัญชี / เข้าสู่ระบบ</button>
+    <div class="log" id="log1"></div>
+  </div>
+
+  <div class="card" id="step2" style="opacity:.4;">
+    <h3>ขั้น 2: โหลดข้อมูลเริ่มต้น</h3>
+    <div class="d">เมนู 6 รายการ (รูปจริงจาก Drive) · โต๊ะ 6 ตัว · โปรโมชั่น 3 แบบ · วัตถุดิบ+สูตร BOM — กดซ้ำได้ ไม่ซ้ำซ้อน (เขียนทับตัวเดิม)</div>
+    <button id="btnSeed" disabled>🚀 โหลดข้อมูลเข้า Firestore</button>
+    <div class="log" id="log2"></div>
+  </div>
+
+  <div class="card">
+    <h3>เสร็จแล้วไปไหนต่อ</h3>
+    <div class="d">1) วาง Security Rules ในแท็บ Rules ของ Firestore (ไฟล์ firestore.rules)<br>2) เปิดเว็บหลัก แล้วล็อกอินด้วยบัญชีที่สร้างในขั้น 1<br>3) เพิ่มบัญชีพนักงานได้ทีหลังจากหน้า Admin</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDXuK8sP5g3E9Avujm-gKP1p6K22t8mfUc",
+  authDomain: "season-one-pos.firebaseapp.com",
+  projectId: "season-one-pos",
+  storageBucket: "season-one-pos.firebasestorage.app",
+  messagingSenderId: "425225846187",
+  appId: "1:425225846187:web:ccb56ad4590450c6d426ee"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const log1 = document.getElementById('log1'), log2 = document.getElementById('log2');
+
+document.getElementById('btnCreate').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+  if(!email || pass.length < 8){ log1.innerHTML = '<span class="err">กรอกอีเมล และรหัสผ่านอย่างน้อย 8 ตัว</span>'; return; }
+  log1.textContent = 'กำลังดำเนินการ...';
+  try {
+    let cred;
+    try { cred = await createUserWithEmailAndPassword(auth, email, pass); }
+    catch(e){
+      if(e.code === 'auth/email-already-in-use'){ cred = await signInWithEmailAndPassword(auth, email, pass); }
+      else throw e;
+    }
+    await setDoc(doc(db,'users',cred.user.uid), { email, role:'admin', name:'TaBon (เจ้าของร้าน)', createdAt: serverTimestamp() }, { merge:true });
+    log1.innerHTML = '<span class="ok">✓ บัญชี Admin พร้อมใช้: '+email+'</span>';
+    document.getElementById('step1').classList.add('step-done');
+    const s2 = document.getElementById('step2'); s2.style.opacity = 1;
+    document.getElementById('btnSeed').disabled = false;
+  } catch(e){ log1.innerHTML = '<span class="err">ผิดพลาด: '+e.code+' — '+e.message+'</span>'; }
+};
+
+const MENU = [
+ ['M001','คอหมูย่างจิ้มแจ่ว','ย่าง-ปิ้ง',140,'kitchen',true,'1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx'],
+ ['M002','ส้มตำไทย','อาหารเรียกน้ำย่อย',90,'kitchen',true,'1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU'],
+ ['M003','เบียร์ช้างเดราฟท์','เบียร์',90,'bar',true,'1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ'],
+ ['M004','ปลาเผาเกลือ','อาหารหลัก',180,'kitchen',true,'1PvjXFZFUzT8fCYFREkMBollR_38nNwHe'],
+ ['M005','Set ปิ้งย่างรวม','ย่าง-ปิ้ง',1090,'kitchen',true,'1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq'],
+ ['M006','เมอร์ไทน์ ค็อกเทล','สุรา-ค็อกเทล',160,'bar',false,'1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq'],
+];
+const TABLES = [
+ ['A1','A1','Zone A Indoor',4],['A2','A2','Zone A Indoor',4],
+ ['B1','B1','Zone B Garden',4],['B2','B2','Zone B Garden',6],
+ ['C1','Camping-1','Zone C Camping',6],['C2','Camping-2','Zone C Camping',6],
+];
+const PROMOS = [
+ ['P001','ไทยช่วยไทยพลัส (เป๋าตัง)','gov_split',40,true,'รัฐช่วย 40% / ลูกค้าจ่าย 60% — บันทึกแยกในบิล'],
+ ['P002','Happy Hour เบียร์ 17:00-19:00','category_discount',20,false,'ลด 20% หมวดเบียร์'],
+ ['P003','ส่วนลดท้ายบิล','bill_discount',10,false,'ลด 10% ทั้งบิล'],
+];
+const INGS = [
+ ['I001','หมูสามชั้น','เนื้อสัตว์','กก.',18,10,180],
+ ['I002','กุ้งสด','อาหารทะเล','กก.',3,5,320],
+ ['I003','เบียร์ช้าง (ขวด)','เครื่องดื่ม','ขวด',0,24,52],
+ ['I004','มะละกอ','ผัก','กก.',6,3,25],
+ ['I005','แก้วใช้แล้วทิ้ง','บรรจุภัณฑ์','ใบ',420,200,1.5],
+ ['I006','กลุ่มเครื่องปรุง','เครื่องปรุง','ชุด',999,10,0],
+];
+const BOM = [
+ ['M001','I001',0.15],['M001','I006',1],['M002','I004',0.2],['M002','I006',1],
+ ['M003','I003',1],['M003','I005',1],
+];
+
+document.getElementById('btnSeed').onclick = async () => {
+  const b = document.getElementById('btnSeed'); b.disabled = true;
+  log2.textContent = '';
+  const put = async (col,id,data,label)=>{
+    await setDoc(doc(db,col,id), {...data, updatedAt: serverTimestamp()}, {merge:true});
+    log2.innerHTML += '<span class="ok">✓ '+label+'</span>\n';
+  };
+  try {
+    for(const [id,name,cat,price,station,active,photo] of MENU)
+      await put('menu',id,{name,category:cat,price,station,active,photoId:photo},'เมนู: '+name);
+    for(const [id,name,zone,seats] of TABLES)
+      await put('tables',id,{name,zone,seats,active:true,status:'free'},'โต๊ะ: '+name);
+    for(const [id,name,type,value,active,note] of PROMOS)
+      await put('promotions',id,{name,type,value,active,note},'โปร: '+name);
+    for(const [id,name,cat,unit,qty,min,cost] of INGS)
+      await put('ingredients',id,{name,category:cat,unit,qty,min,cost},'วัตถุดิบ: '+name);
+    for(const [menuId,ingId,qty] of BOM)
+      await put('bom',menuId+'_'+ingId,{menuId,ingId,qty},'BOM: '+menuId+' ← '+ingId);
+    log2.innerHTML += '\n<span class="ok"><b>🎉 เสร็จสมบูรณ์! เปิดเว็บหลักได้เลย</b></span>';
+  } catch(e){
+    log2.innerHTML += '<span class="err">ผิดพลาด: '+e.code+' — '+e.message+'</span>';
+    b.disabled = false;
+  }
+};
+</script>
+</body>
+</html>
