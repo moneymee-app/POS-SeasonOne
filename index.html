@@ -677,9 +677,10 @@
       <section class="view" id="view-staff">
         <div class="toolbar">
           <div class="search">🔍 <input placeholder="ค้นหาพนักงาน"></div>
-          <button class="pill-btn" style="background:var(--night); color:var(--gold-soft);">＋ เพิ่มพนักงาน</button>
+          <button class="pill-btn" id="btnAddStaff" style="background:var(--night); color:var(--gold-soft);">＋ เพิ่มพนักงาน</button>
         </div>
-        <div class="staff-grid">
+        <div class="staff-grid" id="staffGrid"></div>
+        <div class="staff-grid" id="staffGridDemo" style="display:none;">
           <div class="staff-card">
             <div class="av">มล</div>
             <div>
@@ -983,12 +984,34 @@
   </div>
 </div>
 
+<!-- ===== ADD STAFF MODAL ===== -->
+<div class="modal-back" id="staffModal">
+  <div class="modal">
+    <h3>👤 เพิ่มพนักงานใหม่</h3>
+    <div class="sub">พนักงานล็อกอินด้วย "เบอร์โทร + PIN" ไม่ต้องมีอีเมล — ตั้งค่าที่นี่ครั้งเดียว</div>
+    <input type="text" id="stfName" placeholder="ชื่อเล่น เช่น พี่รุ่ง">
+    <select id="stfRole">
+      <option value="เสิร์ฟ">เสิร์ฟ</option>
+      <option value="ครัว">ครัว</option>
+      <option value="บาร์">บาร์</option>
+      <option value="หัวหน้ากะ/แคชเชียร์">หัวหน้ากะ / แคชเชียร์</option>
+    </select>
+    <input type="text" id="stfPhone" placeholder="เบอร์โทร 10 หลัก เช่น 0812345678" maxlength="10">
+    <input type="text" id="stfPin" placeholder="PIN 4 หลัก (ค่าเริ่มต้น = เบอร์ 4 ตัวท้าย)" maxlength="6">
+    <div id="stfErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('staffModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="stfGo">✓ สร้างบัญชี</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== LOGIN MODAL ===== -->
 <div class="modal-back" id="loginModal">
   <div class="modal">
     <h3>🔐 เข้าสู่ระบบทีมงาน</h3>
     <div class="sub">พนักงาน/เจ้าของร้านเท่านั้น — ลูกค้าสั่งอาหารได้เลยไม่ต้องล็อกอิน</div>
-    <input type="text" id="loginEmail" placeholder="อีเมล">
+    <input type="text" id="loginEmail" placeholder="อีเมล (Admin) หรือ เบอร์โทร (พนักงาน)">
     <input type="text" id="loginPass" placeholder="รหัสผ่าน" style="-webkit-text-security:disc;">
     <div id="loginErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
@@ -1417,9 +1440,9 @@
 </script>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDXuK8sP5g3E9Avujm-gKP1p6K22t8mfUc",
@@ -1440,16 +1463,24 @@ window.fbLoginClick = () => {
   if(auth.currentUser){ if(confirm('ออกจากระบบ?')) signOut(auth); }
   else document.getElementById('loginModal').classList.add('open');
 };
+const PHONE_DOMAIN = '@staff.seasonone.local';
+const toLoginEmail = (input) => {
+  const v = input.trim();
+  if(v.includes('@')) return v;                 // admin ใช้อีเมลจริง
+  const digits = v.replace(/\D/g,'');
+  return digits + PHONE_DOMAIN;                  // พนักงานใช้เบอร์โทร แปลงเป็นอีเมลปลอมภายใน
+};
+
 document.getElementById('loginGo').onclick = async () => {
   const err = document.getElementById('loginErr');
   err.textContent = 'กำลังตรวจสอบ...';
   try {
     await signInWithEmailAndPassword(auth,
-      document.getElementById('loginEmail').value.trim(),
+      toLoginEmail(document.getElementById('loginEmail').value),
       document.getElementById('loginPass').value);
     err.textContent = '';
     document.getElementById('loginModal').classList.remove('open');
-  } catch(e){ err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: อีเมลหรือรหัสผ่านไม่ถูกต้อง'; }
+  } catch(e){ err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: เบอร์โทร/อีเมล หรือรหัสผ่านไม่ถูกต้อง'; }
 };
 
 onAuthStateChanged(auth, async (user) => {
@@ -1478,6 +1509,60 @@ function applyRoleGate(){
 }
 
 const photoUrl = id => 'https://drive.google.com/thumbnail?id='+id+'&sz=w400';
+
+// ===== ADD STAFF (admin only) — ใช้แอปสำรอง กันไม่ให้ admin หลุด login ตอนสร้างบัญชีใหม่ =====
+document.getElementById('btnAddStaff')?.addEventListener('click', () => {
+  if(ROLE !== 'admin'){ if(window.toast) toast('❌ เฉพาะเจ้าของร้านเท่านั้นที่เพิ่มพนักงานได้'); return; }
+  document.getElementById('stfErr').textContent = '';
+  document.getElementById('staffModal').classList.add('open');
+});
+document.getElementById('stfGo').onclick = async () => {
+  const errEl = document.getElementById('stfErr');
+  const name = document.getElementById('stfName').value.trim();
+  const roleTxt = document.getElementById('stfRole').value;
+  const phone = document.getElementById('stfPhone').value.replace(/\D/g,'');
+  let pin = document.getElementById('stfPin').value.trim();
+  if(!name || phone.length < 9){ errEl.textContent = 'กรอกชื่อและเบอร์โทรให้ครบ'; return; }
+  if(!pin) pin = phone.slice(-4);
+  if(pin.length < 4){ errEl.textContent = 'PIN ต้องมีอย่างน้อย 4 หลัก'; return; }
+  errEl.textContent = 'กำลังสร้างบัญชี...';
+  const secondary = initializeApp(firebaseConfig, 'staffCreator-'+Date.now());
+  const secAuth = getAuth(secondary);
+  try {
+    const cred = await createUserWithEmailAndPassword(secAuth, phone+PHONE_DOMAIN, pin);
+    await setDoc(doc(db,'users',cred.user.uid), {
+      name, phone, role:'staff', position: roleTxt, active:true, createdAt: new Date().toISOString()
+    });
+    await signOut(secAuth);
+    await deleteApp(secondary);
+    errEl.innerHTML = '';
+    document.getElementById('staffModal').classList.remove('open');
+    document.getElementById('stfName').value=''; document.getElementById('stfPhone').value=''; document.getElementById('stfPin').value='';
+    if(window.toast) toast('✓ เพิ่ม '+name+' แล้ว — ล็อกอินด้วยเบอร์ '+phone+' + PIN '+pin);
+    loadStaff();
+  } catch(e){
+    errEl.textContent = e.code === 'auth/email-already-in-use' ? 'เบอร์นี้มีบัญชีอยู่แล้ว' : 'ผิดพลาด: '+e.message;
+    try{ await deleteApp(secondary); }catch(_){}
+  }
+};
+
+async function loadStaff(){
+  const grid = document.getElementById('staffGrid');
+  if(!grid) return;
+  try {
+    const qs = await getDocs(query(collection(db,'users'), where('role','==','staff')));
+    if(qs.empty){ grid.innerHTML = ''; document.getElementById('staffGridDemo').style.display='grid'; return; }
+    document.getElementById('staffGridDemo').style.display='none';
+    const rows = []; qs.forEach(d => rows.push(d.data()));
+    grid.innerHTML = rows.map(s => {
+      const initials = (s.name||'?').replace(/[^ก-๙a-zA-Z]/g,'').slice(0,2);
+      return '<div class="staff-card"><div class="av">'+initials+'</div><div>'+
+        '<div class="nm">'+s.name+'</div><div class="role">'+(s.position||'พนักงาน')+' · 📱 '+s.phone+'</div>'+
+        '<div class="clock">'+(s.active!==false?'🟢 ใช้งานได้':'🔴 ปิดใช้งาน')+'</div></div></div>';
+    }).join('');
+  } catch(e){ console.warn('loadStaff failed', e); }
+}
+loadStaff();
 async function loadMenu(){
   try {
     const qs = await getDocs(collection(db,'menu'));
