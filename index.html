@@ -819,13 +819,8 @@
           <div class="chip">สุรา-ค็อกเทล 🔞</div>
         </div>
 
-        <div class="order-menu-grid">
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1U8i4BrcdRl8B_IkVb7HkH9PsH_zL3vFx&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">คอหมูย่างจิ้มแจ่ว</div><div class="pr">฿140</div><button class="order-add" data-name="คอหมูย่างจิ้มแจ่ว" data-price="140">+ เพิ่ม</button></div>
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1EQ2ATTMmZTiSXxF1W4P4OOxOkiu1hrkU&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">ส้มตำไทย</div><div class="pr">฿90</div><button class="order-add" data-name="ส้มตำไทย" data-price="90">+ เพิ่ม</button></div>
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1MhgOK5IfWGf1XA31Wr5_zDWEtJ4ConzZ&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">เบียร์ช้างเดราฟท์</div><div class="pr">฿90</div><button class="order-add" data-name="เบียร์ช้างเดราฟท์" data-price="90">+ เพิ่ม</button></div>
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1PvjXFZFUzT8fCYFREkMBollR_38nNwHe&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">ปลาเผาเกลือ</div><div class="pr">฿180</div><button class="order-add" data-name="ปลาเผาเกลือ" data-price="180">+ เพิ่ม</button></div>
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">Set ปิ้งย่างรวม</div><div class="pr">฿1,090</div><button class="order-add" data-name="Set ปิ้งย่างรวม" data-price="1090">+ เพิ่ม</button></div>
-          <div class="order-tile"><div class="ic" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;"></div><div class="nm">เมอร์ไทน์ ค็อกเทล 🔞</div><div class="pr">฿160</div><button class="order-add" data-name="เมอร์ไทน์ ค็อกเทล" data-price="160">+ เพิ่ม</button></div>
+        <div class="order-menu-grid" id="staffMenuGrid">
+          <div style="color:var(--muted); font-size:13px; padding:20px;">กำลังโหลดเมนู...</div>
         </div>
 
         <div class="cart-panel" id="staffCartPanel"></div>
@@ -2031,8 +2026,9 @@ function ticketHtml(o, station){
   const lateClass = (o.status==='new' && o._mins>=10) ? ' late' : '';
   const timeClass = (o.status==='new' && o._mins>=10) ? ' late-txt' : '';
   let btn = '';
-  if(o.status==='new') btn = '<button class="btn-start" data-oid="'+o.id+'">▶ เริ่มทำ</button>';
-  else if(o.status==='preparing') btn = '<button class="btn-ready" data-oid="'+o.id+'">✓ เสร็จแล้ว</button>';
+  // Bug 3 fix: ปุ่ม "เริ่มทำ" → "พร้อมเสิร์ฟ" กดแล้วข้ามไป ready โดยตรง (ไม่ผ่าน preparing)
+  if(o.status==='new') btn = '<button class="btn-start" data-oid="'+o.id+'">✅ พร้อมเสิร์ฟ</button>';
+  else if(o.status==='preparing') btn = '<button class="btn-ready" data-oid="'+o.id+'">✅ พร้อมเสิร์ฟ</button>';
   return '<div class="ticket'+lateClass+'"><div class="top"><div class="tbl">โต๊ะ '+o.table+'</div><div class="time'+timeClass+'">⏱ '+timeAgo(o.createdAt)+'</div></div>'+
     '<ul class="items">'+items.map(i=>'<li>'+i.name+' ×'+i.qty+'</li>').join('')+'</ul>'+btn+'</div>';
 }
@@ -2047,7 +2043,8 @@ function renderKanban(){
       const html = orders.map(o=>ticketHtml(o,station)).filter(Boolean).join('');
       col.innerHTML = html || '<div class="kanban-empty">ยังไม่มีออเดอร์'+(stage==='new'?'ใหม่':stage==='preparing'?'กำลังทำ':'พร้อมเสิร์ฟ')+'</div>';
       if(cnt) cnt.textContent = orders.length;
-      col.querySelectorAll('.btn-start').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'preparing'})));
+      // Bug 3 fix: กด "พร้อมเสิร์ฟ" → status = ready ทันที ไม่ผ่าน preparing
+      col.querySelectorAll('.btn-start').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'ready'})));
       col.querySelectorAll('.btn-ready').forEach(b => b.addEventListener('click', () => updateDoc(doc(db,'orders',b.dataset.oid), {status:'ready'})));
     });
   });
@@ -2099,6 +2096,27 @@ clockBtnEl?.addEventListener('click', async () => {
 });
 
 // ===================== โหลดเมนู (Item 7,8,13 ผูกกับข้อมูลสด) =====================
+function renderStaffMenu(){
+  // Bug 2 fix: ดึงเมนูจาก MENU_CACHE (Firestore) แทน hardcode
+  const grid = document.getElementById("staffMenuGrid");
+  if(!grid) return;
+  const activeMenus = MENU_CACHE.filter(m=>m.active);
+  if(!activeMenus.length){ grid.innerHTML = "<div style=\"color:var(--muted); font-size:13px; padding:20px;\">ยังไม่มีเมนูเปิดขาย</div>"; return; }
+  grid.innerHTML = activeMenus.map(m =>
+    "<div class=\"order-tile\">"+
+    "<div class=\"ic\" style=\"background-image:url(\x27"+photoUrl(m.photoData||m.photoId)+"\x27); background-size:cover; background-position:center; aspect-ratio:4/3; width:100%; border-radius:9px; margin-bottom:8px;\"></div>"+
+    "<div class=\"nm\">"+m.name+(m.category.includes("สุรา")?" 🔞":"")+"</div>"+
+    "<div class=\"pr\">฿"+Number(m.price).toLocaleString()+"</div>"+
+    "<button class=\"order-add\" data-name=\""+m.name.replace("🔞","").trim()+"\" data-price=\""+m.price+"\">+ เพิ่ม</button>"+
+    "</div>").join("");
+  grid.querySelectorAll(".order-add").forEach(btn => {
+    btn.addEventListener("click", () => {
+      cartAdd(STAFFCART,"staffCartPanel",btn.dataset.name,parseInt(btn.dataset.price,10));
+      const o=btn.textContent; btn.textContent="✓ เพิ่มแล้ว"; setTimeout(()=>{ btn.textContent=o; },600);
+    });
+  });
+}
+
 async function loadMenu(){
   try {
     const qs = await getDocs(collection(db,'menu'));
@@ -2119,6 +2137,7 @@ async function loadMenu(){
       }));
     }
 
+    renderStaffMenu();
     renderMenuTable();
     renderBomMenuOptions();
     renderBomSummary();
@@ -2263,8 +2282,9 @@ document.getElementById('tblSave').onclick = async () => {
 };
 
 // billOf/finishBill hooks — ผูกโต๊ะเข้ากับออเดอร์จริง
+// Bug 1 fix: ดึงทุก status ที่ยังไม่ paid (new/preparing/ready/served) เพื่อให้ปริ้นบิลได้ตลอดเวลา
 window.liveBillOf = (table) => {
-  const orders = ORDERS_CACHE.filter(o => o.table===table && o.status==='served');
+  const orders = ORDERS_CACHE.filter(o => o.table===table && ['new','preparing','ready','served'].includes(o.status));
   if(!orders.length) return null;
   const merged = {};
   orders.forEach(o => o.items.forEach(i => {
@@ -2274,7 +2294,7 @@ window.liveBillOf = (table) => {
   return Object.values(merged);
 };
 window.onBillFinished = async (payCtx) => {
-  const orders = ORDERS_CACHE.filter(o => o.table===payCtx.table && o.status==='served');
+  const orders = ORDERS_CACHE.filter(o => o.table===payCtx.table && ['new','preparing','ready','served'].includes(o.status));
   await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid'})));
 };
 
