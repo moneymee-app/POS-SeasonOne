@@ -660,45 +660,13 @@
       <section class="view" id="view-payments">
         <div class="toolbar">
           <div class="chip-row">
-            <div class="chip active">รอตรวจ (3)</div>
-            <div class="chip">อนุมัติแล้ว</div>
-            <div class="chip">ปฏิเสธ</div>
+            <div class="chip active">รอยืนยัน <span id="pendingConfirmCount">(0)</span></div>
           </div>
         </div>
-        <button class="pill-btn" style="margin-bottom:16px; background:var(--gold); color:var(--night);" onclick="openPayModal('B4','admin')">💰 เก็บตัง / ปริ้นบิล</button>
+        <button class="pill-btn" style="margin-bottom:16px; background:var(--gold); color:var(--night);" onclick="openPayModal(document.querySelector('.tcell')?.dataset.name || 'A1','admin')">💰 เก็บตัง / ปริ้นบิล</button>
 
-        <div class="pay-card">
-          <div class="slip-thumb">🧾</div>
-          <div class="pay-info">
-            <div class="top"><div class="nm">โต๊ะ B4 · คุณสมชาย</div><div class="amt">฿640</div></div>
-            <div class="sub">โอนผ่าน PromptPay · เวลา 19:42 น. · รอตรวจสลิปมา 2 นาที</div>
-          </div>
-          <div class="row-actions">
-            <button class="btn-mini btn-reject">ปฏิเสธ</button>
-            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
-          </div>
-        </div>
-        <div class="pay-card">
-          <div class="slip-thumb">🧾</div>
-          <div class="pay-info">
-            <div class="top"><div class="nm">โต๊ะ A2 · จองล่วงหน้า</div><div class="amt">฿1,280</div></div>
-            <div class="sub">แอปเป๋าตัง (G-Wallet) · เวลา 19:38 น. · รอตรวจสลิปมา 6 นาที</div>
-          </div>
-          <div class="row-actions">
-            <button class="btn-mini btn-reject">ปฏิเสธ</button>
-            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
-          </div>
-        </div>
-        <div class="pay-card">
-          <div class="slip-thumb">🧾</div>
-          <div class="pay-info">
-            <div class="top"><div class="nm">โต๊ะ Camping-1</div><div class="amt">฿2,180</div></div>
-            <div class="sub">โอนผ่าน PromptPay · เวลา 19:29 น. · รอตรวจสลิปมา 15 นาที ⚠️</div>
-          </div>
-          <div class="row-actions">
-            <button class="btn-mini btn-reject">ปฏิเสธ</button>
-            <button class="btn-mini btn-approve">✓ อนุมัติ</button>
-          </div>
+        <div id="pendingConfirmList">
+          <div class="empty"><div class="ic">🧾</div>ยังไม่มีรายการรอยืนยันการชำระเงิน</div>
         </div>
       </section>
 
@@ -1015,6 +983,7 @@
       <button class="btn-lg b-ghost" onclick="document.getElementById('tableHistoryModal').classList.remove('open')">ปิด</button>
       <button class="btn-lg b-gold" id="thEditBtn">✏️ แก้ไขโต๊ะ</button>
     </div>
+    <button class="btn-lg b-green" id="thPayBtn" style="width:100%; margin-top:8px;">💰 จ่ายตัง / ปิดบิล</button>
   </div>
 </div>
 
@@ -1219,7 +1188,7 @@
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="closePayModal()">ยกเลิก</button>
       <button class="btn-lg b-gold" id="printBtn" onclick="printBill()">🖨️ ปริ้นบิล</button>
-      <button class="btn-lg b-green" onclick="finishBill()">✓ ปิดบิล</button>
+      <button class="btn-lg b-green" id="finishBillBtn" onclick="finishBill()">✓ ปิดบิล</button>
     </div>
   </div>
 </div>
@@ -1484,16 +1453,33 @@
   function openPayModal(table, role){
     payCtx = { table, role, method:'transfer', inv:'abb' };
     document.getElementById('payTable').textContent = table;
-    document.getElementById('payRoleNote').textContent =
-      role==='customer' ? 'ชำระเงินด้วยตัวเอง — แนบสลิปแล้วรอพนักงานยืนยัน'
-      : 'โหมดพนักงาน/แอดมิน — ปริ้นรายการอาหารให้ลูกค้าตรวจก่อนเก็บเงินได้';
     document.getElementById('printBtn').style.display = role==='customer' ? 'none' : 'block';
     document.getElementById('cashNote').textContent = role==='customer'
       ? 'พนักงานจะมาเก็บเงินสดที่โต๊ะ กดปิดบิลเพื่อแจ้งพนักงาน'
       : 'รับเงินสดจากลูกค้า แล้วกดปิดบิลเพื่อบันทึกเข้ากะ';
+
+    const finishBtn = document.getElementById('finishBillBtn');
+    const stillCooking = role==='customer' && window.hasUnservedItems && window.hasUnservedItems(table);
+    if(stillCooking){
+      finishBtn.disabled = true;
+      finishBtn.style.opacity = '.4';
+      finishBtn.style.cursor = 'not-allowed';
+      document.getElementById('payRoleNote').textContent = '⏳ ยังมีอาหารที่ครัวยังไม่เสิร์ฟครบ — ต้องรอเสิร์ฟครบก่อนถึงจะปิดบิลได้';
+    } else {
+      finishBtn.disabled = false;
+      finishBtn.style.opacity = '1';
+      finishBtn.style.cursor = 'pointer';
+      document.getElementById('payRoleNote').textContent =
+        role==='customer' ? 'ชำระเงินด้วยตัวเอง — แนบสลิปแล้วรอพนักงานยืนยัน'
+        : 'โหมดพนักงาน/แอดมิน — ปริ้นรายการอาหารให้ลูกค้าตรวจก่อนเก็บเงินได้';
+    }
+
     const items = billOf(table);
-    document.getElementById('billLines').innerHTML = items.map(i=>
-      '<div class="ln"><span>'+i.n+' ×'+i.q+'</span><span>฿'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
+    const statusThMap = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว', awaiting_confirm:'เสิร์ฟแล้ว'};
+    document.getElementById('billLines').innerHTML = items.map(i=>{
+      const statusTxt = i.status ? ' <span style="color:'+(i.status==='served'||i.status==='awaiting_confirm'?'#3EE07A':'#E4B23A')+'; font-size:11px;">— '+(statusThMap[i.status]||i.status)+'</span>' : '';
+      return '<div class="ln"><span>'+i.n+' ×'+i.q+statusTxt+'</span><span>฿'+(i.q*i.p).toLocaleString()+'</span></div>';
+    }).join('');
     const total = billTotal(items);
     document.getElementById('billTotal').textContent = '฿'+total.toLocaleString();
     renderPayQr(total); // สร้าง QR PromptPay ตามยอดบิลจริง
@@ -1575,10 +1561,19 @@
   }
 
   function finishBill(){
+    // เช็คซ้ำอีกชั้น กันกรณีอาหารยังไม่เสิร์ฟครบแต่มีการกดผ่านมาได้ (เผื่อ disabled ถูกข้าม)
+    if(payCtx.role==='customer' && window.hasUnservedItems && window.hasUnservedItems(payCtx.table)){
+      toast('⏳ ยังมีอาหารที่ครัวยังไม่เสิร์ฟครบ รอเสิร์ฟครบก่อนนะครับ');
+      return;
+    }
     closePayModal();
-    toast(payCtx.method==='cash'
-      ? (payCtx.role==='customer' ? '💵 แจ้งพนักงานแล้ว รอเก็บเงินที่โต๊ะ '+payCtx.table : '✓ ปิดบิลโต๊ะ '+payCtx.table+' บันทึกเงินสดเข้ากะแล้ว')
-      : '✓ ส่งสลิปเข้าคิวตรวจแล้ว — โต๊ะ '+payCtx.table);
+    if(payCtx.role==='customer'){
+      toast('✓ แจ้งชำระเงินแล้ว — รอพนักงานตรวจสอบและยืนยันอีกครั้ง');
+    } else {
+      toast(payCtx.method==='cash'
+        ? '✓ ปิดบิลโต๊ะ '+payCtx.table+' บันทึกเงินสดเข้ากะแล้ว'
+        : '✓ ปิดบิลโต๊ะ '+payCtx.table+' แล้ว');
+    }
     if(window.onBillFinished) window.onBillFinished(payCtx);
   }
 
@@ -2167,10 +2162,16 @@ document.getElementById('staffSendOrder')?.addEventListener('click', async () =>
 // ---- kitchen/bar realtime kanban ----
 let ORDERS_CACHE = [];
 let SERVED_ORDERS_CACHE = [];
-let ALL_ACTIVE_ORDERS = []; // รวม new/preparing/ready/served — ใช้โดย liveBillOf และ onBillFinished
+let AWAITING_CONFIRM_CACHE = []; // ลูกค้ากด "ปิดบิล" เอง รอ staff/admin ยืนยันรับเงินจริง
+let ALL_ACTIVE_ORDERS = []; // รวม new/preparing/ready/served/awaiting_confirm — ใช้โดย liveBillOf และ onBillFinished
 function refreshAllActiveOrders(){
-  ALL_ACTIVE_ORDERS = [...ORDERS_CACHE, ...SERVED_ORDERS_CACHE];
+  ALL_ACTIVE_ORDERS = [...ORDERS_CACHE, ...SERVED_ORDERS_CACHE, ...AWAITING_CONFIRM_CACHE];
+  window.ALL_ACTIVE_ORDERS = ALL_ACTIVE_ORDERS; // ให้สคริปต์แรก (UI) เรียกเช็คสถานะได้
 }
+// เช็คว่าโต๊ะนี้มีอาหารที่ยังไม่เสิร์ฟครบไหม (new/preparing/ready) — ใช้กันลูกค้ากดปิดบิลก่อนอาหารมาครบ
+window.hasUnservedItems = (table) => {
+  return (window.ALL_ACTIVE_ORDERS || []).some(o => o.table===table && ['new','preparing','ready'].includes(o.status));
+};
 function timeAgo(ts){
   if(!ts || !ts.toDate) return '';
   const mins = Math.max(0, Math.round((Date.now() - ts.toDate().getTime())/60000));
@@ -2307,6 +2308,58 @@ onSnapshot(collection(db,'expenses'), (qs) => {
   renderFinance();
 }, e => console.warn('expenses listener failed', e));
 
+// ===================== รอยืนยันการชำระเงิน (ลูกค้ากด "ปิดบิล" เอง ต้องรอ staff/admin ยืนยัน) =====================
+onSnapshot(query(collection(db,'orders'), where('status','==','awaiting_confirm')), (qs) => {
+  AWAITING_CONFIRM_CACHE = []; qs.forEach(d => AWAITING_CONFIRM_CACHE.push({id:d.id, ...d.data()}));
+  refreshAllActiveOrders();
+  renderTables();
+  renderPendingConfirm(AWAITING_CONFIRM_CACHE);
+}, e => console.warn('awaiting_confirm listener failed', e));
+
+function renderPendingConfirm(orders){
+  const box = document.getElementById('pendingConfirmList');
+  const countEl = document.getElementById('pendingConfirmCount');
+  if(!box) return;
+  if(countEl) countEl.textContent = '('+orders.length+')';
+  const payBadge = document.getElementById('pay-badge');
+  if(payBadge) payBadge.textContent = orders.length;
+
+  // รวมยอดตามโต๊ะ (ลูกค้าโต๊ะเดียวอาจมีหลายออเดอร์ที่รอยืนยันพร้อมกัน)
+  const byTable = {};
+  orders.forEach(o => { (byTable[o.table] = byTable[o.table]||[]).push(o); });
+
+  const tables = Object.keys(byTable);
+  box.innerHTML = tables.length ? tables.map(table => {
+    const os = byTable[table];
+    const total = os.reduce((s,o)=>s+(o.total||0),0);
+    const method = os[0].payMethod || 'โอน/สแกน';
+    const oldestTime = os.reduce((min,o) => {
+      const t = o.reportedPaidAt?.toDate?.()?.getTime() || Date.now();
+      return Math.min(min, t);
+    }, Infinity);
+    const minsAgo = Math.round((Date.now() - oldestTime)/60000);
+    const oids = os.map(o=>o.id).join(',');
+    return '<div class="pay-card">'+
+      '<div class="slip-thumb">🧾</div>'+
+      '<div class="pay-info"><div class="top"><div class="nm">โต๊ะ '+table+'</div><div class="amt">฿'+total.toLocaleString()+'</div></div>'+
+      '<div class="sub">'+method+' · แจ้งชำระเมื่อ '+minsAgo+' นาทีที่แล้ว'+(minsAgo>=10?' ⚠️':'')+'</div></div>'+
+      '<div class="row-actions"><button class="btn-mini btn-reject" data-oids="'+oids+'" data-action="reject">↩️ ยังไม่จ่าย</button>'+
+      '<button class="btn-mini btn-approve" data-oids="'+oids+'" data-action="approve">✓ ยืนยันรับเงินแล้ว</button></div>'+
+      '</div>';
+  }).join('') : '<div class="empty"><div class="ic">🧾</div>ยังไม่มีรายการรอยืนยันการชำระเงิน</div>';
+
+  box.querySelectorAll('button[data-oids]').forEach(btn => btn.addEventListener('click', async () => {
+    const oids = btn.dataset.oids.split(',');
+    const approve = btn.dataset.action === 'approve';
+    try {
+      await Promise.all(oids.map(id => updateDoc(doc(db,'orders',id), {
+        status: approve ? 'paid' : 'served' // ปฏิเสธ = ย้อนกลับไปสถานะ served (ยังไม่จ่ายจริง ให้เก็บเงินใหม่)
+      })));
+      if(window.toast) toast(approve ? '✓ ยืนยันรับเงินแล้ว' : '↩️ ย้อนกลับเป็นยังไม่จ่ายเงิน — โต๊ะต้องชำระใหม่');
+    } catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+
 document.getElementById('finDateChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
   document.querySelectorAll('#finDateChips .chip').forEach(x=>x.classList.remove('active'));
   c.classList.add('active');
@@ -2420,6 +2473,7 @@ onSnapshot(collection(db,'zones'), (qs) => {
   }
   renderZoneOptions('tblZone');
   renderZoneManageList();
+  renderTables(); // bug fix: ผังโต๊ะต้องอัปเดตทันทีเมื่อมีการเพิ่ม/ลบ/แก้ชื่อโซน ไม่งั้นต้องรอ refresh หน้าถึงจะเห็น
 }, e => console.warn('zones listener failed', e));
 
 function renderZoneOptions(selectId){
@@ -2475,7 +2529,7 @@ function computeTableStatus(tableName){
   if(t && t.reserved) return 'resv';
   const active = ALL_ACTIVE_ORDERS.filter(o => o.table===tableName && o.status!=='paid');
   if(!active.length) return 'free';
-  if(active.some(o => o.status==='served')) return 'bill';
+  if(active.some(o => o.status==='served' || o.status==='awaiting_confirm')) return 'bill';
   return 'busy';
 }
 function renderTables(){
@@ -2513,12 +2567,18 @@ onSnapshot(collection(db,'tables'), (qs) => {
 
 // ===================== ประวัติออเดอร์ต่อโต๊ะ (ล็อต C — เพิ่มหลัง TaBon แจ้งว่าไม่มีที่ดูประวัติ) =====================
 let tableHistoryUnsub = null;
+let currentHistoryTable = null;
 function openTableHistoryModal(tableInfo){
+  currentHistoryTable = tableInfo.name;
   document.getElementById('thTableName').textContent = tableInfo.name;
   document.getElementById('thEditBtn').onclick = () => {
     document.getElementById('tableHistoryModal').classList.remove('open');
     if(ROLE === 'admin') openTableModal(tableInfo);
     else if(window.toast) toast('❌ เฉพาะเจ้าของร้านเท่านั้นที่แก้ไขโต๊ะได้');
+  };
+  document.getElementById('thPayBtn').onclick = () => {
+    document.getElementById('tableHistoryModal').classList.remove('open');
+    openPayModal(tableInfo.name, ROLE === 'admin' ? 'admin' : 'staff');
   };
   document.getElementById('thBody').innerHTML = '<div style="color:var(--muted); padding:20px; text-align:center;">กำลังโหลดประวัติ...</div>';
   document.getElementById('tableHistoryModal').classList.add('open');
@@ -2535,8 +2595,29 @@ function openTableHistoryModal(tableInfo){
   });
 }
 function renderTableHistory(orders){
-  const active = orders.filter(o => ['new','preparing','ready','served'].includes(o.status));
+  const active = orders.filter(o => ['new','preparing','ready','served','awaiting_confirm'].includes(o.status));
   const past = orders.filter(o => o.status==='paid');
+
+  // ปุ่ม "จ่ายตัง/ปิดบิล" กดได้เฉพาะตอนไม่มีอาหารค้างในครัว (new/preparing/ready) — ตรงกับกติกาฝั่งลูกค้า
+  const payBtn = document.getElementById('thPayBtn');
+  const stillCooking = active.some(o => ['new','preparing','ready'].includes(o.status));
+  if(payBtn){
+    if(!active.length){
+      payBtn.style.display = 'none'; // ไม่มีออเดอร์ค้างเลย ไม่ต้องโชว์ปุ่ม
+    } else if(stillCooking){
+      payBtn.style.display = 'block';
+      payBtn.disabled = true;
+      payBtn.style.opacity = '.4';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.textContent = '⏳ รอเสิร์ฟครบก่อนถึงจะปิดบิลได้';
+    } else {
+      payBtn.style.display = 'block';
+      payBtn.disabled = false;
+      payBtn.style.opacity = '1';
+      payBtn.style.cursor = 'pointer';
+      payBtn.textContent = '💰 จ่ายตัง / ปิดบิล';
+    }
+  }
 
   let html = '';
   if(active.length){
@@ -2545,7 +2626,7 @@ function renderTableHistory(orders){
     html += active.map(o => {
       const dt = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
       const itemsTxt = (o.items||[]).map(i=>i.name+'×'+i.qty).join(', ');
-      const statusTh = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว รอเก็บเงิน'}[o.status] || o.status;
+      const statusTh = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว รอเก็บเงิน', awaiting_confirm:'ลูกค้าแจ้งชำระแล้ว รอพนักงานยืนยัน'}[o.status] || o.status;
       return '<div class="order-card"><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+statusTh+' · ฿'+(o.total||0).toLocaleString()+'</div></div></div>';
     }).join('');
     html += '<div style="text-align:right; font-size:13px; margin:4px 0 16px; color:var(--gold-soft);">รวมยอดที่ยังไม่ปิดบิล: ฿'+activeTotal.toLocaleString()+'</div>';
@@ -2606,18 +2687,31 @@ document.getElementById('tblSave').onclick = async () => {
 // billOf/finishBill hooks — ผูกโต๊ะเข้ากับออเดอร์จริง
 // Bug 1 fix: ดึงทุก status ที่ยังไม่ paid (new/preparing/ready/served) เพื่อให้ปริ้นบิลได้ตลอดเวลา
 window.liveBillOf = (table) => {
-  const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===table && ['new','preparing','ready','served'].includes(o.status));
+  const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===table && ['new','preparing','ready','served','awaiting_confirm'].includes(o.status));
   if(!orders.length) return null;
   const merged = {};
   orders.forEach(o => o.items.forEach(i => {
-    merged[i.name] = merged[i.name] || {n:i.name, q:0, p:i.price};
-    merged[i.name].q += i.qty;
+    // แยกกลุ่มตามชื่อเมนู+สถานะ ป้องกันรวมจานที่เสิร์ฟแล้วกับจานที่ยังไม่มาปนกัน
+    const key = i.name + '|' + o.status;
+    merged[key] = merged[key] || {n:i.name, q:0, p:i.price, status:o.status};
+    merged[key].q += i.qty;
   }));
   return Object.values(merged);
 };
 window.onBillFinished = async (payCtx) => {
-  const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && ['new','preparing','ready','served'].includes(o.status));
-  await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid', payMethod: payCtx.method==='cash'?'เงินสด':'โอน/สแกน'})));
+  const payMethodTh = payCtx.method==='cash' ? 'เงินสด' : 'โอน/สแกน';
+  if(payCtx.role === 'customer'){
+    // ลูกค้ากดเอง → เฉพาะออเดอร์ที่ served แล้วเท่านั้น (ตรงกับ Firestore rule ที่อนุญาต)
+    // แค่ "แจ้งว่าชำระแล้ว" รอพนักงาน/แอดมินกดยืนยันอีกที ไม่ตัดเป็น paid ทันที
+    const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && o.status==='served');
+    await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {
+      status:'awaiting_confirm', payMethod: payMethodTh, reportedPaidAt: serverTimestamp()
+    })));
+  } else {
+    // พนักงาน/แอดมินกดเอง (เห็นเงิน/สลิปต่อหน้าแล้ว) → ปิดบิลจริงทันที ครอบคลุมทุกสถานะที่ยังไม่ paid
+    const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && ['new','preparing','ready','served','awaiting_confirm'].includes(o.status));
+    await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid', payMethod: payMethodTh})));
+  }
 };
 
 // ===================== ITEM 10: ครัวแจ้งของหมด (ก่อน/หลังลูกค้าสั่ง) =====================
