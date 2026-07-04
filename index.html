@@ -398,6 +398,7 @@
       <div class="nav-group-label">ภาพรวม</div>
       <div class="nav-item active" data-view="dashboard"><span class="ic">📊</span> แดชบอร์ดยอดขาย</div>
       <div class="nav-item" data-view="analytics"><span class="ic">📈</span> รายงานสรุป</div>
+      <div class="nav-item" data-view="finance"><span class="ic">💵</span> บัญชีรายรับ-รายจ่าย</div>
 
       <div class="nav-group-label">ปฏิบัติการ</div>
       <div class="nav-item" data-view="tables"><span class="ic">🪑</span> ผังโต๊ะ / คิว</div>
@@ -553,6 +554,43 @@
           <div class="card-head"><h3>ผลงานพนักงาน</h3></div>
           <table style="border:none;"><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>ชม.ทำงาน</th><th>ออเดอร์เสิร์ฟ</th><th>ยอดขายที่รับผิดชอบ</th></tr></thead>
             <tbody id="an-staff"></tbody></table>
+        </div>
+      </section>
+
+      <!-- ========== FINANCE: บัญชีรายรับ-รายจ่าย ========== -->
+      <section class="view" id="view-finance">
+        <div class="toolbar">
+          <div class="chip-row" id="finDateChips">
+            <div class="chip active" data-fd="today">วันนี้</div>
+            <div class="chip" data-fd="week">7 วันล่าสุด</div>
+            <div class="chip" data-fd="month">30 วันล่าสุด</div>
+          </div>
+          <a href="https://docs.google.com/spreadsheets/d/1_placeholder_/edit" target="_blank" class="pill-btn" style="background:var(--night); color:var(--gold-soft); text-decoration:none;">📊 เปิด Google Sheet ฉบับเต็ม</a>
+          <button class="pill-btn" id="btnAddExpense" style="background:var(--danger); color:#fff;">➖ บันทึกรายจ่าย</button>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">รายรับรวม</div><div class="val" id="fin-income" style="color:var(--ok);">—</div></div>
+          <div class="kpi"><div class="lbl">รายจ่ายรวม</div><div class="val" id="fin-expense" style="color:var(--danger);">—</div></div>
+          <div class="kpi"><div class="lbl">กำไรสุทธิ</div><div class="val" id="fin-net">—</div></div>
+          <div class="kpi"><div class="lbl">จำนวนบิล</div><div class="val" id="fin-count">—</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>💰 รายรับ (จากบิลที่ปิดแล้ว)</h3></div>
+            <table style="border:none;">
+              <thead><tr><th>วันที่-เวลา</th><th>โต๊ะ</th><th>รายการ</th><th>วิธีจ่าย</th><th>ยอด</th></tr></thead>
+              <tbody id="fin-income-body"><tr><td colspan="5" style="color:var(--muted);">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>💸 รายจ่าย</h3></div>
+            <table style="border:none;">
+              <thead><tr><th>วันที่</th><th>หมวด</th><th>รายการ</th><th>ยอด</th><th></th></tr></thead>
+              <tbody id="fin-expense-body"><tr><td colspan="5" style="color:var(--muted);">ยังไม่มีรายจ่ายบันทึกไว้</td></tr></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -1060,6 +1098,30 @@
   </div>
 </div>
 
+<!-- ===== ADD EXPENSE MODAL ===== -->
+<div class="modal-back" id="expenseModal">
+  <div class="modal">
+    <h3>➖ บันทึกรายจ่าย</h3>
+    <div class="sub">เช่น ซื้อวัตถุดิบ ค่าจ้าง ค่าน้ำ-ไฟ ค่าเช่า ฯลฯ</div>
+    <input type="date" id="expDate">
+    <select id="expCat">
+      <option value="วัตถุดิบ">วัตถุดิบ</option>
+      <option value="ค่าจ้าง">ค่าจ้าง / เงินเดือน</option>
+      <option value="ค่าน้ำ-ไฟ">ค่าน้ำ-ไฟ-เน็ต</option>
+      <option value="ค่าเช่า">ค่าเช่า/ค่าสถานที่</option>
+      <option value="ซ่อมบำรุง">ซ่อมบำรุง/อุปกรณ์</option>
+      <option value="อื่นๆ">อื่นๆ</option>
+    </select>
+    <input type="text" id="expNote" placeholder="รายละเอียด เช่น ซื้อหมู 20 กก.">
+    <input type="text" id="expAmount" placeholder="จำนวนเงิน (บาท)">
+    <div id="expErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('expenseModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="expSave">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ADD STAFF MODAL ===== -->
 <div class="modal-back" id="staffModal">
   <div class="modal">
@@ -1247,6 +1309,7 @@
     dashboard: ['แดชบอร์ดยอดขาย', 'วันเสาร์ที่ 1 กรกฎาคม 2569 · อัปเดตล่าสุดเมื่อครู่'],
     menu: ['จัดการเมนู', 'รวม 42 เมนู · 6 หมวดหมู่'],
     analytics: ['รายงานสรุป', 'ยอดขาย · สต็อค · พนักงาน — สลับช่วงเวลาได้'],
+    finance: ['บัญชีรายรับ-รายจ่าย', 'รายรับดึงจากบิลที่ปิดแล้วอัตโนมัติ · รายจ่ายกรอกเอง'],
     tables: ['ผังโต๊ะ / คิว', 'แตะโต๊ะเพื่อเปลี่ยนสถานะ (ตัวอย่าง)'],
     stock: ['สต็อคสินค้า', '38 รายการวัตถุดิบ · 5 รายการใกล้หมด · 1 รายการหมด'],
     payments: ['ตรวจสลิป / ยืนยันการชำระเงิน', '3 รายการรอตรวจสอบ'],
@@ -2015,6 +2078,11 @@ document.getElementById('staffSendOrder')?.addEventListener('click', async () =>
 
 // ---- kitchen/bar realtime kanban ----
 let ORDERS_CACHE = [];
+let SERVED_ORDERS_CACHE = [];
+let ALL_ACTIVE_ORDERS = []; // รวม new/preparing/ready/served — ใช้โดย liveBillOf และ onBillFinished
+function refreshAllActiveOrders(){
+  ALL_ACTIVE_ORDERS = [...ORDERS_CACHE, ...SERVED_ORDERS_CACHE];
+}
 function timeAgo(ts){
   if(!ts || !ts.toDate) return '';
   const mins = Math.max(0, Math.round((Date.now() - ts.toDate().getTime())/60000));
@@ -2073,11 +2141,116 @@ function startOrdersListener(){
       const mins = v.createdAt && v.createdAt.toDate ? Math.round((Date.now()-v.createdAt.toDate().getTime())/60000) : 0;
       ORDERS_CACHE.push({id:d.id, ...v, _mins:mins});
     });
+    refreshAllActiveOrders();
     renderKanban();
     renderStaffOrders();
+    renderTables();
   }, (e) => console.warn('orders listener failed', e));
+
+  // Bug fix: cache แยกสำหรับออเดอร์ served (ต้องมี เพื่อให้ liveBillOf/onBillFinished/สีผังโต๊ะเห็นบิลที่เสิร์ฟแล้วแต่ยังไม่จ่ายเงิน)
+  onSnapshot(query(collection(db,'orders'), where('status','==','served')), (qs) => {
+    SERVED_ORDERS_CACHE = []; qs.forEach(d => SERVED_ORDERS_CACHE.push({id:d.id, ...d.data()}));
+    refreshAllActiveOrders();
+    renderTables();
+  }, (e) => console.warn('served orders listener failed', e));
 }
 startOrdersListener();
+
+// ===================== FINANCE: บัญชีรายรับ-รายจ่าย (ล็อต C ข้อ 1) =====================
+let PAID_ORDERS_CACHE = [];
+let EXPENSES_CACHE = [];
+let finRangeDays = 1; // 1=วันนี้, 7=7วัน, 30=30วัน
+
+function withinRange(ts, days){
+  if(!ts || !ts.toDate) return false;
+  const cutoff = Date.now() - days*24*60*60*1000;
+  return ts.toDate().getTime() >= cutoff;
+}
+
+function renderFinance(){
+  const incomeBody = document.getElementById('fin-income-body');
+  const expenseBody = document.getElementById('fin-expense-body');
+  if(!incomeBody) return; // หน้านี้ยังไม่ได้เปิดใช้งาน ไม่ต้อง render
+
+  const incomeRows = PAID_ORDERS_CACHE.filter(o => withinRange(o.createdAt, finRangeDays));
+  const expenseRows = EXPENSES_CACHE.filter(e => withinRange(e.createdAt, finRangeDays));
+
+  const totalIncome = incomeRows.reduce((s,o)=>s+(o.total||0),0);
+  const totalExpense = expenseRows.reduce((s,e)=>s+(e.amount||0),0);
+  const net = totalIncome - totalExpense;
+
+  document.getElementById('fin-income').textContent = '฿'+totalIncome.toLocaleString();
+  document.getElementById('fin-expense').textContent = '฿'+totalExpense.toLocaleString();
+  const netEl = document.getElementById('fin-net');
+  netEl.textContent = (net>=0?'฿':'-฿')+Math.abs(net).toLocaleString();
+  netEl.style.color = net>=0 ? 'var(--ok)' : 'var(--danger)';
+  document.getElementById('fin-count').textContent = incomeRows.length;
+
+  incomeBody.innerHTML = incomeRows.length ? incomeRows
+    .sort((a,b)=> (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0))
+    .map(o => {
+      const dt = o.createdAt && o.createdAt.toDate ? o.createdAt.toDate().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}) : '-';
+      const itemsTxt = (o.items||[]).map(i=>i.name+'×'+i.qty).join(', ');
+      return '<tr><td>'+dt+'</td><td>'+o.table+'</td><td style="max-width:220px; white-space:normal;">'+itemsTxt+'</td><td>'+(o.payMethod||'-')+'</td><td>฿'+(o.total||0).toLocaleString()+'</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="color:var(--muted);">ยังไม่มีบิลที่ปิดแล้วในช่วงนี้</td></tr>';
+
+  expenseBody.innerHTML = expenseRows.length ? expenseRows
+    .sort((a,b)=> (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0))
+    .map(e => {
+      const dt = e.createdAt && e.createdAt.toDate ? e.createdAt.toDate().toLocaleDateString('th-TH') : (e.date||'-');
+      return '<tr><td>'+dt+'</td><td>'+e.category+'</td><td>'+(e.note||'-')+'</td><td>฿'+(e.amount||0).toLocaleString()+'</td>'+
+        '<td><button class="icon-sm exp-del" data-eid="'+e.id+'">🗑️</button></td></tr>';
+    }).join('') : '<tr><td colspan="5" style="color:var(--muted);">ยังไม่มีรายจ่ายบันทึกไว้ในช่วงนี้</td></tr>';
+
+  expenseBody.querySelectorAll('.exp-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบรายการรายจ่ายนี้ใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'expenses',b.dataset.eid)); if(window.toast) toast('🗑️ ลบแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
+  }));
+}
+
+onSnapshot(query(collection(db,'orders'), where('status','==','paid')), (qs) => {
+  PAID_ORDERS_CACHE = []; qs.forEach(d => PAID_ORDERS_CACHE.push({id:d.id, ...d.data()}));
+  renderFinance();
+}, e => console.warn('paid orders listener failed', e));
+
+onSnapshot(collection(db,'expenses'), (qs) => {
+  EXPENSES_CACHE = []; qs.forEach(d => EXPENSES_CACHE.push({id:d.id, ...d.data()}));
+  renderFinance();
+}, e => console.warn('expenses listener failed', e));
+
+document.getElementById('finDateChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('#finDateChips .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');
+  finRangeDays = c.dataset.fd==='today' ? 1 : (c.dataset.fd==='week' ? 7 : 30);
+  renderFinance();
+}));
+
+document.getElementById('btnAddExpense')?.addEventListener('click', () => {
+  document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('expNote').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expErr').textContent = '';
+  document.getElementById('expenseModal').classList.add('open');
+});
+document.getElementById('expSave').onclick = async () => {
+  const errEl = document.getElementById('expErr');
+  const dateVal = document.getElementById('expDate').value;
+  const category = document.getElementById('expCat').value;
+  const note = document.getElementById('expNote').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  if(!dateVal || !amount || amount <= 0){ errEl.textContent = 'กรอกวันที่และจำนวนเงินให้ถูกต้อง'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const newId = 'E'+Date.now();
+    await setDoc(doc(db,'expenses',newId), {
+      date: dateVal, category, note, amount,
+      createdAt: serverTimestamp(), recordedBy: auth.currentUser?.email || auth.currentUser?.uid || 'unknown'
+    });
+    document.getElementById('expenseModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกรายจ่ายแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+};
 
 // ---- เช็คอิน-เอาท์จริง (item 25) ----
 const clockBtnEl = document.getElementById('clockBtn');
@@ -2212,7 +2385,7 @@ document.getElementById('zoneAddBtn')?.addEventListener('click', async () => {
 function computeTableStatus(tableName){
   const t = TABLES_CACHE.find(x=>x.name===tableName);
   if(t && t.reserved) return 'resv';
-  const active = ORDERS_CACHE.filter(o => o.table===tableName && o.status!=='paid');
+  const active = ALL_ACTIVE_ORDERS.filter(o => o.table===tableName && o.status!=='paid');
   if(!active.length) return 'free';
   if(active.some(o => o.status==='served')) return 'bill';
   return 'busy';
@@ -2284,7 +2457,7 @@ document.getElementById('tblSave').onclick = async () => {
 // billOf/finishBill hooks — ผูกโต๊ะเข้ากับออเดอร์จริง
 // Bug 1 fix: ดึงทุก status ที่ยังไม่ paid (new/preparing/ready/served) เพื่อให้ปริ้นบิลได้ตลอดเวลา
 window.liveBillOf = (table) => {
-  const orders = ORDERS_CACHE.filter(o => o.table===table && ['new','preparing','ready','served'].includes(o.status));
+  const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===table && ['new','preparing','ready','served'].includes(o.status));
   if(!orders.length) return null;
   const merged = {};
   orders.forEach(o => o.items.forEach(i => {
@@ -2294,8 +2467,8 @@ window.liveBillOf = (table) => {
   return Object.values(merged);
 };
 window.onBillFinished = async (payCtx) => {
-  const orders = ORDERS_CACHE.filter(o => o.table===payCtx.table && ['new','preparing','ready','served'].includes(o.status));
-  await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid'})));
+  const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && ['new','preparing','ready','served'].includes(o.status));
+  await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid', payMethod: payCtx.method==='cash'?'เงินสด':'โอน/สแกน'})));
 };
 
 // ===================== ITEM 10: ครัวแจ้งของหมด (ก่อน/หลังลูกค้าสั่ง) =====================
