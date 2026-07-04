@@ -2081,7 +2081,8 @@ function renderTables(){
   }).join('') || '<div class="empty"><div class="ic">🪑</div>ยังไม่มีโต๊ะ — กด "＋ เพิ่มโต๊ะ" เพื่อเริ่มต้น</div>';
 
   box.querySelectorAll('.tcell').forEach(c => c.addEventListener('click', () => {
-    if(batchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
+    const inBatchMode = document.getElementById('btnBatchMode')?.textContent.includes('ยกเลิก');
+    if(inBatchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
     if(ROLE !== 'admin'){ return; }
     if(confirm('แก้ไข/ลบโต๊ะ "'+c.dataset.name+'" ?\nกด OK เพื่อแก้ไขชื่อ, Cancel เพื่อปิด')){
       const newName = prompt('ชื่อโต๊ะใหม่:', c.dataset.name);
@@ -2213,11 +2214,11 @@ window.printBatchBills = (invType) => {
   setTimeout(()=>w.print(),300);
   if(window.toast) toast('🖨️ เปิดหน้าต่างพิมพ์ '+count+' บิล — เลือก "Save as PDF" ในหน้าต่างพิมพ์ได้ถ้าต้องการไฟล์ PDF');
 };
-let batchMode = false;
 window.toggleBatchMode = () => {
-  batchMode = !batchMode;
-  document.getElementById('btnBatchMode').textContent = batchMode ? '✕ ยกเลิกโหมดเลือก' : '☑️ เลือกหลายโต๊ะเพื่อปริ้น';
-  document.getElementById('batchPrintBar').style.display = batchMode ? 'flex' : 'none';
+  const btn = document.getElementById('btnBatchMode');
+  const turningOn = !btn.textContent.includes('ยกเลิก');
+  btn.textContent = turningOn ? '✕ ยกเลิกโหมดเลือก' : '☑️ เลือกหลายโต๊ะเพื่อปริ้น';
+  document.getElementById('batchPrintBar').style.display = turningOn ? 'flex' : 'none';
   document.querySelectorAll('.tcell').forEach(c => c.classList.remove('batch-selected'));
   updateBatchCount();
 };
