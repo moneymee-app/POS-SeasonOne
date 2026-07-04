@@ -305,7 +305,7 @@
   .b-ghost{ background:rgba(255,255,255,.07); color:var(--ink); }
   .slip-preview{ display:none; align-items:center; gap:10px; background:rgba(62,224,122,.1); border:1px solid rgba(62,224,122,.35); border-radius:9px; padding:8px 12px; font-size:12.5px; margin-bottom:8px; }
   .slip-preview img{ width:42px; height:42px; object-fit:cover; border-radius:6px; }
-  .toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--night); color:var(--gold-soft); border:1px solid var(--gold); padding:12px 22px; border-radius:99px; font-size:13.5px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,.5); animation:toastIn .25s ease; }
+  .toast{ position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:var(--night); color:var(--gold-soft); border:1px solid var(--gold); padding:12px 22px; border-radius:99px; font-size:13.5px; z-index:90; box-shadow:0 8px 24px rgba(0,0,0,.5); animation:toastIn .25s ease; }
   @keyframes toastIn{ from{opacity:0; transform:translateX(-50%) translateY(10px);} to{opacity:1; transform:translateX(-50%) translateY(0);} }
   .float-stack{ position:fixed; right:16px; bottom:96px; display:flex; flex-direction:column; gap:10px; z-index:40; }
   .float-btn{ width:54px; height:54px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:19px; box-shadow:0 6px 18px rgba(0,0,0,.45); border:1px solid rgba(200,168,75,.4); }
@@ -1403,6 +1403,8 @@
   let payCtx = { table:'B4', role:'admin', method:'transfer', inv:'abb' };
 
   function toast(msg){
+    // ลบ toast เก่าที่ยังค้างอยู่ก่อน เพื่อไม่ให้ซ้อนทับกันจนบัง modal/ปุ่มสำคัญ (bug ที่ TaBon เจอ)
+    document.querySelectorAll('.toast').forEach(old => old.remove());
     const t = document.createElement('div'); t.className='toast'; t.textContent=msg;
     document.body.appendChild(t); setTimeout(()=>t.remove(), 2600);
   }
@@ -1735,6 +1737,11 @@ const toLoginEmail = async (input) => {
 
 document.getElementById('loginGo').onclick = async () => {
   const err = document.getElementById('loginErr');
+  const btn = document.getElementById('loginGo');
+  if(btn.disabled) return; // กันกดซ้ำระหว่างกำลังตรวจสอบอยู่ (แก้ปัญหาดีเลย์แล้วกดซ้ำ)
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'กำลังเข้าสู่ระบบ...';
   err.textContent = 'กำลังตรวจสอบ...';
   try {
     const email = await toLoginEmail(document.getElementById('loginEmail').value);
@@ -1742,6 +1749,10 @@ document.getElementById('loginGo').onclick = async () => {
     err.textContent = '';
     document.getElementById('loginModal').classList.remove('open');
   } catch(e){ err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: เบอร์โทร/อีเมล หรือรหัสผ่านไม่ถูกต้อง'; }
+  finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 };
 
 onAuthStateChanged(auth, async (user) => {
@@ -2178,8 +2189,10 @@ document.getElementById('custCheckoutBtn')?.addEventListener('click', async () =
     const items = CUSTCART.map(it => ({name:it.n, qty:it.q, price:it.p, station:getStationOf(it.n)}));
     const total = CUSTCART.reduce((s,i)=>s+i.q*i.p,0);
     const newId = 'O'+Date.now();
+    // บันทึกว่าใครสั่งจริง — ถ้าล็อกอินอยู่ (staff/admin สวมมุมมองลูกค้าดู) จะเห็นชื่อจริง ถ้าไม่ล็อกอินคือลูกค้าจริง
+    const orderedBy = auth.currentUser ? (auth.currentUser.email || auth.currentUser.uid) : 'ลูกค้า (ไม่ล็อกอิน)';
     await setDoc(doc(db,'orders',newId), {
-      table: currentTable, items, total, status:'new', source:'customer', createdAt: serverTimestamp()
+      table: currentTable, items, total, status:'new', source:'customer', orderedBy, createdAt: serverTimestamp()
     });
     CUSTCART.length = 0; cartRefresh('custCartPanel');
     if(window.toast) toast('✓ ส่งออเดอร์เข้าครัวแล้ว — รอสักครู่นะครับ 🙏');
@@ -2193,8 +2206,9 @@ document.getElementById('staffSendOrder')?.addEventListener('click', async () =>
     const items = STAFFCART.map(it => ({name:it.n, qty:it.q, price:it.p, station:getStationOf(it.n)}));
     const total = STAFFCART.reduce((s,i)=>s+i.q*i.p,0);
     const newId = 'O'+Date.now();
+    const orderedBy = auth.currentUser ? (auth.currentUser.email || auth.currentUser.uid) : 'ไม่ทราบชื่อ';
     await setDoc(doc(db,'orders',newId), {
-      table, items, total, status:'new', source:'staff', createdAt: serverTimestamp()
+      table, items, total, status:'new', source:'staff', orderedBy, createdAt: serverTimestamp()
     });
     toast('✓ ส่งออเดอร์โต๊ะ '+table+' เข้าครัวแล้ว');
     STAFFCART.length = 0; cartRefresh('staffCartPanel');
@@ -2746,7 +2760,8 @@ function renderTableHistory(orders){
       const statusTh = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว รอเก็บเงิน', awaiting_confirm:'ลูกค้าแจ้งชำระแล้ว รอพนักงานยืนยัน'}[o.status] || o.status;
       const isUnserved = ['new','preparing','ready'].includes(o.status);
       const warnIcon = isUnserved ? '⚠️ ' : '';
-      return '<div class="order-card"'+(isUnserved?' style="border-color:var(--warn);"':'')+'><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+warnIcon+statusTh+' · ฿'+(o.total||0).toLocaleString()+'</div></div></div>';
+      const bySrc = o.source==='staff' ? ' · สั่งโดยพนักงาน ('+(o.orderedBy||'ไม่ทราบชื่อ').split('@')[0]+')' : (o.orderedBy && o.orderedBy!=='ลูกค้า (ไม่ล็อกอิน)' ? ' · สั่งโดย '+o.orderedBy.split('@')[0]+' (สวมมุมมองลูกค้า)' : '');
+      return '<div class="order-card"'+(isUnserved?' style="border-color:var(--warn);"':'')+'><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+warnIcon+statusTh+' · ฿'+(o.total||0).toLocaleString()+bySrc+'</div></div></div>';
     }).join('');
     html += '<div style="text-align:right; font-size:13px; margin:4px 0 16px; color:var(--gold-soft);">รวมยอดที่ยังไม่ปิดบิล: ฿'+activeTotal.toLocaleString()+'</div>';
   }
@@ -2856,7 +2871,7 @@ window.onBillFinished = async (payCtx) => {
 };
 
 // ===================== ITEM 10: ครัวแจ้งของหมด (ก่อน/หลังลูกค้าสั่ง) =====================
-document.getElementById('btnSoldOut')?.addEventListener('click', () => {
+function renderSoldOutList(){
   const activeStation = document.querySelector('.kstation.active')?.dataset.station || 'kitchen';
   const list = MENU_CACHE.filter(m => (m.station||'kitchen')===activeStation);
   document.getElementById('soldOutList').innerHTML = list.map(m =>
@@ -2867,21 +2882,30 @@ document.getElementById('btnSoldOut')?.addEventListener('click', () => {
     const mid = b.dataset.mid;
     const wasActive = b.dataset.active === 'true';
     const nowActive = !wasActive;
-    await updateDoc(doc(db,'menu',mid), {active: nowActive});
-    if(!nowActive){
-      // เช็คว่ามีออเดอร์ที่กำลังทำอยู่ซึ่งมีเมนูนี้อยู่ไหม (สั่งไปแล้วก่อนของหมด)
-      const m = MENU_CACHE.find(x=>x.id===mid);
-      const affected = ORDERS_CACHE.filter(o => ['new','preparing'].includes(o.status) && o.items.some(i=>i.name===m.name));
-      for(const o of affected){
-        await setDoc(doc(collection(db,'soldOutAlerts')), {
-          orderId:o.id, table:o.table, itemName:m.name, createdAt: serverTimestamp(), resolved:false
-        });
+    b.disabled = true; b.textContent = 'กำลังบันทึก...'; // ล็อกปุ่มกันกดซ้ำระหว่างรอ + โชว์ว่ากำลังทำงานอยู่
+    try {
+      await updateDoc(doc(db,'menu',mid), {active: nowActive});
+      if(!nowActive){
+        // เช็คว่ามีออเดอร์ที่กำลังทำอยู่ซึ่งมีเมนูนี้อยู่ไหม (สั่งไปแล้วก่อนของหมด)
+        const m = MENU_CACHE.find(x=>x.id===mid);
+        const affected = ORDERS_CACHE.filter(o => ['new','preparing'].includes(o.status) && o.items.some(i=>i.name===m.name));
+        for(const o of affected){
+          await setDoc(doc(collection(db,'soldOutAlerts')), {
+            orderId:o.id, table:o.table, itemName:m.name, createdAt: serverTimestamp(), resolved:false
+          });
+        }
+        if(affected.length && window.toast) toast('⚠️ มี '+affected.length+' ออเดอร์ที่สั่ง "'+m.name+'" ไปแล้ว — แจ้งพนักงานให้ยืนยันกับลูกค้าแล้ว');
       }
-      if(affected.length && window.toast) toast('⚠️ มี '+affected.length+' ออเดอร์ที่สั่ง "'+m.name+'" ไปแล้ว — แจ้งพนักงานให้ยืนยันกับลูกค้าแล้ว');
+      if(window.toast) toast(nowActive ? '✓ เปิดขายกลับมาแล้ว' : '🚫 แจ้งของหมดแล้ว — เมนูหายจากลูกค้าทันที');
+      renderSoldOutList(); // รีเฟรชรายการในตัว modal เดิม ไม่เปิด modal ซ้อนใหม่ (bug เดิมที่ TaBon เจอ)
+    } catch(e){
+      b.disabled = false; b.textContent = wasActive ? '🚫 แจ้งหมด' : '✓ กลับมาขาย';
+      if(window.toast) toast('❌ บันทึกไม่สำเร็จ: '+e.message);
     }
-    if(window.toast) toast(nowActive ? '✓ เปิดขายกลับมาแล้ว' : '🚫 แจ้งของหมดแล้ว — เมนูหายจากลูกค้าทันที');
-    document.getElementById('btnSoldOut').click();
   }));
+}
+document.getElementById('btnSoldOut')?.addEventListener('click', () => {
+  renderSoldOutList();
   document.getElementById('soldOutModal').classList.add('open');
 });
 
