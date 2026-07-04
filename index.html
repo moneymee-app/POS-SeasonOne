@@ -1450,32 +1450,46 @@
     if(lbl) lbl.textContent = 'ยอด ฿'+Number(amount).toLocaleString();
   }
 
+  function updateFinishBtnLabel(){
+    const finishBtn = document.getElementById('finishBillBtn');
+    if(!finishBtn) return;
+    if(payCtx.role === 'customer'){
+      finishBtn.textContent = '✓ ยืนยันการจ่ายตัง';
+    } else {
+      finishBtn.textContent = '✓ ปิดบิล';
+    }
+  }
+
   function openPayModal(table, role){
     payCtx = { table, role, method:'transfer', inv:'abb' };
     document.getElementById('payTable').textContent = table;
     document.getElementById('printBtn').style.display = role==='customer' ? 'none' : 'block';
     document.getElementById('cashNote').textContent = role==='customer'
-      ? 'พนักงานจะมาเก็บเงินสดที่โต๊ะ กดปิดบิลเพื่อแจ้งพนักงาน'
+      ? 'พนักงานจะมาเก็บเงินสดที่โต๊ะหลังกดยืนยัน — กรุณารอพนักงานมาเก็บเงินจริง'
       : 'รับเงินสดจากลูกค้า แล้วกดปิดบิลเพื่อบันทึกเข้ากะ';
 
+    // ไม่ล็อกปุ่มเรื่องเสิร์ฟครบอีกต่อไป (ตามที่ TaBon ยืนยัน) — แค่เตือนถ้ายังมีจานค้าง
     const finishBtn = document.getElementById('finishBillBtn');
-    const stillCooking = role==='customer' && window.hasUnservedItems && window.hasUnservedItems(table);
+    finishBtn.disabled = false;
+    finishBtn.style.opacity = '1';
+    finishBtn.style.cursor = 'pointer';
+    updateFinishBtnLabel();
+
+    const stillCooking = window.hasUnservedItems && window.hasUnservedItems(table);
     if(stillCooking){
-      finishBtn.disabled = true;
-      finishBtn.style.opacity = '.4';
-      finishBtn.style.cursor = 'not-allowed';
-      document.getElementById('payRoleNote').textContent = '⏳ ยังมีอาหารที่ครัวยังไม่เสิร์ฟครบ — ต้องรอเสิร์ฟครบก่อนถึงจะปิดบิลได้';
+      document.getElementById('payRoleNote').textContent = '⚠️ ยังมีอาหารบางรายการที่ครัวยังไม่เสิร์ฟ — ยอดรวมนับรวมไว้แล้ว';
     } else {
-      finishBtn.disabled = false;
-      finishBtn.style.opacity = '1';
-      finishBtn.style.cursor = 'pointer';
       document.getElementById('payRoleNote').textContent =
-        role==='customer' ? 'ชำระเงินด้วยตัวเอง — แนบสลิปแล้วรอพนักงานยืนยัน'
+        role==='customer' ? 'ชำระเงินด้วยตัวเอง — แนบสลิปแล้วกดยืนยัน'
         : 'โหมดพนักงาน/แอดมิน — ปริ้นรายการอาหารให้ลูกค้าตรวจก่อนเก็บเงินได้';
     }
 
     const items = billOf(table);
-    const statusThMap = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว', awaiting_confirm:'เสิร์ฟแล้ว'};
+    // ลูกค้าเห็นแค่ "รอเสิร์ฟ" อย่างเดียว (ไม่ต้องรู้รายละเอียดขั้นตอนครัว กันงงว่าทำไมต้องจ่ายทั้งที่ยังไม่เริ่มทำ)
+    // พนักงาน/แอดมิน เห็นรายละเอียดครบ เพื่อเร่งครัวได้ถูกจุด
+    const statusThMap = role==='customer'
+      ? {new:'รอเสิร์ฟ', preparing:'รอเสิร์ฟ', ready:'รอเสิร์ฟ', served:'เสิร์ฟแล้ว', awaiting_confirm:'เสิร์ฟแล้ว'}
+      : {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว', awaiting_confirm:'เสิร์ฟแล้ว'};
     document.getElementById('billLines').innerHTML = items.map(i=>{
       const statusTxt = i.status ? ' <span style="color:'+(i.status==='served'||i.status==='awaiting_confirm'?'#3EE07A':'#E4B23A')+'; font-size:11px;">— '+(statusThMap[i.status]||i.status)+'</span>' : '';
       return '<div class="ln"><span>'+i.n+' ×'+i.q+statusTxt+'</span><span>฿'+(i.q*i.p).toLocaleString()+'</span></div>';
@@ -1561,15 +1575,23 @@
   }
 
   function finishBill(){
-    // เช็คซ้ำอีกชั้น กันกรณีอาหารยังไม่เสิร์ฟครบแต่มีการกดผ่านมาได้ (เผื่อ disabled ถูกข้าม)
-    if(payCtx.role==='customer' && window.hasUnservedItems && window.hasUnservedItems(payCtx.table)){
-      toast('⏳ ยังมีอาหารที่ครัวยังไม่เสิร์ฟครบ รอเสิร์ฟครบก่อนนะครับ');
-      return;
-    }
-    closePayModal();
     if(payCtx.role==='customer'){
-      toast('✓ แจ้งชำระเงินแล้ว — รอพนักงานตรวจสอบและยืนยันอีกครั้ง');
+      if(payCtx.method === 'transfer'){
+        // ต้องแนบสลิปก่อนถึงจะยืนยันผ่าน
+        const slipShown = document.getElementById('slipPreview').style.display === 'flex';
+        if(!slipShown){
+          toast('📎 กรุณาแนบรูปสลิปการโอนก่อนกดยืนยันนะครับ');
+          return;
+        }
+        closePayModal();
+        toast('✓ ส่งสลิปยืนยันการจ่ายตังแล้ว — รอพนักงานตรวจสอบและยืนยันอีกครั้ง');
+      } else {
+        // จ่ายเงินสด — ไม่มีสลิปให้แนบ แต่ต้องเตือนชัดเจนว่ายังไม่จบ ต้องรอพนักงานมาเก็บเงินจริง
+        closePayModal();
+        toast('💵 แจ้งพนักงานแล้ว — กรุณารอพนักงานมาเก็บเงินสดที่โต๊ะ ยังไม่ถือว่าจ่ายจนกว่าพนักงานจะรับเงินจริง');
+      }
     } else {
+      closePayModal();
       toast(payCtx.method==='cash'
         ? '✓ ปิดบิลโต๊ะ '+payCtx.table+' บันทึกเงินสดเข้ากะแล้ว'
         : '✓ ปิดบิลโต๊ะ '+payCtx.table+' แล้ว');
@@ -2539,11 +2561,14 @@ function renderTables(){
   TABLES_CACHE.forEach(t => { (zones[t.zone] = zones[t.zone]||[]).push(t); });
   const zoneOrder = ZONES_CACHE.map(z=>z.name);
   const allZones = [...new Set([...zoneOrder, ...Object.keys(zones)])];
-  const innerHtml = allZones.filter(z=>zones[z]).map(z => {
-    const cells = zones[z].map(t => {
+  // Bug fix: เดิม .filter(z=>zones[z]) จะซ่อนโซนที่เพิ่งสร้างใหม่และยังไม่มีโต๊ะเลย ทำให้ดูเหมือน "โซนไม่ขึ้น"
+  // ตอนนี้แสดงทุกโซนที่มีอยู่ แม้ยังไม่มีโต๊ะ พร้อมข้อความชวนเพิ่มโต๊ะ
+  const innerHtml = allZones.map(z => {
+    const tablesInZone = zones[z] || [];
+    const cells = tablesInZone.length ? tablesInZone.map(t => {
       const st = computeTableStatus(t.name);
       return '<div class="tcell '+st+'" data-tid="'+t.id+'" data-name="'+t.name+'" data-seats="'+(t.seats||4)+'" data-zone="'+t.zone+'">'+t.name+'<br><small style="font-size:10px; opacity:.7;">'+(t.seats||4)+' ที่นั่ง</small></div>';
-    }).join('');
+    }).join('') : '<div style="grid-column:1/-1; color:var(--muted); font-size:12.5px; padding:10px 0;">ยังไม่มีโต๊ะในโซนนี้ — กด "＋ เพิ่มโต๊ะ" แล้วเลือกโซนนี้ได้เลย</div>';
     return '<div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>'+z+'</h3></div><div class="tmap">'+cells+'</div></div>';
   }).join('') || '<div class="empty"><div class="ic">🪑</div>ยังไม่มีโต๊ะ — กด "＋ เพิ่มโต๊ะ" เพื่อเริ่มต้น</div>';
 
@@ -2598,36 +2623,36 @@ function renderTableHistory(orders){
   const active = orders.filter(o => ['new','preparing','ready','served','awaiting_confirm'].includes(o.status));
   const past = orders.filter(o => o.status==='paid');
 
-  // ปุ่ม "จ่ายตัง/ปิดบิล" กดได้เฉพาะตอนไม่มีอาหารค้างในครัว (new/preparing/ready) — ตรงกับกติกาฝั่งลูกค้า
+  // ปุ่ม "จ่ายตัง/ปิดบิล" — พนักงาน/แอดมินกดได้เสมอ (เห็นสถานการณ์จริงต่อหน้าอยู่แล้ว) แค่เตือนถ้ายังมีจานค้าง
   const payBtn = document.getElementById('thPayBtn');
   const stillCooking = active.some(o => ['new','preparing','ready'].includes(o.status));
   if(payBtn){
     if(!active.length){
       payBtn.style.display = 'none'; // ไม่มีออเดอร์ค้างเลย ไม่ต้องโชว์ปุ่ม
-    } else if(stillCooking){
-      payBtn.style.display = 'block';
-      payBtn.disabled = true;
-      payBtn.style.opacity = '.4';
-      payBtn.style.cursor = 'not-allowed';
-      payBtn.textContent = '⏳ รอเสิร์ฟครบก่อนถึงจะปิดบิลได้';
     } else {
       payBtn.style.display = 'block';
       payBtn.disabled = false;
       payBtn.style.opacity = '1';
       payBtn.style.cursor = 'pointer';
-      payBtn.textContent = '💰 จ่ายตัง / ปิดบิล';
+      payBtn.textContent = stillCooking ? '💰 จ่ายตัง / ปิดบิล (มีจานรอเสิร์ฟ)' : '💰 จ่ายตัง / ปิดบิล';
     }
   }
 
   let html = '';
   if(active.length){
     const activeTotal = active.reduce((s,o)=>s+(o.total||0),0);
+    const unservedCount = active.filter(o => ['new','preparing','ready'].includes(o.status)).length;
     html += '<div class="lbl2" style="color:var(--ok);">🟢 กำลังทานอยู่ตอนนี้</div>';
+    if(unservedCount > 0){
+      html += '<div style="background:rgba(228,178,58,.15); border:1px solid var(--warn); border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--warn); margin-bottom:10px;">⚠️ มี '+unservedCount+' ออเดอร์ที่ยังไม่เสิร์ฟ — ยอดรวมด้านล่างนับรวมรายการเหล่านี้ไว้ด้วยแล้ว</div>';
+    }
     html += active.map(o => {
       const dt = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
       const itemsTxt = (o.items||[]).map(i=>i.name+'×'+i.qty).join(', ');
       const statusTh = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว รอเก็บเงิน', awaiting_confirm:'ลูกค้าแจ้งชำระแล้ว รอพนักงานยืนยัน'}[o.status] || o.status;
-      return '<div class="order-card"><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+statusTh+' · ฿'+(o.total||0).toLocaleString()+'</div></div></div>';
+      const isUnserved = ['new','preparing','ready'].includes(o.status);
+      const warnIcon = isUnserved ? '⚠️ ' : '';
+      return '<div class="order-card"'+(isUnserved?' style="border-color:var(--warn);"':'')+'><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+warnIcon+statusTh+' · ฿'+(o.total||0).toLocaleString()+'</div></div></div>';
     }).join('');
     html += '<div style="text-align:right; font-size:13px; margin:4px 0 16px; color:var(--gold-soft);">รวมยอดที่ยังไม่ปิดบิล: ฿'+activeTotal.toLocaleString()+'</div>';
   }
@@ -2701,9 +2726,9 @@ window.liveBillOf = (table) => {
 window.onBillFinished = async (payCtx) => {
   const payMethodTh = payCtx.method==='cash' ? 'เงินสด' : 'โอน/สแกน';
   if(payCtx.role === 'customer'){
-    // ลูกค้ากดเอง → เฉพาะออเดอร์ที่ served แล้วเท่านั้น (ตรงกับ Firestore rule ที่อนุญาต)
+    // ลูกค้ากดยืนยันจ่ายตังเองได้เสมอ แม้อาหารบางจานยังไม่เสิร์ฟ (ตามที่ TaBon ยืนยัน)
     // แค่ "แจ้งว่าชำระแล้ว" รอพนักงาน/แอดมินกดยืนยันอีกที ไม่ตัดเป็น paid ทันที
-    const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && o.status==='served');
+    const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && ['new','preparing','ready','served'].includes(o.status));
     await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {
       status:'awaiting_confirm', payMethod: payMethodTh, reportedPaidAt: serverTimestamp()
     })));
