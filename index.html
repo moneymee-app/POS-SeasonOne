@@ -369,6 +369,7 @@
   .modal select{ width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:13px; font-family:inherit; margin-bottom:10px; }
   .modal select option{ background:#1C1E18; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -820,6 +821,7 @@
     <div class="staff-tabs">
       <div class="staff-tab active" data-staff-tab="orders">ออเดอร์ที่ต้องเสิร์ฟ</div>
       <div class="staff-tab" data-staff-tab="takeorder">สั่งแทนลูกค้า</div>
+      <div class="staff-tab" data-staff-tab="tablemap">ผังโต๊ะ</div>
       <div class="staff-tab" data-staff-tab="schedule">ตารางกะของฉัน</div>
     </div>
     <div class="staff-content">
@@ -866,6 +868,11 @@
           <div>โต๊ะ <b id="staffOrderTable">A2</b> · <b id="staffOrderCount">0</b> รายการ · <b id="staffOrderTotal">฿0</b></div>
           <button id="staffSendOrder">ส่งเข้าครัว →</button>
         </div>
+      </div>
+
+      <div class="staff-panel" id="staff-panel-tablemap">
+        <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">แตะโต๊ะเพื่อดูว่ากำลังทานอยู่ไหม และดูประวัติออเดอร์ย้อนหลังได้</div>
+        <div id="staffTableZonesLive"><div class="empty"><div class="ic">🪑</div>กำลังโหลดผังโต๊ะ...</div></div>
       </div>
 
       <div class="staff-panel" id="staff-panel-schedule">
@@ -994,6 +1001,19 @@
     <div id="soldOutList" style="max-height:340px; overflow-y:auto;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('soldOutModal').classList.remove('open')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TABLE ORDER HISTORY MODAL (ใหม่) ===== -->
+<div class="modal-back" id="tableHistoryModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>🧾 ประวัติออเดอร์ — โต๊ะ <span id="thTableName">-</span></h3>
+    <div class="sub">ดูว่าโต๊ะนี้กำลังทานอยู่ไหม และย้อนดูประวัติออเดอร์ก่อนหน้าได้ทั้งหมด</div>
+    <div id="thBody" style="max-height:50vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('tableHistoryModal').classList.remove('open')">ปิด</button>
+      <button class="btn-lg b-gold" id="thEditBtn">✏️ แก้ไขโต๊ะ</button>
     </div>
   </div>
 </div>
@@ -1173,7 +1193,12 @@
       <div class="opt" data-pay="cash">💵 เงินสด</div>
     </div>
     <div id="transferZone">
-      <div class="qr-box"><b>PromptPay QR</b><span>092-625-1541 · ยอดตามบิล</span><span style="font-size:10px;color:#888;">(QR จริงจะ generate ตอนเชื่อม Firebase)</span></div>
+      <div class="qr-box" id="qrBoxReal" style="height:auto; padding:12px;">
+        <div id="payQrCanvas" style="width:180px; height:180px;"></div>
+        <b style="margin-top:6px;">สแกนจ่ายผ่าน PromptPay</b>
+        <span>098-225-4566 · นาย ฐปนัท ใบแสง</span>
+        <span id="qrAmountLabel" style="font-weight:700; color:#0D0D0D;">ยอด ฿0</span>
+      </div>
       <div class="slip-preview" id="slipPreview"><img id="slipImg"><span id="slipName"></span></div>
       <button class="btn-lg b-ghost" style="width:100%;" onclick="document.getElementById('slipInput').click()">📎 แนบรูปสลิป</button>
     </div>
@@ -1417,6 +1442,45 @@
   function billOf(table){ return (window.liveBillOf ? window.liveBillOf(table) : null) || BILLS[table] || BILLS['B4']; }
   function billTotal(items){ return items.reduce((s,i)=>s+i.q*i.p,0); }
 
+  // ===== PromptPay QR generator (EMV QR Code spec, ไม่พึ่ง API ภายนอก) =====
+  const SHOP_PROMPTPAY_PHONE = '0982254566';
+  function ppFormatTLV(id, value){
+    const len = String(value.length).padStart(2,'0');
+    return id + len + value;
+  }
+  function ppCrc16(data){
+    let crc = 0xFFFF;
+    for(let i=0;i<data.length;i++){
+      crc ^= (data.charCodeAt(i) << 8);
+      for(let j=0;j<8;j++){
+        crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+        crc &= 0xFFFF;
+      }
+    }
+    return crc.toString(16).toUpperCase().padStart(4,'0');
+  }
+  function generatePromptPayPayload(phone, amount){
+    let target = phone.replace(/\D/g,'');
+    if(target.startsWith('0')) target = '66' + target.substring(1);
+    target = target.padStart(13,'0');
+    const merchantInfo = ppFormatTLV('00','A000000677010111') + ppFormatTLV('01', target);
+    let payload = ppFormatTLV('00','01') + ppFormatTLV('01', amount ? '12' : '11') + ppFormatTLV('29', merchantInfo) + ppFormatTLV('53','764');
+    if(amount) payload += ppFormatTLV('54', Number(amount).toFixed(2));
+    payload += ppFormatTLV('58','TH');
+    payload += '6304';
+    return payload + ppCrc16(payload);
+  }
+  let payQrInstance = null;
+  function renderPayQr(amount){
+    const box = document.getElementById('payQrCanvas');
+    if(!box || typeof QRCode === 'undefined') return;
+    const payload = generatePromptPayPayload(SHOP_PROMPTPAY_PHONE, amount);
+    box.innerHTML = '';
+    payQrInstance = new QRCode(box, { text: payload, width:170, height:170, colorDark:'#0D0D0D', colorLight:'#ffffff' });
+    const lbl = document.getElementById('qrAmountLabel');
+    if(lbl) lbl.textContent = 'ยอด ฿'+Number(amount).toLocaleString();
+  }
+
   function openPayModal(table, role){
     payCtx = { table, role, method:'transfer', inv:'abb' };
     document.getElementById('payTable').textContent = table;
@@ -1430,7 +1494,9 @@
     const items = billOf(table);
     document.getElementById('billLines').innerHTML = items.map(i=>
       '<div class="ln"><span>'+i.n+' ×'+i.q+'</span><span>฿'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
-    document.getElementById('billTotal').textContent = '฿'+billTotal(items).toLocaleString();
+    const total = billTotal(items);
+    document.getElementById('billTotal').textContent = '฿'+total.toLocaleString();
+    renderPayQr(total); // สร้าง QR PromptPay ตามยอดบิลจริง
     // reset segments
     document.querySelectorAll('#paySeg .opt').forEach(o=>o.classList.toggle('sel', o.dataset.pay==='transfer'));
     document.querySelectorAll('#invSeg .opt').forEach(o=>o.classList.toggle('sel', o.dataset.inv==='abb'));
@@ -1464,7 +1530,25 @@
     document.getElementById('slipPreview').style.display='flex';
   });
 
-  function printBill(){
+  // สร้าง QR PromptPay เป็น data URL image สำหรับฝังในหน้าต่างปริ้น (ใช้ div ชั่วคราวที่ซ่อนไว้)
+  function getPromptPayQrDataUrl(amount){
+    return new Promise((resolve) => {
+      const tmp = document.createElement('div');
+      tmp.style.display = 'none';
+      document.body.appendChild(tmp);
+      new QRCode(tmp, { text: generatePromptPayPayload(SHOP_PROMPTPAY_PHONE, amount), width:200, height:200 });
+      setTimeout(() => {
+        const img = tmp.querySelector('img');
+        const canvas = tmp.querySelector('canvas');
+        const url = img && img.src ? img.src : (canvas ? canvas.toDataURL('image/png') : '');
+        document.body.removeChild(tmp);
+        resolve(url);
+      }, 80);
+    });
+  }
+  window.getPromptPayQrDataUrl = getPromptPayQrDataUrl; // ให้ module script (Firebase) เรียกใช้ได้ด้วย
+
+  async function printBill(){
     const items = billOf(payCtx.table);
     const total = billTotal(items);
     const vat = Math.round(total*7/107);
@@ -1472,7 +1556,8 @@
     const nm = document.getElementById('invName').value;
     const tx = document.getElementById('invTax').value;
     const ad = document.getElementById('invAddr').value;
-    let h = '<html><head><meta charset="UTF-8"><title>บิล</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:12px;}h4{text-align:center;margin:6px 0;}hr{border:none;border-top:1px dashed #000;}.ln{display:flex;justify-content:space-between;}.tt{font-weight:bold;font-size:14px;}</style></head><body>';
+    const qrUrl = await getPromptPayQrDataUrl(total);
+    let h = '<html><head><meta charset="UTF-8"><title>บิล</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:12px;}h4{text-align:center;margin:6px 0;}hr{border:none;border-top:1px dashed #000;}.ln{display:flex;justify-content:space-between;}.tt{font-weight:bold;font-size:14px;}.qrwrap{text-align:center;margin:10px 0;}</style></head><body>';
     h += '<h4>Season One<br>Food Drink & Bistro</h4><div style="text-align:center">ถ.มะลิวัลย์ ขอนแก่น · โทร 092-625-1541<br>TAX ID: 0-0000-00000-00-0</div><hr>';
     h += '<div>'+(full?'ใบกำกับภาษี (เต็มรูป)':'ใบกำกับภาษีอย่างย่อ')+'</div>';
     h += '<div>โต๊ะ '+payCtx.table+' · '+new Date().toLocaleString('th-TH')+'</div>';
@@ -1480,6 +1565,9 @@
     h += '<hr>' + items.map(i=>'<div class="ln"><span>'+i.n+' x'+i.q+'</span><span>'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
     h += '<hr><div class="ln tt"><span>รวม</span><span>฿'+total.toLocaleString()+'</span></div>';
     h += '<div class="ln"><span>ภาษีมูลค่าเพิ่ม 7% (รวมใน)</span><span>'+vat.toLocaleString()+'</span></div>';
+    if(qrUrl){
+      h += '<hr><div class="qrwrap"><img src="'+qrUrl+'" width="160" height="160"><br><b>สแกนจ่าย PromptPay</b><br>098-225-4566 · นาย ฐปนัท ใบแสง</div>';
+    }
     h += '<hr><div style="text-align:center">ขอบคุณที่ใช้บริการ 🌾</div></body></html>';
     const w = window.open('','_blank','width=320,height=600');
     w.document.write(h); w.document.close();
@@ -2391,13 +2479,13 @@ function computeTableStatus(tableName){
   return 'busy';
 }
 function renderTables(){
-  const box = document.getElementById('tableZonesLive');
-  if(!box) return;
+  // Render ลงทั้ง 2 ที่: ผังโต๊ะฝั่ง Admin และฝั่งพนักงาน (ใช้ข้อมูลชุดเดียวกัน)
+  const boxIds = ['tableZonesLive','staffTableZonesLive'];
   const zones = {};
   TABLES_CACHE.forEach(t => { (zones[t.zone] = zones[t.zone]||[]).push(t); });
   const zoneOrder = ZONES_CACHE.map(z=>z.name);
   const allZones = [...new Set([...zoneOrder, ...Object.keys(zones)])];
-  box.innerHTML = allZones.filter(z=>zones[z]).map(z => {
+  const innerHtml = allZones.filter(z=>zones[z]).map(z => {
     const cells = zones[z].map(t => {
       const st = computeTableStatus(t.name);
       return '<div class="tcell '+st+'" data-tid="'+t.id+'" data-name="'+t.name+'" data-seats="'+(t.seats||4)+'" data-zone="'+t.zone+'">'+t.name+'<br><small style="font-size:10px; opacity:.7;">'+(t.seats||4)+' ที่นั่ง</small></div>';
@@ -2405,17 +2493,78 @@ function renderTables(){
     return '<div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>'+z+'</h3></div><div class="tmap">'+cells+'</div></div>';
   }).join('') || '<div class="empty"><div class="ic">🪑</div>ยังไม่มีโต๊ะ — กด "＋ เพิ่มโต๊ะ" เพื่อเริ่มต้น</div>';
 
-  box.querySelectorAll('.tcell').forEach(c => c.addEventListener('click', () => {
-    const inBatchMode = document.getElementById('btnBatchMode')?.textContent.includes('ยกเลิก');
-    if(inBatchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
-    if(ROLE !== 'admin'){ return; }
-    openTableModal({id:c.dataset.tid, name:c.dataset.name, seats:c.dataset.seats, zone:c.dataset.zone});
-  }));
+  boxIds.forEach(boxId => {
+    const box = document.getElementById(boxId);
+    if(!box) return;
+    box.innerHTML = innerHtml;
+    box.querySelectorAll('.tcell').forEach(c => c.addEventListener('click', () => {
+      // โหมดเลือกหลายโต๊ะเพื่อปริ้น มีเฉพาะฝั่ง Admin เท่านั้น
+      const inBatchMode = boxId==='tableZonesLive' && document.getElementById('btnBatchMode')?.textContent.includes('ยกเลิก');
+      if(inBatchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
+      if(!ROLE){ return; } // ลูกค้าไม่ล็อกอินกดไม่ได้
+      openTableHistoryModal({id:c.dataset.tid, name:c.dataset.name, seats:c.dataset.seats, zone:c.dataset.zone});
+    }));
+  });
 }
 onSnapshot(collection(db,'tables'), (qs) => {
   TABLES_CACHE = []; qs.forEach(d => TABLES_CACHE.push({id:d.id, ...d.data()}));
   renderTables();
 }, e => console.warn('tables listener failed', e));
+
+// ===================== ประวัติออเดอร์ต่อโต๊ะ (ล็อต C — เพิ่มหลัง TaBon แจ้งว่าไม่มีที่ดูประวัติ) =====================
+let tableHistoryUnsub = null;
+function openTableHistoryModal(tableInfo){
+  document.getElementById('thTableName').textContent = tableInfo.name;
+  document.getElementById('thEditBtn').onclick = () => {
+    document.getElementById('tableHistoryModal').classList.remove('open');
+    if(ROLE === 'admin') openTableModal(tableInfo);
+    else if(window.toast) toast('❌ เฉพาะเจ้าของร้านเท่านั้นที่แก้ไขโต๊ะได้');
+  };
+  document.getElementById('thBody').innerHTML = '<div style="color:var(--muted); padding:20px; text-align:center;">กำลังโหลดประวัติ...</div>';
+  document.getElementById('tableHistoryModal').classList.add('open');
+
+  if(tableHistoryUnsub) tableHistoryUnsub(); // เลิกฟังของโต๊ะเก่าก่อนเปิดโต๊ะใหม่
+  tableHistoryUnsub = onSnapshot(query(collection(db,'orders'), where('table','==',tableInfo.name)), (qs) => {
+    const orders = [];
+    qs.forEach(d => orders.push({id:d.id, ...d.data()}));
+    orders.sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
+    renderTableHistory(orders);
+  }, e => {
+    console.warn('table history listener failed', e);
+    document.getElementById('thBody').innerHTML = '<div style="color:var(--danger); padding:20px;">โหลดประวัติไม่สำเร็จ: '+e.message+'</div>';
+  });
+}
+function renderTableHistory(orders){
+  const active = orders.filter(o => ['new','preparing','ready','served'].includes(o.status));
+  const past = orders.filter(o => o.status==='paid');
+
+  let html = '';
+  if(active.length){
+    const activeTotal = active.reduce((s,o)=>s+(o.total||0),0);
+    html += '<div class="lbl2" style="color:var(--ok);">🟢 กำลังทานอยู่ตอนนี้</div>';
+    html += active.map(o => {
+      const dt = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '-';
+      const itemsTxt = (o.items||[]).map(i=>i.name+'×'+i.qty).join(', ');
+      const statusTh = {new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว รอเก็บเงิน'}[o.status] || o.status;
+      return '<div class="order-card"><div><div class="tbl">'+dt+' น. · '+itemsTxt+'</div><div class="itm">สถานะ: '+statusTh+' · ฿'+(o.total||0).toLocaleString()+'</div></div></div>';
+    }).join('');
+    html += '<div style="text-align:right; font-size:13px; margin:4px 0 16px; color:var(--gold-soft);">รวมยอดที่ยังไม่ปิดบิล: ฿'+activeTotal.toLocaleString()+'</div>';
+  }
+
+  html += '<div class="lbl2">📜 ประวัติออเดอร์ที่ปิดบิลแล้ว (ล่าสุดก่อน)</div>';
+  if(!past.length){
+    html += '<div style="color:var(--muted); padding:10px 0;">ยังไม่มีประวัติออเดอร์ที่ปิดบิลแล้วสำหรับโต๊ะนี้</div>';
+  } else {
+    html += '<table style="border:none;"><thead><tr><th>วันที่-เวลา</th><th>รายการ</th><th>วิธีจ่าย</th><th>ยอด</th></tr></thead><tbody>';
+    html += past.map(o => {
+      const dt = o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}) : '-';
+      const itemsTxt = (o.items||[]).map(i=>i.name+'×'+i.qty).join(', ');
+      return '<tr><td style="white-space:nowrap;">'+dt+'</td><td style="max-width:200px; white-space:normal;">'+itemsTxt+'</td><td>'+(o.payMethod||'-')+'</td><td>฿'+(o.total||0).toLocaleString()+'</td></tr>';
+    }).join('');
+    html += '</tbody></table>';
+  }
+  document.getElementById('thBody').innerHTML = html;
+}
 
 let editingTableId = null;
 function openTableModal(existing){
@@ -2526,27 +2675,32 @@ onSnapshot(query(collection(db,'soldOutAlerts'), where('resolved','==',false)), 
 }, e => console.warn('soldOutAlerts listener failed', e));
 
 // ===================== ITEM 15: ปริ้นหลายบิลรวมเป็นไฟล์เดียว =====================
-function buildBillHtml(table, items, invType){
+async function buildBillHtml(table, items, invType){
   const total = items.reduce((s,i)=>s+i.q*i.p,0);
   const vat = Math.round(total*7/107);
+  const qrUrl = await window.getPromptPayQrDataUrl(total);
   let h = '<div style="page-break-after:always; padding:10px 0;">';
   h += '<h4 style="text-align:center;">Season One<br>Food Drink &amp; Bistro</h4><div style="text-align:center">ถ.มะลิวัลย์ ขอนแก่น · โทร 092-625-1541</div><hr>';
   h += '<div>'+(invType==='full'?'ใบกำกับภาษี (เต็มรูป)':'ใบกำกับภาษีอย่างย่อ')+'</div>';
   h += '<div>โต๊ะ '+table+' · '+new Date().toLocaleString('th-TH')+'</div><hr>';
   h += items.map(i=>'<div class="ln"><span>'+i.n+' x'+i.q+'</span><span>'+(i.q*i.p).toLocaleString()+'</span></div>').join('');
   h += '<hr><div class="ln tt"><span>รวม</span><span>฿'+total.toLocaleString()+'</span></div>';
-  h += '<div class="ln"><span>VAT 7% (รวมใน)</span><span>'+vat.toLocaleString()+'</span></div></div>';
+  h += '<div class="ln"><span>VAT 7% (รวมใน)</span><span>'+vat.toLocaleString()+'</span></div>';
+  if(qrUrl){
+    h += '<hr><div style="text-align:center;"><img src="'+qrUrl+'" width="140" height="140"><br><b>สแกนจ่าย PromptPay</b><br>098-225-4566</div>';
+  }
+  h += '</div>';
   return h;
 }
-window.printBatchBills = (invType) => {
+window.printBatchBills = async (invType) => {
   const selected = Array.from(document.querySelectorAll('.tcell.batch-selected')).map(c=>c.dataset.name);
   if(!selected.length){ if(window.toast) toast('เลือกโต๊ะที่ต้องการพิมพ์ก่อน'); return; }
   let allHtml = '';
   let count = 0;
-  selected.forEach(table => {
+  for(const table of selected){
     const items = window.liveBillOf(table);
-    if(items && items.length){ allHtml += buildBillHtml(table, items, invType); count++; }
-  });
+    if(items && items.length){ allHtml += await buildBillHtml(table, items, invType); count++; }
+  }
   if(!count){ if(window.toast) toast('โต๊ะที่เลือกยังไม่มีบิลที่พร้อมปริ้น'); return; }
   const w = window.open('','_blank');
   w.document.write('<html><head><meta charset="UTF-8"><title>บิลรวม '+count+' โต๊ะ</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:12px;}hr{border:none;border-top:1px dashed #000;}.ln{display:flex;justify-content:space-between;}.tt{font-weight:bold;font-size:14px;}</style></head><body>'+allHtml+'</body></html>');
