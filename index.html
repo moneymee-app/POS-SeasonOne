@@ -566,6 +566,7 @@
             <div class="chip">⚪ จองแล้ว</div>
           </div>
           <button class="pill-btn" id="btnBatchMode" style="background:var(--night); color:var(--gold-soft);">☑️ เลือกหลายโต๊ะเพื่อปริ้น</button>
+          <button class="pill-btn" id="btnManageZones" style="background:var(--night); color:var(--gold-soft);">📍 จัดการโซน</button>
           <button class="pill-btn" id="btnAddTable" style="background:var(--gold); color:var(--night);">＋ เพิ่มโต๊ะ</button>
         </div>
         <div id="batchPrintBar" style="display:none; background:var(--forest); color:#fff; padding:12px 16px; border-radius:10px; margin-bottom:14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -969,16 +970,27 @@
   <div class="modal">
     <h3 id="tableModalTitle">🪑 เพิ่มโต๊ะใหม่</h3>
     <input type="text" id="tblName" placeholder="ชื่อโต๊ะ เช่น A7">
-    <select id="tblZone">
-      <option value="Zone A Indoor">Zone A · Indoor</option>
-      <option value="Zone B Garden">Zone B · Outdoor Garden</option>
-      <option value="Zone C Camping">Zone C · Camping</option>
-    </select>
+    <select id="tblZone"></select>
     <input type="text" id="tblSeats" placeholder="จำนวนที่นั่ง">
     <div id="tblErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('tableModal').classList.remove('open')">ยกเลิก</button>
       <button class="btn-lg b-gold" id="tblSave">✓ บันทึก</button>
+    </div>
+    <button class="btn-lg" id="tblDeleteBtn" style="display:none; width:100%; margin-top:8px; background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบโต๊ะนี้</button>
+  </div>
+</div>
+
+<!-- ===== ZONE MANAGE MODAL ===== -->
+<div class="modal-back" id="zoneModal">
+  <div class="modal">
+    <h3>📍 จัดการโซน</h3>
+    <div class="sub">เปลี่ยนชื่อโซนจะอัปเดตโต๊ะทุกตัวในโซนนั้นให้ตรงกันอัตโนมัติ · ลบโซนได้เมื่อไม่มีโต๊ะเหลืออยู่</div>
+    <div id="zoneManageList" style="max-height:280px; overflow-y:auto; margin-bottom:12px;"></div>
+    <input type="text" id="zoneNewName" placeholder="ชื่อโซนใหม่ เช่น Zone D Rooftop">
+    <button class="btn-lg b-gold" id="zoneAddBtn" style="width:100%; margin-bottom:10px;">＋ เพิ่มโซน</button>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('zoneModal').classList.remove('open')">ปิด</button>
     </div>
   </div>
 </div>
@@ -1001,7 +1013,9 @@
       <option value="bar">บาร์</option>
     </select>
     <input type="text" id="mnPrice" placeholder="ราคา (บาท)">
-    <input type="file" id="mnPhotoFile" accept="image/*" style="margin-bottom:10px;">
+    <input type="file" id="mnPhotoFile" accept="image/*" style="margin-bottom:6px;">
+    <div style="font-size:11.5px;color:var(--muted);margin:6px 0 4px;">หรือวางลิงก์รูปจาก Google Drive (ถ้ามีรูปอยู่ในโฟลเดอร์ POS-Season One แล้ว):</div>
+    <input type="text" id="mnPhotoDriveLink" placeholder="วางลิงก์แชร์จาก Google Drive ที่นี่">
     <div id="mnErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('menuModal').classList.remove('open')">ยกเลิก</button>
@@ -1525,20 +1539,23 @@ window.fbLoginClick = () => {
   else document.getElementById('loginModal').classList.add('open');
 };
 const PHONE_DOMAIN = '@staff.seasonone.local';
-const toLoginEmail = (input) => {
+const toLoginEmail = async (input) => {
   const v = input.trim();
   if(v.includes('@')) return v;                 // admin ใช้อีเมลจริง
   const digits = v.replace(/\D/g,'');
-  return digits + PHONE_DOMAIN;                  // พนักงานใช้เบอร์โทร แปลงเป็นอีเมลปลอมภายใน
+  try {
+    const idxSnap = await getDoc(doc(db,'phoneIndex',digits));
+    if(idxSnap.exists() && idxSnap.data().activeEmail) return idxSnap.data().activeEmail; // เบอร์นี้เคยถูกใช้ซ้ำ ให้ใช้อีเมลเวอร์ชันล่าสุด
+  } catch(e){ /* ไม่มี index ก็ไปทางปกติ */ }
+  return digits + PHONE_DOMAIN;                  // พนักงานใช้เบอร์โทร แปลงเป็นอีเมลปลอมภายใน (เวอร์ชันแรก)
 };
 
 document.getElementById('loginGo').onclick = async () => {
   const err = document.getElementById('loginErr');
   err.textContent = 'กำลังตรวจสอบ...';
   try {
-    await signInWithEmailAndPassword(auth,
-      toLoginEmail(document.getElementById('loginEmail').value),
-      document.getElementById('loginPass').value);
+    const email = await toLoginEmail(document.getElementById('loginEmail').value);
+    await signInWithEmailAndPassword(auth, email, document.getElementById('loginPass').value);
     err.textContent = '';
     document.getElementById('loginModal').classList.remove('open');
   } catch(e){ err.textContent = 'เข้าสู่ระบบไม่สำเร็จ: เบอร์โทร/อีเมล หรือรหัสผ่านไม่ถูกต้อง'; }
@@ -1549,7 +1566,16 @@ onAuthStateChanged(auth, async (user) => {
   if(user){
     try {
       const snap = await getDoc(doc(db,'users',user.uid));
-      ROLE = snap.exists() ? snap.data().role : 'staff';
+      const data = snap.exists() ? snap.data() : {role:'staff'};
+      if(data.active === false){
+        if(window.toast) toast('❌ บัญชีนี้ถูกปิดใช้งานแล้ว — ติดต่อเจ้าของร้าน');
+        await signOut(auth);
+        ROLE = null;
+        btn.textContent = '🔐 เข้าสู่ระบบ';
+        applyRoleGate();
+        return;
+      }
+      ROLE = data.role || 'staff';
     } catch(e){ ROLE = 'staff'; }
     btn.textContent = '👤 ' + (user.email||'').split('@')[0] + ' · ออกจากระบบ';
   } else { ROLE = null; btn.textContent = '🔐 เข้าสู่ระบบ'; }
@@ -1618,13 +1644,29 @@ async function loadStaff(){
     const qs = await getDocs(query(collection(db,'users'), where('role','==','staff')));
     if(qs.empty){ grid.innerHTML = ''; document.getElementById('staffGridDemo').style.display='grid'; return; }
     document.getElementById('staffGridDemo').style.display='none';
-    const rows = []; qs.forEach(d => rows.push(d.data()));
+    const rows = []; qs.forEach(d => rows.push({uid:d.id, ...d.data()}));
     grid.innerHTML = rows.map(s => {
       const initials = (s.name||'?').replace(/[^ก-๙a-zA-Z]/g,'').slice(0,2);
-      return '<div class="staff-card"><div class="av">'+initials+'</div><div>'+
+      const isActive = s.active !== false;
+      return '<div class="staff-card" data-uid="'+s.uid+'"><div class="av">'+initials+'</div><div style="flex:1">'+
         '<div class="nm">'+s.name+'</div><div class="role">'+(s.position||'พนักงาน')+' · 📱 '+s.phone+'</div>'+
-        '<div class="clock">'+(s.active!==false?'🟢 ใช้งานได้':'🔴 ปิดใช้งาน')+'</div></div></div>';
+        '<div class="clock">'+(isActive?'🟢 ใช้งานได้':'🔴 ปิดใช้งาน')+'</div>'+
+        '<div style="display:flex; gap:6px; margin-top:8px;">'+
+          '<button class="btn-mini stf-toggle" data-uid="'+s.uid+'" data-active="'+isActive+'" style="background:'+(isActive?'rgba(228,72,58,.15)':'rgba(62,224,122,.15)')+'; color:'+(isActive?'#FF8A73':'#3EE07A')+';">'+(isActive?'⏸ ปิดใช้งาน':'▶ เปิดใช้งาน')+'</button>'+
+          '<button class="btn-mini stf-del" data-uid="'+s.uid+'" data-name="'+s.name+'" style="background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบ</button>'+
+        '</div></div></div>';
     }).join('');
+
+    grid.querySelectorAll('.stf-toggle').forEach(b => b.addEventListener('click', async () => {
+      const nowActive = b.dataset.active !== 'true';
+      try { await updateDoc(doc(db,'users',b.dataset.uid), {active: nowActive}); if(window.toast) toast(nowActive?'✓ เปิดใช้งานแล้ว':'⏸ ปิดใช้งานแล้ว — พนักงานคนนี้จะล็อกอินเว็บไม่ได้ (ไม่เห็นเมนูใดๆ) แต่บัญชียังอยู่ในระบบ Firebase'); loadStaff(); }
+      catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+    }));
+    grid.querySelectorAll('.stf-del').forEach(b => b.addEventListener('click', async () => {
+      if(!confirm('ลบข้อมูล "'+b.dataset.name+'" ออกจากระบบ?\n\n⚠️ หมายเหตุ: นี่จะลบแค่ข้อมูล/ประวัติออกจากหน้าเว็บเท่านั้น บัญชีล็อกอินจริง (Firebase Authentication) จะยังคงเข้าระบบได้ในทางเทคนิค — ถ้าต้องการปิดกั้นให้เข้าไม่ได้เด็ดขาด ต้องลบที่ Firebase Console → Authentication → Users ด้วยตนเองอีกขั้นตอน\n\nกด OK เพื่อลบข้อมูลต่อ')) return;
+      try { await deleteDoc(doc(db,'users',b.dataset.uid)); if(window.toast) toast('🗑️ ลบข้อมูลพนักงานแล้ว'); loadStaff(); }
+      catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
+    }));
   } catch(e){ console.warn('loadStaff failed', e); }
 }
 loadStaff();
@@ -1675,6 +1717,7 @@ function openMenuModal(mid){
   document.getElementById('menuModalTitle').textContent = mid ? '✏️ แก้ไขเมนู' : '➕ เพิ่มเมนูใหม่';
   document.getElementById('mnErr').textContent = '';
   document.getElementById('mnPhotoFile').value = '';
+  document.getElementById('mnPhotoDriveLink').value = '';
   if(mid){
     const m = MENU_CACHE.find(x=>x.id===mid);
     document.getElementById('mnName').value = m?.name || '';
@@ -1690,6 +1733,15 @@ function openMenuModal(mid){
   document.getElementById('menuModal').classList.add('open');
 }
 document.getElementById('btnAddMenu')?.addEventListener('click', () => openMenuModal(null));
+function extractDriveFileId(url){
+  if(!url) return null;
+  const m1 = url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  if(m1) return m1[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  if(m2) return m2[1];
+  if(/^[a-zA-Z0-9_-]{20,}$/.test(url.trim())) return url.trim(); // เผื่อ TaBon วางแค่ file ID ตรงๆ
+  return null;
+}
 document.getElementById('mnSave').onclick = async () => {
   const errEl = document.getElementById('mnErr');
   const name = document.getElementById('mnName').value.trim();
@@ -1700,13 +1752,20 @@ document.getElementById('mnSave').onclick = async () => {
   errEl.textContent = 'กำลังบันทึก...';
   try {
     const data = { name, category, station, price, active: true };
-    const file = document.getElementById('mnPhotoFile').files[0];
-    if(file) data.photoData = await fileToDataUrl(file);
+    const driveLink = document.getElementById('mnPhotoDriveLink').value.trim();
+    const driveId = extractDriveFileId(driveLink);
+    if(driveId){
+      data.photoId = driveId;
+      data.photoData = null; // ใช้ลิงก์ Drive แทนไฟล์ที่อัพโหลด
+    } else {
+      const file = document.getElementById('mnPhotoFile').files[0];
+      if(file) data.photoData = await fileToDataUrl(file);
+    }
     if(editingMenuId){
       await updateDoc(doc(db,'menu',editingMenuId), data);
     } else {
       const newId = 'M'+Date.now();
-      await setDoc(doc(db,'menu',newId), {...data, photoId: data.photoData ? null : ''});
+      await setDoc(doc(db,'menu',newId), {...data, photoId: data.photoId || (data.photoData ? null : '')});
     }
     document.getElementById('menuModal').classList.remove('open');
     if(window.toast) toast('✓ บันทึกเมนูแล้ว');
@@ -1793,14 +1852,29 @@ function ingName(ingId){ const i = ING_CACHE.find(x=>x.id===ingId); return i ? i
 window.bomFilter = () => renderBomIngList(document.getElementById('bomSearch').value.trim());
 function renderBomIngList(f){
   const list = ING_CACHE.filter(i => i.name.includes(f));
-  document.getElementById('bomIngList').innerHTML = list.length ? list.map(i =>
+  const quickAdd = f.trim() ? '<div class="bom-chip" id="bomQuickAddIng" style="background:var(--gold); color:var(--night); font-weight:700;">＋ สร้างวัตถุดิบใหม่ "'+f.trim()+'"</div>' : '';
+  document.getElementById('bomIngList').innerHTML = (list.length ? list.map(i =>
     '<div class="bom-chip" data-ingid="'+i.id+'">＋ '+i.name+'</div>').join('') :
-    '<span style="font-size:12px;color:var(--muted)">ไม่พบ — เพิ่มวัตถุดิบใหม่ได้ในหน้าสต็อค</span>';
-  document.getElementById('bomIngList').querySelectorAll('.bom-chip').forEach(c=>c.addEventListener('click', ()=>{
+    '<span style="font-size:12px;color:var(--muted)">ไม่พบวัตถุดิบนี้</span>') + quickAdd;
+  document.getElementById('bomIngList').querySelectorAll('.bom-chip[data-ingid]').forEach(c=>c.addEventListener('click', ()=>{
     const id = c.dataset.ingid;
     if(!BOMCUR.find(x=>x.ingId===id)) BOMCUR.push({ingId:id, qty:''});
     renderBomRows();
   }));
+  document.getElementById('bomQuickAddIng')?.addEventListener('click', async () => {
+    const name = f.trim();
+    try {
+      const newId = 'I'+Date.now();
+      await setDoc(doc(db,'ingredients',newId), {name, category:'อื่นๆ', unit:'หน่วย', qty:0, min:0, cost:0});
+      ING_CACHE.push({id:newId, name, category:'อื่นๆ', unit:'หน่วย', qty:0, min:0, cost:0});
+      BOMCUR.push({ingId:newId, qty:''});
+      document.getElementById('bomSearch').value = '';
+      renderBomIngList('');
+      renderBomRows();
+      renderIngTable();
+      if(window.toast) toast('✓ สร้างวัตถุดิบ "'+name+'" แล้ว — แก้รายละเอียด (หน่วย/ราคาทุน) เพิ่มได้ทีหลังในหน้าสต็อค');
+    } catch(e){ if(window.toast) toast('❌ สร้างไม่สำเร็จ: '+e.message); }
+  });
 }
 window.bomDel = (i) => { BOMCUR.splice(i,1); renderBomRows(); };
 function renderBomRows(){
@@ -2057,6 +2131,65 @@ loadShopSettings();
 
 // ===================== ITEM 5+6: ผังโต๊ะสด + สถานะอัตโนมัติ =====================
 let TABLES_CACHE = [];
+let ZONES_CACHE = [];
+onSnapshot(collection(db,'zones'), (qs) => {
+  ZONES_CACHE = []; qs.forEach(d => ZONES_CACHE.push({id:d.id, ...d.data()}));
+  if(ZONES_CACHE.length === 0){
+    // seed ค่าเริ่มต้นจากโซนเดิมที่มีอยู่ในโต๊ะ (ทำครั้งเดียวถ้ายังไม่เคยมี zones collection)
+    ['Zone A Indoor','Zone B Garden','Zone C Camping'].forEach(z => setDoc(doc(db,'zones',z.replace(/\s+/g,'_')), {name:z}));
+  }
+  renderZoneOptions('tblZone');
+  renderZoneManageList();
+}, e => console.warn('zones listener failed', e));
+
+function renderZoneOptions(selectId){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = ZONES_CACHE.map(z => '<option value="'+z.name+'">'+z.name+'</option>').join('');
+  if(prev && ZONES_CACHE.some(z=>z.name===prev)) sel.value = prev;
+}
+function renderZoneManageList(){
+  const box = document.getElementById('zoneManageList');
+  if(!box) return;
+  box.innerHTML = ZONES_CACHE.map(z => {
+    const count = TABLES_CACHE.filter(t=>t.zone===z.name).length;
+    return '<div class="bom-row"><span style="flex:1">'+z.name+' <span style="color:var(--muted); font-size:11.5px;">('+count+' โต๊ะ)</span></span>'+
+      '<button class="icon-sm zone-rename" data-zid="'+z.id+'" data-zname="'+z.name+'">✏️</button>'+
+      '<button class="icon-sm zone-del" data-zid="'+z.id+'" data-zname="'+z.name+'">🗑️</button></div>';
+  }).join('') || '<div style="font-size:12px;color:var(--muted);">ยังไม่มีโซน</div>';
+
+  box.querySelectorAll('.zone-rename').forEach(b => b.addEventListener('click', async () => {
+    const newName = prompt('ชื่อโซนใหม่:', b.dataset.zname);
+    if(!newName || !newName.trim() || newName.trim()===b.dataset.zname) return;
+    const trimmed = newName.trim();
+    try {
+      await updateDoc(doc(db,'zones',b.dataset.zid), {name: trimmed});
+      // อัปเดตโต๊ะทุกตัวที่อยู่ในโซนนี้ให้ชื่อโซนตรงกันทันที
+      const affected = TABLES_CACHE.filter(t=>t.zone===b.dataset.zname);
+      await Promise.all(affected.map(t => updateDoc(doc(db,'tables',t.id), {zone: trimmed})));
+      if(window.toast) toast('✓ เปลี่ยนชื่อโซนแล้ว — อัปเดตโต๊ะ '+affected.length+' ตัวตามด้วย');
+    } catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+  box.querySelectorAll('.zone-del').forEach(b => b.addEventListener('click', async () => {
+    const count = TABLES_CACHE.filter(t=>t.zone===b.dataset.zname).length;
+    if(count > 0){ if(window.toast) toast('❌ ลบไม่ได้ — โซนนี้ยังมีโต๊ะอยู่ '+count+' ตัว ย้าย/ลบโต๊ะออกก่อน'); return; }
+    if(!confirm('ลบโซน "'+b.dataset.zname+'" ใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'zones',b.dataset.zid)); if(window.toast) toast('🗑️ ลบโซนแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+document.getElementById('btnManageZones')?.addEventListener('click', () => {
+  renderZoneManageList();
+  document.getElementById('zoneModal').classList.add('open');
+});
+document.getElementById('zoneAddBtn')?.addEventListener('click', async () => {
+  const input = document.getElementById('zoneNewName');
+  const name = input.value.trim();
+  if(!name) return;
+  try { await setDoc(doc(db,'zones',name.replace(/\s+/g,'_')+'_'+Date.now()), {name}); input.value=''; if(window.toast) toast('✓ เพิ่มโซนแล้ว'); }
+  catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+});
 function computeTableStatus(tableName){
   const t = TABLES_CACHE.find(x=>x.name===tableName);
   if(t && t.reserved) return 'resv';
@@ -2070,12 +2203,12 @@ function renderTables(){
   if(!box) return;
   const zones = {};
   TABLES_CACHE.forEach(t => { (zones[t.zone] = zones[t.zone]||[]).push(t); });
-  const zoneOrder = ['Zone A Indoor','Zone B Garden','Zone C Camping'];
+  const zoneOrder = ZONES_CACHE.map(z=>z.name);
   const allZones = [...new Set([...zoneOrder, ...Object.keys(zones)])];
   box.innerHTML = allZones.filter(z=>zones[z]).map(z => {
     const cells = zones[z].map(t => {
       const st = computeTableStatus(t.name);
-      return '<div class="tcell '+st+'" data-tid="'+t.id+'" data-name="'+t.name+'">'+t.name+'</div>';
+      return '<div class="tcell '+st+'" data-tid="'+t.id+'" data-name="'+t.name+'" data-seats="'+(t.seats||4)+'" data-zone="'+t.zone+'">'+t.name+'<br><small style="font-size:10px; opacity:.7;">'+(t.seats||4)+' ที่นั่ง</small></div>';
     }).join('');
     return '<div class="card" style="margin-bottom:14px;"><div class="card-head"><h3>'+z+'</h3></div><div class="tmap">'+cells+'</div></div>';
   }).join('') || '<div class="empty"><div class="ic">🪑</div>ยังไม่มีโต๊ะ — กด "＋ เพิ่มโต๊ะ" เพื่อเริ่มต้น</div>';
@@ -2084,10 +2217,7 @@ function renderTables(){
     const inBatchMode = document.getElementById('btnBatchMode')?.textContent.includes('ยกเลิก');
     if(inBatchMode){ c.classList.toggle('batch-selected'); updateBatchCount(); return; }
     if(ROLE !== 'admin'){ return; }
-    if(confirm('แก้ไข/ลบโต๊ะ "'+c.dataset.name+'" ?\nกด OK เพื่อแก้ไขชื่อ, Cancel เพื่อปิด')){
-      const newName = prompt('ชื่อโต๊ะใหม่:', c.dataset.name);
-      if(newName && newName.trim()) updateDoc(doc(db,'tables',c.dataset.tid), {name:newName.trim()});
-    }
+    openTableModal({id:c.dataset.tid, name:c.dataset.name, seats:c.dataset.seats, zone:c.dataset.zone});
   }));
 }
 onSnapshot(collection(db,'tables'), (qs) => {
@@ -2095,12 +2225,24 @@ onSnapshot(collection(db,'tables'), (qs) => {
   renderTables();
 }, e => console.warn('tables listener failed', e));
 
-document.getElementById('btnAddTable')?.addEventListener('click', () => {
-  document.getElementById('tableModalTitle').textContent = '🪑 เพิ่มโต๊ะใหม่';
-  document.getElementById('tblName').value = '';
-  document.getElementById('tblSeats').value = '';
+let editingTableId = null;
+function openTableModal(existing){
+  editingTableId = existing ? existing.id : null;
+  document.getElementById('tableModalTitle').textContent = existing ? '🪑 แก้ไขโต๊ะ' : '🪑 เพิ่มโต๊ะใหม่';
+  document.getElementById('tblName').value = existing ? existing.name : '';
+  document.getElementById('tblSeats').value = existing ? existing.seats : '';
   document.getElementById('tblErr').textContent = '';
+  renderZoneOptions('tblZone');
+  if(existing) document.getElementById('tblZone').value = existing.zone;
+  document.getElementById('tblDeleteBtn').style.display = existing ? 'block' : 'none';
   document.getElementById('tableModal').classList.add('open');
+}
+document.getElementById('btnAddTable')?.addEventListener('click', () => openTableModal(null));
+document.getElementById('tblDeleteBtn')?.addEventListener('click', async () => {
+  if(!editingTableId) return;
+  if(!confirm('ลบโต๊ะ "'+document.getElementById('tblName').value+'" ใช่ไหม? กู้คืนไม่ได้')) return;
+  try { await deleteDoc(doc(db,'tables',editingTableId)); document.getElementById('tableModal').classList.remove('open'); if(window.toast) toast('🗑️ ลบโต๊ะแล้ว'); }
+  catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
 });
 document.getElementById('tblSave').onclick = async () => {
   const errEl = document.getElementById('tblErr');
@@ -2109,9 +2251,14 @@ document.getElementById('tblSave').onclick = async () => {
   const seats = parseInt(document.getElementById('tblSeats').value,10) || 4;
   if(!name){ errEl.textContent = 'กรอกชื่อโต๊ะ'; return; }
   try {
-    await setDoc(doc(db,'tables',name), {name, zone, seats, active:true, reserved:false});
+    if(editingTableId){
+      await updateDoc(doc(db,'tables',editingTableId), {name, zone, seats});
+      if(window.toast) toast('✓ บันทึกการแก้ไขแล้ว');
+    } else {
+      await setDoc(doc(db,'tables',name), {name, zone, seats, active:true, reserved:false});
+      if(window.toast) toast('✓ เพิ่มโต๊ะ '+name+' แล้ว');
+    }
     document.getElementById('tableModal').classList.remove('open');
-    if(window.toast) toast('✓ เพิ่มโต๊ะ '+name+' แล้ว');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 };
 
