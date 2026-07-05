@@ -2417,22 +2417,35 @@ async function loadScheduleStaff(){
   } catch(e){ console.warn('loadScheduleStaff failed', e); }
 }
 
-async function loadScheduleData(startDate, endDate){
-  try {
-    const qs = await getDocs(query(collection(db,'schedules'),
-      where('date','>=', fmtDateKey(startDate)), where('date','<=', fmtDateKey(endDate))));
-    SCHEDULE_DATA_CACHE = {};
-    qs.forEach(d => { const v = d.data(); SCHEDULE_DATA_CACHE[v.uid+'|'+v.date] = v; });
-  } catch(e){ console.warn('loadScheduleData failed', e); }
-}
+// Bug fix: เปลี่ยนจาก getDocs (ดึงครั้งเดียว) เป็น onSnapshot (real-time)
+// เพราะ Admin กับพนักงานอยู่คนละเครื่อง คนละเบราว์เซอร์ ไม่มีทางสั่งให้กันรีเฟรชตรงๆ ได้
+// ต้องให้ Firestore แจ้งเตือนอัตโนมัติเมื่อมีข้อมูลใหม่ (เช่น พนักงานขอลาจากมือถือ) แทน
+let scheduleListenerUnsub = null;
+let leavesListenerUnsub = null;
+const CALENDAR_DATA_RANGE_DAYS = 70; // ครอบคลุมย้อนหลัง+ล่วงหน้าพอสำหรับเลื่อนดูปฏิทินได้ลื่น ไม่ต้อง re-subscribe บ่อย
 
-async function loadLeavesForCalendar(startDate, endDate){
-  try {
-    const qs = await getDocs(query(collection(db,'leaves'),
-      where('date','>=', fmtDateKey(startDate)), where('date','<=', fmtDateKey(endDate))));
-    LEAVES_CACHE_FOR_CAL = {};
-    qs.forEach(d => { const v = d.data(); LEAVES_CACHE_FOR_CAL[v.uid+'|'+v.date] = v; });
-  } catch(e){ console.warn('loadLeavesForCalendar failed', e); }
+function startScheduleCalendarListeners(){
+  if(scheduleListenerUnsub) return; // subscribe ครั้งเดียวพอ ไม่ต้องเปิดซ้ำทุกครั้งที่เปลี่ยนเดือน
+  const rangeStart = new Date(); rangeStart.setDate(rangeStart.getDate() - CALENDAR_DATA_RANGE_DAYS);
+  const rangeEnd = new Date(); rangeEnd.setDate(rangeEnd.getDate() + CALENDAR_DATA_RANGE_DAYS);
+
+  scheduleListenerUnsub = onSnapshot(query(collection(db,'schedules'),
+    where('date','>=', fmtDateKey(rangeStart)), where('date','<=', fmtDateKey(rangeEnd))),
+    (qs) => {
+      SCHEDULE_DATA_CACHE = {};
+      qs.forEach(d => { const v = d.data(); SCHEDULE_DATA_CACHE[v.uid+'|'+v.date] = v; });
+      if(window.renderScheduleGrid) renderScheduleGrid();
+      if(document.getElementById('dayDetailModal')?.classList.contains('open') && window.renderDayDetailBody) renderDayDetailBody();
+    }, e => console.warn('schedule calendar listener failed', e));
+
+  leavesListenerUnsub = onSnapshot(query(collection(db,'leaves'),
+    where('date','>=', fmtDateKey(rangeStart)), where('date','<=', fmtDateKey(rangeEnd))),
+    (qs) => {
+      LEAVES_CACHE_FOR_CAL = {};
+      qs.forEach(d => { const v = d.data(); LEAVES_CACHE_FOR_CAL[v.uid+'|'+v.date] = v; });
+      if(window.renderScheduleGrid) renderScheduleGrid();
+      if(document.getElementById('dayDetailModal')?.classList.contains('open') && window.renderDayDetailBody) renderDayDetailBody();
+    }, e => console.warn('leaves calendar listener failed', e));
 }
 
 function countShiftsForDay(dateKey){
@@ -2450,7 +2463,6 @@ function countShiftsForDay(dateKey){
 async function renderScheduleGrid(){
   const box = document.getElementById('schedCalendarBox');
   if(!box) return;
-  box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดปฏิทิน...</div>';
 
   try {
     const year = schedAnchorDate.getFullYear();
@@ -2462,11 +2474,9 @@ async function renderScheduleGrid(){
     const gridEnd = new Date(gridStart);
     gridEnd.setDate(gridStart.getDate() + 41); // 6 แถว x 7 วัน ครอบคลุมทุกกรณี
 
-    await Promise.all([
-      loadScheduleStaff(),
-      loadScheduleData(gridStart, gridEnd),
-      loadLeavesForCalendar(gridStart, gridEnd)
-    ]);
+    // เริ่ม real-time listener ครั้งแรก (ถ้ายังไม่เคยเริ่ม) — ครั้งถัดๆ ไปจะ re-render อัตโนมัติเมื่อมีข้อมูลใหม่โดยไม่ต้องเรียกซ้ำ
+    startScheduleCalendarListeners();
+    if(!SCHEDULE_STAFF_CACHE.length) await loadScheduleStaff();
 
     if(!SCHEDULE_STAFF_CACHE.length){
       box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">ยังไม่มีพนักงานในระบบ — เพิ่มพนักงานที่หน้า "พนักงาน & เข้างาน" ก่อน</div>';
