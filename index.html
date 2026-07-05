@@ -368,10 +368,16 @@
   .bom-row input{ width:70px !important; margin-bottom:0 !important; text-align:center; }
   .modal select{ width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:13px; font-family:inherit; margin-bottom:10px; }
   .modal select option{ background:#1C1E18; }
+  /* ซ่อนหน้าจอไว้ก่อนจนกว่าจะกำหนดมุมมอง/หน้าที่ถูกต้องจาก URL เสร็จ กันเห็นแวบ Admin ก่อนสลับไปหน้าจริง */
+  body.state-restoring{ visibility:hidden; }
 </style>
+<script>
+  // Safety net: ถ้าด้วยเหตุใดก็ตาม (เช่น JS error) หน้าจอยังไม่ถูกแสดงภายใน 2 วิ ให้บังคับแสดงเลย กันจอขาวค้างตลอดไป
+  setTimeout(function(){ document.body.classList.remove('state-restoring'); }, 2000);
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body>
+<body class="state-restoring">
 
 <div class="role-switcher">
   <div class="rs-label">มุมมอง</div>
@@ -1706,18 +1712,25 @@
   // ===== TABLE MAP: tap to cycle status =====
   // table status cells are rendered live by the Firebase module script (auto status from real orders)
 
-  // ===== RESTORE STATE FROM URL (กัน refresh แล้วหลุดไปหน้า default) =====
+  // ===== RESTORE STATE FROM URL (กัน refresh แล้วหลุดไปหน้า default + กันเห็นแวบ Admin ก่อนสลับ) =====
   (function restoreStateFromUrl(){
-    const params = new URLSearchParams(location.search);
-    const savedMode = params.get('mode');
-    const savedView = params.get('view');
-    if(savedMode){
-      const tab = document.querySelector('.rs-tab[data-mode="'+savedMode+'"]');
-      if(tab) tab.click(); // ใช้ click() เพื่อให้ logic เดิม (เปลี่ยน mode-view, note) ทำงานครบตามปกติ
-    }
-    if(savedView){
-      const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
-      if(item) item.click();
+    try {
+      const params = new URLSearchParams(location.search);
+      const savedMode = params.get('mode');
+      const savedView = params.get('view');
+      if(savedMode){
+        const tab = document.querySelector('.rs-tab[data-mode="'+savedMode+'"]');
+        if(tab) tab.click(); // ใช้ click() เพื่อให้ logic เดิม (เปลี่ยน mode-view, note) ทำงานครบตามปกติ
+      }
+      if(savedView){
+        const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
+        if(item) item.click();
+      }
+    } catch(e){
+      console.warn('restoreStateFromUrl failed', e);
+    } finally {
+      // ไม่ว่าสำเร็จหรือพลาด ต้องแสดงหน้าจอเสมอ กันจอขาวค้างตลอดไป
+      document.body.classList.remove('state-restoring');
     }
   })();
 </script>
