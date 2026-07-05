@@ -411,6 +411,7 @@
   setTimeout(function(){ document.body.classList.remove('state-restoring'); }, 2000);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="state-restoring">
 
@@ -610,6 +611,7 @@
             <div class="chip" data-fd="custom">📅 เลือกวันที่เอง</div>
           </div>
           <a href="https://docs.google.com/spreadsheets/d/1_placeholder_/edit" target="_blank" class="pill-btn" style="background:var(--night); color:var(--gold-soft); text-decoration:none;">📊 เปิด Google Sheet ฉบับเต็ม</a>
+          <button class="pill-btn" id="btnExportExcel" style="background:#217346; color:#fff;">📥 Export Excel</button>
           <button class="pill-btn" id="btnAddExpense" style="background:var(--danger); color:#fff;">➖ บันทึกรายจ่าย</button>
         </div>
 
@@ -697,8 +699,10 @@
           <button class="pill-btn" id="btnAddIng" style="background:var(--gold); color:var(--night);">＋ วัตถุดิบใหม่</button>
         </div>
 
+        <div id="expiryAlertBox" style="display:none; margin-bottom:16px;"></div>
+
         <table>
-          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>ราคาทุน/หน่วย</th></tr></thead>
+          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>ราคาทุน/หน่วย</th><th>วันหมดอายุ</th></tr></thead>
           <tbody id="ingTableBody"></tbody>
         </table>
 
@@ -1189,6 +1193,10 @@
     <input type="text" id="ingQty" placeholder="จำนวนคงเหลือ">
     <input type="text" id="ingMin" placeholder="จำนวนขั้นต่ำ (Min)">
     <input type="text" id="ingCost" placeholder="ราคาทุน/หน่วย (บาท)">
+    <div style="font-size:11.5px;color:var(--muted);margin:10px 0 4px;">วันที่ซื้อเข้า (กรอกแล้วระบบแนะนำวันหมดอายุให้อัตโนมัติ แก้ไขเองได้)</div>
+    <input type="date" id="ingPurchaseDate">
+    <div style="font-size:11.5px;color:var(--muted);margin:6px 0 4px;">วันหมดอายุ</div>
+    <input type="date" id="ingExpiryDate">
     <div id="ingErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('ingModal').classList.remove('open')">ยกเลิก</button>
@@ -2848,9 +2856,19 @@ document.getElementById('mnSave').onclick = async () => {
 function ingRowHtml(i){
   const statusCls = i.qty <= 0 ? 'off' : (i.qty <= i.min ? 'wait' : 'on');
   const statusTxt = i.qty <= 0 ? 'หมดสต็อค' : (i.qty <= i.min ? 'ใกล้หมด' : 'ปกติ');
+  let expiryHtml = '<span style="color:var(--muted);">-</span>';
+  if(i.expiryDate){
+    const expiry = new Date(i.expiryDate+'T23:59:59');
+    const daysLeft = Math.ceil((expiry.getTime() - Date.now()) / 86400000);
+    const expiryLabel = expiry.toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    if(daysLeft < 0) expiryHtml = '<span style="color:var(--danger); font-weight:600;">⚠️ หมดอายุแล้ว ('+expiryLabel+')</span>';
+    else if(daysLeft <= 1) expiryHtml = '<span style="color:var(--warn); font-weight:600;">⏰ ใกล้หมดอายุ ('+expiryLabel+')</span>';
+    else expiryHtml = '<span style="color:var(--muted);">'+expiryLabel+'</span>';
+  }
   return '<tr><td><div class="cell-item"><div class="thumb">📦</div>'+i.name+'</div></td>'+
     '<td>'+i.category+'</td><td>'+i.qty+' '+i.unit+'</td><td>'+i.min+' '+i.unit+'</td>'+
-    '<td><span class="status '+statusCls+'">'+statusTxt+'</span></td><td>฿'+Number(i.cost||0).toLocaleString()+'</td></tr>';
+    '<td><span class="status '+statusCls+'">'+statusTxt+'</span></td><td>฿'+Number(i.cost||0).toLocaleString()+'</td>'+
+    '<td>'+expiryHtml+'</td></tr>';
 }
 function renderIngTable(){
   const tbody = document.getElementById('ingTableBody');
@@ -2860,21 +2878,78 @@ function renderIngTable(){
   const cat = activeChip ? activeChip.dataset.cat : 'ทั้งหมด';
   let items = ING_CACHE.filter(i => !q || i.name.toLowerCase().includes(q));
   if(cat !== 'ทั้งหมด') items = items.filter(i => i.category === cat);
-  tbody.innerHTML = items.length ? items.map(ingRowHtml).join('') : '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบวัตถุดิบที่ค้นหา</td></tr>';
+  tbody.innerHTML = items.length ? items.map(ingRowHtml).join('') : '<tr><td colspan="7" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบวัตถุดิบที่ค้นหา</td></tr>';
 
   document.getElementById('kpi-ing-total').textContent = ING_CACHE.length;
   document.getElementById('kpi-ing-low').textContent = ING_CACHE.filter(i=>i.qty>0 && i.qty<=i.min).length;
   document.getElementById('kpi-ing-out').textContent = ING_CACHE.filter(i=>i.qty<=0).length;
   const totalValue = ING_CACHE.reduce((s,i)=>s+(i.qty*(i.cost||0)),0);
   document.getElementById('kpi-ing-value').textContent = '฿'+Math.round(totalValue).toLocaleString();
+  renderExpiryAlerts();
+}
+function renderExpiryAlerts(){
+  const box = document.getElementById('expiryAlertBox');
+  if(!box) return;
+  const now = Date.now();
+  const expired = [], nearExpiry = [];
+  ING_CACHE.forEach(i => {
+    if(!i.expiryDate) return;
+    const expiry = new Date(i.expiryDate+'T23:59:59');
+    const daysLeft = Math.ceil((expiry.getTime() - now) / 86400000);
+    if(daysLeft < 0) expired.push(i);
+    else if(daysLeft <= 1) nearExpiry.push(i);
+  });
+  if(!expired.length && !nearExpiry.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = 'block';
+  let html = '';
+  if(expired.length){
+    html += '<div style="background:rgba(228,72,58,.12); border:1px solid var(--danger); border-radius:10px; padding:12px 16px; margin-bottom:8px;">'+
+      '<b style="color:var(--danger);">⚠️ วัตถุดิบหมดอายุแล้ว ('+expired.length+' รายการ)</b><br>'+
+      '<span style="font-size:12.5px; color:var(--ink);">'+expired.map(i=>i.name).join(', ')+'</span></div>';
+  }
+  if(nearExpiry.length){
+    html += '<div style="background:rgba(228,178,58,.12); border:1px solid var(--warn); border-radius:10px; padding:12px 16px;">'+
+      '<b style="color:var(--warn);">⏰ วัตถุดิบใกล้หมดอายุ ภายใน 1 วัน ('+nearExpiry.length+' รายการ)</b><br>'+
+      '<span style="font-size:12.5px; color:var(--ink);">'+nearExpiry.map(i=>i.name).join(', ')+'</span></div>';
+  }
+  box.innerHTML = html;
 }
 document.getElementById('ingSearchInput')?.addEventListener('input', renderIngTable);
 document.getElementById('ingCatChips')?.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
   document.querySelectorAll('#ingCatChips .chip').forEach(x=>x.classList.remove('active'));
   c.classList.add('active'); renderIngTable();
 }));
+// มาตรฐานอายุการเก็บ (วัน) ตามหมวดหมู่ — ใช้แนะนำวันหมดอายุอัตโนมัติ TaBon แก้ค่าพวกนี้ได้ทีหลังถ้าต้องการปรับ
+const SHELF_LIFE_DAYS_BY_CATEGORY = {
+  'เนื้อสัตว์': 3,      // เนื้อสัตว์/อาหารทะเล - เก็บได้สั้นที่สุด
+  'ผัก': 5,             // ผัก/เครื่องปรุง
+  'เครื่องดื่ม': 180,   // เครื่องดื่ม/แอลกอฮอล์ - เก็บได้นาน
+  'บรรจุภัณฑ์': null,   // ไม่มีวันหมดอายุ
+  'อื่นๆ': 7
+};
+function suggestExpiryDate(purchaseDateStr, category){
+  const days = SHELF_LIFE_DAYS_BY_CATEGORY[category];
+  if(days === null || days === undefined || !purchaseDateStr) return '';
+  const d = new Date(purchaseDateStr+'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return toLocalDateKey(d);
+}
+document.getElementById('ingPurchaseDate')?.addEventListener('change', (e) => {
+  const category = document.getElementById('ingCat').value;
+  const suggested = suggestExpiryDate(e.target.value, category);
+  if(suggested) document.getElementById('ingExpiryDate').value = suggested;
+});
+document.getElementById('ingCat')?.addEventListener('change', () => {
+  // ถ้าเปลี่ยนหมวดหมู่หลังกรอกวันที่ซื้อแล้ว ให้คำนวณวันหมดอายุแนะนำใหม่ตามหมวดใหม่
+  const purchaseVal = document.getElementById('ingPurchaseDate').value;
+  if(purchaseVal){
+    const suggested = suggestExpiryDate(purchaseVal, document.getElementById('ingCat').value);
+    if(suggested) document.getElementById('ingExpiryDate').value = suggested;
+  }
+});
+
 document.getElementById('btnAddIng')?.addEventListener('click', () => {
-  ['ingName','ingUnit','ingQty','ingMin','ingCost'].forEach(id=>document.getElementById(id).value='');
+  ['ingName','ingUnit','ingQty','ingMin','ingCost','ingPurchaseDate','ingExpiryDate'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('ingErr').textContent = '';
   document.getElementById('ingModal').classList.add('open');
 });
@@ -2886,11 +2961,13 @@ document.getElementById('ingSave').onclick = async () => {
   const qty = parseFloat(document.getElementById('ingQty').value) || 0;
   const min = parseFloat(document.getElementById('ingMin').value) || 0;
   const cost = parseFloat(document.getElementById('ingCost').value) || 0;
+  const purchaseDate = document.getElementById('ingPurchaseDate').value || null;
+  const expiryDate = document.getElementById('ingExpiryDate').value || null;
   if(!name || !unit){ errEl.textContent = 'กรอกชื่อและหน่วยให้ครบ'; return; }
   errEl.textContent = 'กำลังบันทึก...';
   try {
     const newId = 'I'+Date.now();
-    await setDoc(doc(db,'ingredients',newId), {name,category,unit,qty,min,cost});
+    await setDoc(doc(db,'ingredients',newId), {name,category,unit,qty,min,cost,purchaseDate,expiryDate});
     document.getElementById('ingModal').classList.remove('open');
     if(window.toast) toast('✓ เพิ่มวัตถุดิบแล้ว');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
@@ -3367,6 +3444,8 @@ function renderPendingConfirm(orders){
         const table = relatedOrders[0].table;
         const totalAmount = relatedOrders.reduce((s,o)=>s+(o.total||0),0);
         const method = relatedOrders[0].payMethod || 'โอน/สแกน';
+        // หักสต็อควัตถุดิบอัตโนมัติตามสูตร BOM — จุดนี้ก็เป็นตอน "ปิดบิลสำเร็จ" เหมือนกัน (ยืนยันรับเงินจากหน้าตรวจสลิป)
+        deductStockForOrders(relatedOrders);
         try {
           await setDoc(doc(db,'payments','PAY'+Date.now()), {
             table, amount: totalAmount, method, status:'confirmed', confirmedBy, createdAt: serverTimestamp()
@@ -3416,6 +3495,47 @@ document.getElementById('btnApplyFinRange')?.addEventListener('click', () => {
   errEl.textContent = '';
   finCustomRange = { start, end };
   renderFinance();
+});
+
+// ===================== Export Excel (บัญชีรายรับ-รายจ่าย) =====================
+document.getElementById('btnExportExcel')?.addEventListener('click', () => {
+  try {
+    // ใช้ข้อมูลชุดเดียวกับที่กำลังแสดงอยู่บนหน้าจอตอนนี้ (ตามช่วงวันที่ที่เลือก) ตามที่ TaBon ยืนยัน
+    const incomeRows = PAID_ORDERS_CACHE.filter(o => withinRange(o.createdAt))
+      .sort((a,b)=> (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0));
+    const expenseRows = EXPENSES_CACHE.filter(e => withinRange(e.createdAt))
+      .sort((a,b)=> (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0));
+
+    const incomeSheetData = incomeRows.map(o => ({
+      'วันที่-เวลา': o.createdAt?.toDate ? o.createdAt.toDate().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'}) : '-',
+      'โต๊ะ': o.table || '-',
+      'รายการ': (o.items||[]).map(i=>i.name+'×'+i.qty).join(', '),
+      'วิธีจ่าย': o.payMethod || '-',
+      'ยอด (บาท)': o.total || 0,
+      'ผู้ตรวจสอบ': o.confirmedBy ? o.confirmedBy.split('@')[0] : '-'
+    }));
+    const expenseSheetData = expenseRows.map(e => ({
+      'วันที่': e.createdAt?.toDate ? e.createdAt.toDate().toLocaleDateString('th-TH') : (e.date || '-'),
+      'หมวด': e.category || '-',
+      'รายการ': e.note || '-',
+      'ยอด (บาท)': e.amount || 0
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const wsIncome = XLSX.utils.json_to_sheet(incomeSheetData.length ? incomeSheetData : [{'หมายเหตุ':'ไม่มีข้อมูลรายรับในช่วงนี้'}]);
+    const wsExpense = XLSX.utils.json_to_sheet(expenseSheetData.length ? expenseSheetData : [{'หมายเหตุ':'ไม่มีข้อมูลรายจ่ายในช่วงนี้'}]);
+    XLSX.utils.book_append_sheet(wb, wsIncome, 'รายรับ');
+    XLSX.utils.book_append_sheet(wb, wsExpense, 'รายจ่าย');
+
+    const rangeLabel = finCustomRange
+      ? toLocalDateKey(finCustomRange.start)+'_ถึง_'+toLocalDateKey(finCustomRange.end)
+      : toLocalDateKey(new Date());
+    XLSX.writeFile(wb, 'SeasonOne-บัญชี-'+rangeLabel+'.xlsx');
+    if(window.toast) toast('✓ ดาวน์โหลดไฟล์ Excel แล้ว');
+  } catch(e){
+    console.error('Export Excel failed', e);
+    if(window.toast) toast('❌ Export ไม่สำเร็จ: '+e.message);
+  }
 });
 
 document.getElementById('btnAddExpense')?.addEventListener('click', () => {
@@ -3843,6 +3963,50 @@ window.liveBillOf = (table) => {
   }));
   return Object.values(merged);
 };
+// ===================== หักสต็อควัตถุดิบอัตโนมัติ (ตอนปิดบิล/จ่ายเงินสำเร็จเท่านั้น ตามที่ TaBon ยืนยัน) =====================
+async function deductStockForOrders(orders){
+  try {
+    // รวมจำนวนแต่ละเมนูจากทุกออเดอร์ในบิลนี้ก่อน (กันเมนูเดียวกันสั่งหลายรอบ ต้อง query BOM ซ้ำ)
+    const menuQtyMap = {}; // menuName -> totalQty
+    orders.forEach(o => (o.items||[]).forEach(item => {
+      menuQtyMap[item.name] = (menuQtyMap[item.name] || 0) + item.qty;
+    }));
+
+    // ต้องหาว่าแต่ละชื่อเมนูตรงกับ menuId ไหนใน Firestore (BOM ผูกกับ menuId ไม่ใช่ชื่อ)
+    const menuSnap = await getDocs(collection(db,'menu'));
+    const menuByName = {};
+    menuSnap.forEach(d => { const v = d.data(); menuByName[v.name] = d.id; });
+
+    // รวมจำนวนวัตถุดิบที่ต้องหักทั้งหมด จากทุกเมนูในบิล (กันวัตถุดิบตัวเดียวกันถูกใช้หลายเมนู)
+    const ingDeductMap = {}; // ingId -> totalQtyToDeduct
+    for(const menuName in menuQtyMap){
+      const menuId = menuByName[menuName];
+      if(!menuId) continue; // ไม่พบเมนูนี้ใน Firestore (อาจถูกลบไปแล้ว) ข้าม ไม่ error
+      const bomSnap = await getDocs(query(collection(db,'bom'), where('menuId','==',menuId)));
+      bomSnap.forEach(d => {
+        const bomEntry = d.data();
+        const qtyPerDish = parseFloat(bomEntry.qty) || 0;
+        if(qtyPerDish <= 0) return; // ข้ามถ้าปริมาณต่อจานกรอกไม่ถูกต้อง/ว่าง
+        const totalDeduct = qtyPerDish * menuQtyMap[menuName];
+        ingDeductMap[bomEntry.ingId] = (ingDeductMap[bomEntry.ingId] || 0) + totalDeduct;
+      });
+    }
+
+    // หักสต็อคจริงทีละวัตถุดิบ (อ่านค่าปัจจุบันสดๆ ก่อนหัก กันข้อมูลเก่าจาก cache ไม่ตรงกัน)
+    for(const ingId in ingDeductMap){
+      const ingRef = doc(db,'ingredients',ingId);
+      const ingSnap = await getDoc(ingRef);
+      if(!ingSnap.exists()) continue; // วัตถุดิบถูกลบไปแล้ว ข้าม ไม่ error
+      const currentQty = ingSnap.data().qty || 0;
+      const newQty = Math.max(0, currentQty - ingDeductMap[ingId]); // กันติดลบ
+      await updateDoc(ingRef, {qty: newQty});
+    }
+  } catch(e){
+    // การหักสต็อคพลาดไม่ควรทำให้ปิดบิลไม่ได้ (เงินเข้าจริงแล้วคือสิ่งสำคัญที่สุด) แค่ log ไว้เตือน
+    console.warn('deductStockForOrders failed (ไม่กระทบการปิดบิล):', e);
+  }
+}
+
 window.onBillFinished = async (payCtx) => {
   const payMethodTh = payCtx.method==='cash' ? 'เงินสด' : 'โอน/สแกน';
   const actingUser = auth.currentUser?.email || auth.currentUser?.uid || 'ลูกค้า (ไม่ล็อกอิน)';
@@ -3860,6 +4024,8 @@ window.onBillFinished = async (payCtx) => {
       const orders = ALL_ACTIVE_ORDERS.filter(o => o.table===payCtx.table && ['new','preparing','ready','served','awaiting_confirm'].includes(o.status));
       if(!orders.length) throw new Error('ไม่พบออเดอร์ที่จะปิดบิล (อาจถูกปิดไปแล้ว)');
       await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid', payMethod: payMethodTh, confirmedBy: actingUser, confirmedAt: serverTimestamp()})));
+      // หักสต็อควัตถุดิบอัตโนมัติตามสูตร BOM — ทำหลังปิดบิลสำเร็จเท่านั้น (ตามที่ TaBon ยืนยัน กันออเดอร์ถูกยกเลิกก่อนแล้วสต็อคหักไปแล้ว)
+      deductStockForOrders(orders);
       // สร้าง payment record แยก (ใหม่) — เก็บเฉพาะตอนเงินเข้าจริงเท่านั้น ใช้สำหรับ sync เข้า Sheet แท็บ Payments
       const totalAmount = orders.reduce((s,o)=>s+(o.total||0),0);
       const paymentId = 'PAY'+Date.now();
