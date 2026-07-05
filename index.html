@@ -3499,6 +3499,16 @@ async function loadMySchedule(){
 }
 window.loadMySchedule = loadMySchedule;
 
+// Bug fix: restoreStateFromUrl() ในสคริปต์แรกรันเร็วเกินไป (ก่อน module script นี้โหลดเสร็จ)
+// ทำให้กด/เปิดลิงก์ตรงไปหน้า "ตารางแพลนงาน" (?view=schedule) แล้วค้างเงียบๆ ไม่มี error เลย
+// เพราะฟังก์ชัน renderScheduleGrid/loadMySchedule ยังไม่ถูก expose ตอนนั้น
+// จุดนี้คือจุดที่ทุกฟังก์ชันที่จำเป็นพร้อมใช้งานแน่นอนแล้ว จึงเช็ค URL ซ้ำอีกครั้งเพื่อความชัวร์
+(function reapplyDeferredViewsAfterFirebaseReady(){
+  const params = new URLSearchParams(location.search);
+  if(params.get('view') === 'schedule') renderScheduleGrid();
+  // หน้าตารางกะของฉัน (พนักงาน) โหลดผ่านการคลิกแท็บเท่านั้น ไม่ผูกกับ URL param แยก จึงไม่ต้องเช็คซ้ำที่นี่
+})();
+
 // ===================== ขอลาล่วงหน้า (พนักงานส่งเอง) =====================
 document.getElementById('btnRequestLeave')?.addEventListener('click', () => {
   if(!auth.currentUser){ if(window.toast) toast('❌ ต้องเข้าสู่ระบบก่อน'); return; }
