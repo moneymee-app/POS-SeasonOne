@@ -452,6 +452,7 @@
       <div class="nav-group-label">บุคลากร</div>
       <div class="nav-item" data-view="staff"><span class="ic">👥</span> พนักงาน &amp; เข้างาน</div>
       <div class="nav-item" data-view="schedule"><span class="ic">🗓️</span> ตารางแพลนงาน</div>
+      <div class="nav-item" data-view="reservations"><span class="ic">📅</span> จองโต๊ะล่วงหน้า</div>
 
       <div class="nav-group-label">ระบบ</div>
       <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> ตั้งค่าร้าน</div>
@@ -855,6 +856,35 @@
         </div>
       </section>
 
+      <!-- ========== RESERVATIONS (จองโต๊ะล่วงหน้า) ========== -->
+      <section class="view" id="view-reservations">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-head"><h3>⏰ ช่วงเวลาที่เปิดรับจอง</h3><button class="pill-btn" id="btnAddSlot" style="background:var(--gold); color:var(--night);">＋ เพิ่มช่วงเวลา</button></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">เปิด/ปิดแต่ละช่วงเวลาได้ตามต้องการ — ลูกค้าจะเลือกได้เฉพาะช่วงที่เปิดอยู่เท่านั้น</div>
+          <div id="slotList"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-head"><h3>📊 ความจุที่นั่งวันนี้ (ตามโซน)</h3></div>
+          <div id="capacityOverview"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>📋 รายการคำขอจอง</h3>
+            <div class="chip-row" id="resvStatusChips">
+              <div class="chip active" data-rs="pending">รออนุมัติ</div>
+              <div class="chip" data-rs="approved">อนุมัติแล้ว</div>
+              <div class="chip" data-rs="all">ทั้งหมด</div>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>วันที่-เวลา</th><th>ชื่อ/เบอร์โทร</th><th>โซน</th><th>จำนวนคน</th><th>สถานะ</th><th></th></tr></thead>
+            <tbody id="reservationTableBody"><tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ========== SETTINGS ========== -->
       <section class="view" id="view-settings">
         <div class="grid-2">
@@ -1044,6 +1074,7 @@
           <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
         </div>
       </div>
+      <button class="pill-btn" id="btnOpenReservation" style="width:100%; background:var(--forest); color:#fff; margin-top:10px;">📅 จองโต๊ะล่วงหน้า</button>
     </div>
     <div class="cust-cats">
       <div class="cust-cat active">ทั้งหมด</div>
@@ -1303,6 +1334,63 @@
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('leaveModal').classList.remove('open')">ยกเลิก</button>
       <button class="btn-lg b-gold" id="leaveSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESERVATION SLOT MODAL (Admin จัดการช่วงเวลาจอง) ===== -->
+<div class="modal-back" id="slotModal">
+  <div class="modal">
+    <h3 id="slotModalTitle">⏰ เพิ่มช่วงเวลาจอง</h3>
+    <input type="text" id="slotTime" placeholder="เวลา เช่น 11:00">
+    <input type="text" id="slotLabel" placeholder="ชื่อช่วง (ถ้ามี) เช่น รอบเที่ยง">
+    <div id="slotErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('slotModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="slotSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RESERVATION EDIT/CANCEL MODAL (Admin แก้ไข/ยกเลิกการจอง) ===== -->
+<div class="modal-back" id="resvEditModal">
+  <div class="modal">
+    <h3>📅 จัดการคำขอจอง</h3>
+    <div id="resvEditDetail" style="font-size:13.5px; line-height:1.9; margin-bottom:14px;"></div>
+    <div class="lbl2">เปลี่ยนสถานะ</div>
+    <select id="resvEditStatus">
+      <option value="pending">รออนุมัติ</option>
+      <option value="approved">อนุมัติแล้ว</option>
+      <option value="rejected">ปฏิเสธ</option>
+      <option value="cancelled">ยกเลิก</option>
+    </select>
+    <div id="resvCancelWarning" style="display:none; background:rgba(228,72,58,.12); border:1px solid var(--danger); border-radius:9px; padding:10px 14px; font-size:12.5px; color:#FF8A73; margin-bottom:10px;">
+      ⚠️ อย่าลืมโทรแจ้งลูกค้าที่เบอร์นี้ด้วยว่าการจองถูกยกเลิก/ปฏิเสธ ระบบไม่ได้ส่ง SMS หรือโทรแจ้งอัตโนมัติ
+    </div>
+    <div id="resvEditErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('resvEditModal').classList.remove('open')">ปิด</button>
+      <button class="btn-lg b-gold" id="resvEditSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TABLE RESERVATION MODAL (ลูกค้าจองโต๊ะล่วงหน้า) ===== -->
+<div class="modal-back" id="reservationModal">
+  <div class="modal">
+    <h3>📅 จองโต๊ะล่วงหน้า</h3>
+    <div class="sub">กรอกข้อมูลแล้วส่งคำขอ — ทางร้านจะยืนยันการจองให้เร็วที่สุด</div>
+    <input type="text" id="resvName" placeholder="ชื่อผู้จอง">
+    <input type="text" id="resvPhone" placeholder="เบอร์โทรศัพท์ (สำหรับติดต่อยืนยัน)" maxlength="10">
+    <input type="date" id="resvDate">
+    <select id="resvSlotTime"><option value="">เลือกวันที่ก่อนเพื่อดูช่วงเวลาที่เปิดจอง</option></select>
+    <select id="resvZone"></select>
+    <input type="text" id="resvPartySize" placeholder="จำนวนคน">
+    <div id="resvCapacityNote" style="font-size:12px; color:var(--muted); margin-bottom:8px;"></div>
+    <div id="resvErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('reservationModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="resvSendBtn">✓ ส่งคำขอจอง</button>
     </div>
   </div>
 </div>
@@ -1577,6 +1665,7 @@
     payments: ['ตรวจสลิป / ยืนยันการชำระเงิน', '3 รายการรอตรวจสอบ'],
     staff: ['พนักงาน & การเข้างาน', 'วันนี้เข้างานแล้ว 4 จาก 6 คน'],
     schedule: ['ตารางแพลนงาน', 'คลิกที่ช่องเพื่อจัดกะพนักงาน — แสดงล่วงหน้า 8 สัปดาห์'],
+    reservations: ['จองโต๊ะล่วงหน้า', 'จัดการช่วงเวลาที่เปิดจอง + อนุมัติ/ยกเลิกคำขอจอง'],
     settings: ['ตั้งค่าร้าน', 'ข้อมูลร้านและสิทธิ์การเข้าถึง']
   };
 
@@ -1642,6 +1731,7 @@
       saveViewToUrl(v);
       if(v === 'staff' && window.loadHrStats) loadHrStats(); // รีเฟรชสถิติ HR ทุกครั้งที่เปิดหน้านี้ (ข้อมูลอาจเปลี่ยนตั้งแต่โหลดครั้งแรก)
       if(v === 'schedule' && window.renderScheduleGrid) renderScheduleGrid();
+      if(v === 'reservations' && window.loadReservationAdminData) loadReservationAdminData();
     });
   });
 
@@ -2749,6 +2839,235 @@ onSnapshot(collection(db,'positions'), (qs) => {
   refreshShiftPositionOptions(); // อัปเดตตัวเลือกตำแหน่งในตอนจัดกะด้วย
 }, e => console.warn('positions listener failed', e));
 
+// ===================== ระบบจองโต๊ะล่วงหน้า (ล็อต C ข้อ 6) =====================
+let RESERVATION_SLOTS_CACHE = [];
+
+// ---------- ฝั่ง Admin: จัดการช่วงเวลาที่เปิดจอง ----------
+function renderSlotList(){
+  const box = document.getElementById('slotList');
+  if(!box) return;
+  if(!RESERVATION_SLOTS_CACHE.length){ box.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีช่วงเวลาที่เปิดจอง</div>'; return; }
+  const sorted = [...RESERVATION_SLOTS_CACHE].sort((a,b)=>a.time.localeCompare(b.time));
+  box.innerHTML = sorted.map(s =>
+    '<div class="bom-row"><span style="flex:1">'+s.time+(s.label?' — '+s.label:'')+
+    '<span class="status '+(s.active?'on':'off')+'" style="margin-left:8px;">'+(s.active?'เปิดรับจอง':'ปิด')+'</span></span>'+
+    '<button class="btn-mini '+(s.active?'btn-reject':'btn-approve')+'" data-sid="'+s.id+'" data-active="'+s.active+'" data-action="toggle">'+(s.active?'ปิด':'เปิด')+'</button>'+
+    '<button class="icon-sm slot-edit" data-sid="'+s.id+'">✏️</button>'+
+    '<button class="icon-sm slot-del" data-sid="'+s.id+'" data-time="'+s.time+'">🗑️</button></div>'
+  ).join('');
+  box.querySelectorAll('button[data-action="toggle"]').forEach(b => b.addEventListener('click', async () => {
+    try { await updateDoc(doc(db,'reservationSlots',b.dataset.sid), {active: !(b.dataset.active==='true')}); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+  box.querySelectorAll('.slot-edit').forEach(b => b.addEventListener('click', () => openSlotModal(b.dataset.sid)));
+  box.querySelectorAll('.slot-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบช่วงเวลา "'+b.dataset.time+'" ใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'reservationSlots',b.dataset.sid)); if(window.toast) toast('🗑️ ลบแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+let editingSlotId = null;
+window.openSlotModal = (sid) => {
+  editingSlotId = sid || null;
+  document.getElementById('slotModalTitle').textContent = sid ? '✏️ แก้ไขช่วงเวลาจอง' : '⏰ เพิ่มช่วงเวลาจอง';
+  const existing = sid ? RESERVATION_SLOTS_CACHE.find(s=>s.id===sid) : null;
+  document.getElementById('slotTime').value = existing?.time || '';
+  document.getElementById('slotLabel').value = existing?.label || '';
+  document.getElementById('slotErr').textContent = '';
+  document.getElementById('slotModal').classList.add('open');
+};
+document.getElementById('btnAddSlot')?.addEventListener('click', () => openSlotModal(null));
+document.getElementById('slotSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('slotErr');
+  const time = document.getElementById('slotTime').value.trim();
+  const label = document.getElementById('slotLabel').value.trim();
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){ errEl.textContent = 'กรุณากรอกเวลาให้ถูกต้อง เช่น 11:00'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const docId = editingSlotId || 'SLOT_'+time.replace(':','')+'_'+Date.now();
+    await setDoc(doc(db,'reservationSlots',docId), {time, label, active: true});
+    document.getElementById('slotModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกช่วงเวลาแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+onSnapshot(collection(db,'reservationSlots'), (qs) => {
+  RESERVATION_SLOTS_CACHE = []; qs.forEach(d => RESERVATION_SLOTS_CACHE.push({id:d.id, ...d.data()}));
+  renderSlotList();
+  refreshCustomerSlotOptions();
+}, e => console.warn('reservationSlots listener failed', e));
+
+// ---------- ความจุที่นั่งตามโซน (ใช้ทั้งฝั่งลูกค้าเช็คก่อนจอง และ Admin ดูภาพรวม) ----------
+function calcZoneCapacity(zoneName){
+  return TABLES_CACHE.filter(t => t.zone === zoneName).reduce((s,t)=>s+(t.seats||4),0);
+}
+async function getApprovedReservationsFor(dateKey, slotTime, zoneName){
+  const qs = await getDocs(query(collection(db,'reservations'),
+    where('date','==',dateKey), where('slotTime','==',slotTime), where('zone','==',zoneName), where('status','==','approved')));
+  let total = 0;
+  qs.forEach(d => total += (d.data().partySize || 0));
+  return total;
+}
+
+// ---------- ฝั่งลูกค้า: ฟอร์มจองโต๊ะ ----------
+function refreshCustomerSlotOptions(){
+  const sel = document.getElementById('resvSlotTime');
+  if(!sel) return;
+  const activeSlots = RESERVATION_SLOTS_CACHE.filter(s=>s.active).sort((a,b)=>a.time.localeCompare(b.time));
+  sel.innerHTML = activeSlots.length
+    ? activeSlots.map(s => '<option value="'+s.time+'">'+s.time+(s.label?' — '+s.label:'')+'</option>').join('')
+    : '<option value="">ขณะนี้ยังไม่เปิดรับจอง</option>';
+}
+function refreshCustomerZoneOptions(){
+  const sel = document.getElementById('resvZone');
+  if(!sel) return;
+  sel.innerHTML = ZONES_CACHE.map(z => '<option value="'+z.name+'">'+z.name+'</option>').join('');
+}
+document.getElementById('btnOpenReservation')?.addEventListener('click', () => {
+  document.getElementById('resvName').value = '';
+  document.getElementById('resvPhone').value = '';
+  document.getElementById('resvDate').value = toLocalDateKey(new Date());
+  document.getElementById('resvPartySize').value = '';
+  document.getElementById('resvCapacityNote').textContent = '';
+  document.getElementById('resvErr').textContent = '';
+  refreshCustomerSlotOptions();
+  refreshCustomerZoneOptions();
+  document.getElementById('reservationModal').classList.add('open');
+});
+document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('resvErr');
+  const name = document.getElementById('resvName').value.trim();
+  const phone = document.getElementById('resvPhone').value.replace(/\D/g,'');
+  const date = document.getElementById('resvDate').value;
+  const slotTime = document.getElementById('resvSlotTime').value;
+  const zone = document.getElementById('resvZone').value;
+  const partySize = parseInt(document.getElementById('resvPartySize').value, 10);
+  if(!name || phone.length < 9 || !date || !slotTime || !zone || !partySize || partySize <= 0){
+    errEl.textContent = 'กรุณากรอกข้อมูลให้ครบและถูกต้อง'; return;
+  }
+  errEl.textContent = 'กำลังตรวจสอบที่นั่งว่าง...';
+  try {
+    const capacity = calcZoneCapacity(zone);
+    const alreadyBooked = await getApprovedReservationsFor(date, slotTime, zone);
+    if(capacity > 0 && (alreadyBooked + partySize) > capacity){
+      errEl.textContent = '⚠️ ช่วงเวลานี้ที่นั่งไม่พอแล้ว (จองได้แล้ว '+alreadyBooked+'/'+capacity+' ที่นั่ง) กรุณาเลือกช่วงเวลาอื่น';
+      return;
+    }
+    const resvId = 'RESV'+Date.now();
+    await setDoc(doc(db,'reservations',resvId), {
+      name, phone, date, slotTime, zone, partySize, status:'pending', createdAt: serverTimestamp()
+    });
+    document.getElementById('reservationModal').classList.remove('open');
+    if(window.toast) toast('✓ ส่งคำขอจองแล้ว — รอทางร้านยืนยันนะครับ');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+// เช็คความจุแบบ real-time ตอนเลือกช่วงเวลา/โซน/จำนวนคน (ก่อนกดส่งจริง) ให้ลูกค้าเห็นล่วงหน้า
+['resvDate','resvSlotTime','resvZone','resvPartySize'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', async () => {
+    const date = document.getElementById('resvDate').value;
+    const slotTime = document.getElementById('resvSlotTime').value;
+    const zone = document.getElementById('resvZone').value;
+    const noteEl = document.getElementById('resvCapacityNote');
+    if(!date || !slotTime || !zone){ noteEl.textContent = ''; return; }
+    const capacity = calcZoneCapacity(zone);
+    if(capacity <= 0){ noteEl.textContent = ''; return; }
+    const booked = await getApprovedReservationsFor(date, slotTime, zone);
+    const pct = Math.round((booked/capacity)*100);
+    noteEl.textContent = 'ที่นั่งจองแล้ว '+booked+'/'+capacity+' ('+pct+'%)';
+    noteEl.style.color = pct >= 80 ? 'var(--danger)' : 'var(--muted)';
+  });
+});
+
+// ---------- ฝั่ง Admin: รายการคำขอจอง + ความจุภาพรวม ----------
+let resvStatusFilter = 'pending';
+async function loadReservationAdminData(){
+  await renderCapacityOverview();
+  await renderReservationTable();
+}
+window.loadReservationAdminData = loadReservationAdminData;
+
+async function renderCapacityOverview(){
+  const box = document.getElementById('capacityOverview');
+  if(!box) return;
+  const todayKey = toLocalDateKey(new Date());
+  try {
+    const qs = await getDocs(query(collection(db,'reservations'), where('date','==',todayKey), where('status','==','approved')));
+    const byZone = {};
+    qs.forEach(d => { const v = d.data(); byZone[v.zone] = (byZone[v.zone]||0) + v.partySize; });
+    const zoneNames = [...new Set([...ZONES_CACHE.map(z=>z.name), ...Object.keys(byZone)])];
+    if(!zoneNames.length){ box.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีโซนในระบบ</div>'; return; }
+    box.innerHTML = zoneNames.map(zoneName => {
+      const capacity = calcZoneCapacity(zoneName);
+      const booked = byZone[zoneName] || 0;
+      const pct = capacity > 0 ? Math.round((booked/capacity)*100) : 0;
+      const warnHtml = pct >= 80 ? '<div style="color:var(--warn); font-size:12px; margin-top:4px;">⚠️ ใกล้เต็มแล้ว ('+pct+'%) — พิจารณาเปิดโต๊ะเสริมหรือปิดรับจองเพิ่มไหม?</div>' : '';
+      return '<div style="margin-bottom:14px;"><div style="display:flex; justify-content:space-between; font-size:13.5px; margin-bottom:6px;"><b>'+zoneName+'</b><span>'+booked+'/'+capacity+' ที่นั่ง ('+pct+'%)</span></div>'+
+        '<div class="bar-track"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%; background:'+(pct>=80?'var(--danger)':'linear-gradient(90deg,var(--forest),var(--gold))')+';"></div></div>'+warnHtml+'</div>';
+    }).join('');
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+
+async function renderReservationTable(){
+  const tbody = document.getElementById('reservationTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr>';
+  try {
+    let qs;
+    if(resvStatusFilter === 'all') qs = await getDocs(collection(db,'reservations'));
+    else qs = await getDocs(query(collection(db,'reservations'), where('status','==',resvStatusFilter)));
+    const rows = []; qs.forEach(d => rows.push({id:d.id, ...d.data()}));
+    rows.sort((a,b) => (a.date+a.slotTime).localeCompare(b.date+b.slotTime));
+
+    const statusLabel = {pending:'รออนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก'};
+    const statusColor = {pending:'var(--warn)', approved:'var(--ok)', rejected:'var(--danger)', cancelled:'var(--muted)'};
+
+    tbody.innerHTML = rows.length ? rows.map(r => {
+      const dateLabel = new Date(r.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+      return '<tr><td>'+dateLabel+' · '+r.slotTime+'</td><td>'+r.name+' · 📱'+r.phone+'</td><td>'+r.zone+'</td><td>'+r.partySize+' คน</td>'+
+        '<td><span style="color:'+statusColor[r.status]+';">'+ (statusLabel[r.status]||r.status) +'</span></td>'+
+        '<td><button class="icon-sm resv-manage" data-rid="'+r.id+'">⚙️</button></td></tr>';
+    }).join('') : '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">ไม่มีรายการ</td></tr>';
+
+    tbody.querySelectorAll('.resv-manage').forEach(b => b.addEventListener('click', () => openResvEditModal(rows.find(r=>r.id===b.dataset.rid))));
+  } catch(e){ tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</td></tr>'; }
+}
+document.getElementById('resvStatusChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('#resvStatusChips .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');
+  resvStatusFilter = c.dataset.rs;
+  renderReservationTable();
+}));
+
+let editingResvId = null;
+window.openResvEditModal = (resv) => {
+  editingResvId = resv.id;
+  const dateLabel = new Date(resv.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('resvEditDetail').innerHTML =
+    '<b>'+resv.name+'</b> · 📱 '+resv.phone+'<br>'+
+    dateLabel+' เวลา '+resv.slotTime+'<br>'+
+    'โซน '+resv.zone+' · '+resv.partySize+' คน';
+  document.getElementById('resvEditStatus').value = resv.status;
+  document.getElementById('resvCancelWarning').style.display = 'none';
+  document.getElementById('resvEditErr').textContent = '';
+  document.getElementById('resvEditModal').classList.add('open');
+};
+document.getElementById('resvEditStatus')?.addEventListener('change', (e) => {
+  const showWarning = e.target.value === 'rejected' || e.target.value === 'cancelled';
+  document.getElementById('resvCancelWarning').style.display = showWarning ? 'block' : 'none';
+});
+document.getElementById('resvEditSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('resvEditErr');
+  const newStatus = document.getElementById('resvEditStatus').value;
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    await updateDoc(doc(db,'reservations',editingResvId), {
+      status: newStatus, updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ', updatedAt: serverTimestamp()
+    });
+    document.getElementById('resvEditModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกแล้ว');
+    renderReservationTable();
+    renderCapacityOverview();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
 
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
