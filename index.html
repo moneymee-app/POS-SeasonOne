@@ -388,6 +388,14 @@
   .cal-cell.is-today{ border-color:var(--gold); background:rgba(200,168,75,.08); }
   .cal-daynum{ font-size:14px; font-weight:700; color:var(--ink); margin-bottom:4px; }
   .cal-counts{ display:flex; flex-wrap:wrap; gap:4px; font-size:12px; font-weight:700; }
+  .cal-open-dot{
+    display:inline-block; width:9px; height:9px; border-radius:50%;
+    background:var(--ok); box-shadow:0 0 0 2px rgba(62,224,122,.25);
+  }
+  /* จอกว้าง (คอม/แท็บเล็ต) — ขยายจุดให้ใหญ่ขึ้น อ่านง่ายขึ้น ไม่ต้องพึ่งข้อความกำกับ */
+  @media (min-width: 900px){
+    .cal-open-dot{ width:14px; height:14px; box-shadow:0 0 0 3px rgba(62,224,122,.25); }
+  }
   .cal-count-morning{ color:#E4CD8C; }
   .cal-count-evening{ color:#8AC4FF; }
   .cal-count-full{ color:#3EE07A; }
@@ -400,6 +408,22 @@
   .day-detail-row:last-child{ border-bottom:none; }
   .day-detail-name{ font-size:13.5px; font-weight:600; }
   .day-detail-position{ font-size:11.5px; color:var(--muted); }
+
+  /* ===== RESERVATION CARDS (แทนตารางบนมือถือ กันปุ่มถูกซ่อนต้องเลื่อนหา) ===== */
+  .resv-card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+  .resv-card-top{ display:flex; justify-content:space-between; align-items:start; margin-bottom:8px; }
+  .resv-card-datetime{ font-size:13px; color:var(--gold-soft); font-weight:600; }
+  .resv-card-name{ font-size:14.5px; font-weight:700; margin:2px 0; }
+  .resv-card-phone{ font-size:12.5px; color:var(--muted); }
+  .resv-card-meta{ display:flex; gap:14px; font-size:13px; margin:8px 0; color:var(--ink); }
+  .resv-card-actions{ display:flex; gap:8px; margin-top:10px; }
+  .resv-card-actions button{
+    flex:1; padding:10px; border-radius:9px; font-size:14px; font-weight:600; border:none; cursor:pointer;
+  }
+  /* จอกว้าง (คอม) — ขยายปุ่มให้ใหญ่ขึ้น กดง่ายขึ้น ไม่เล็กจนต้องเพ่ง */
+  @media (min-width: 900px){
+    .resv-card-actions button{ padding:13px; font-size:15.5px; }
+  }
   .tcell{ aspect-ratio:1; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Sarabun',sans-serif; font-size:20px; font-weight:700; cursor:pointer; border:2px solid; gap:4px; }
   .tcell.free{ border-color:#3EE07A; color:#3EE07A; background:rgba(62,224,122,.07); }
   .tcell.busy{ border-color:var(--gold); color:var(--gold-soft); background:rgba(200,168,75,.1); }
@@ -925,10 +949,7 @@
               <div class="chip" data-rs="all">ทั้งหมด</div>
             </div>
           </div>
-          <table>
-            <thead><tr><th>วันที่-เวลา</th><th>ชื่อ/เบอร์โทร</th><th>โซน</th><th>จำนวนคน</th><th>สถานะ</th><th></th></tr></thead>
-            <tbody id="reservationTableBody"><tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr></tbody>
-          </table>
+          <div id="reservationCardList"><div style="color:var(--muted); font-size:13px; text-align:center; padding:20px;">กำลังโหลด...</div></div>
         </div>
       </section>
 
@@ -1411,6 +1432,10 @@
   <div class="modal">
     <h3>📅 จัดการคำขอจอง</h3>
     <div id="resvEditDetail" style="font-size:13.5px; line-height:1.9; margin-bottom:14px;"></div>
+    <div class="lbl2">โซน</div>
+    <select id="resvEditZone"></select>
+    <div class="lbl2">จำนวนคน</div>
+    <input type="text" id="resvEditPartySize" placeholder="จำนวนคน">
     <div class="lbl2">เปลี่ยนสถานะ</div>
     <select id="resvEditStatus">
       <option value="pending">รออนุมัติ</option>
@@ -2974,7 +2999,7 @@ async function renderReservationCalendar(){
           '<span style="color:var(--muted);">เหลือ '+remaining+' ที่</span>'+
           '<span style="color:'+pctColor+'; font-weight:700;">'+pct+'%</span></div>';
       } else if(hasSlots){
-        dotHtml = '<div class="cal-counts"><span style="color:var(--ok);">● เปิดจองแล้ว</span></div>';
+        dotHtml = '<div class="cal-counts"><span class="cal-open-dot"></span></div>';
       } else {
         dotHtml = '<div class="cal-empty-hint">ว่าง</div>';
       }
@@ -3211,9 +3236,9 @@ async function renderCapacityOverview(){
 }
 
 async function renderReservationTable(){
-  const tbody = document.getElementById('reservationTableBody');
-  if(!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr>';
+  const box = document.getElementById('reservationCardList');
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--muted); font-size:13px; text-align:center; padding:20px;">กำลังโหลด...</div>';
   try {
     let qs;
     if(resvStatusFilter === 'all') qs = await getDocs(collection(db,'reservations'));
@@ -3224,25 +3249,32 @@ async function renderReservationTable(){
     const statusLabel = {pending:'รออนุมัติ', approved:'อนุมัติแล้ว', rejected:'ปฏิเสธ', cancelled:'ยกเลิก'};
     const statusColor = {pending:'var(--warn)', approved:'var(--ok)', rejected:'var(--danger)', cancelled:'var(--muted)'};
 
-    tbody.innerHTML = rows.length ? rows.map(r => {
-      const dateLabel = new Date(r.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short'});
-      const approveBtn = r.status==='pending' ? '<button class="icon-sm resv-approve" data-rid="'+r.id+'" title="อนุมัติทันที" style="color:var(--ok);">✓</button>' : '';
-      return '<tr><td>'+dateLabel+' · '+r.slotTime+'</td><td>'+r.name+' · 📱'+r.phone+'</td><td>'+r.zone+'</td><td>'+r.partySize+' คน</td>'+
-        '<td><span style="color:'+statusColor[r.status]+';">'+ (statusLabel[r.status]||r.status) +'</span></td>'+
-        '<td><div class="row-actions">'+approveBtn+
-        '<button class="icon-sm resv-edit" data-rid="'+r.id+'" title="แก้ไข">✏️</button>'+
-        '<button class="icon-sm resv-delete" data-rid="'+r.id+'" data-phone="'+r.phone+'" title="ลบ/ยกเลิก">🗑️</button></div></td></tr>';
-    }).join('') : '<tr><td colspan="6" style="color:var(--muted); text-align:center; padding:20px;">ไม่มีรายการ</td></tr>';
+    box.innerHTML = rows.length ? rows.map(r => {
+      const dateLabel = new Date(r.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+      const approveBtn = r.status==='pending'
+        ? '<button class="resv-approve" data-rid="'+r.id+'" style="background:rgba(62,224,122,.15); color:var(--ok);">✓ อนุมัติ</button>' : '';
+      return '<div class="resv-card">'+
+        '<div class="resv-card-top">'+
+          '<div><div class="resv-card-datetime">📅 '+dateLabel+' · '+r.slotTime+'</div>'+
+          '<div class="resv-card-name">'+r.name+'</div><div class="resv-card-phone">📱 '+r.phone+'</div></div>'+
+          '<span class="status" style="background:transparent; border:1px solid '+statusColor[r.status]+'; color:'+statusColor[r.status]+';">'+(statusLabel[r.status]||r.status)+'</span>'+
+        '</div>'+
+        '<div class="resv-card-meta"><span>🪑 '+r.zone+'</span><span>👥 '+r.partySize+' คน</span></div>'+
+        '<div class="resv-card-actions">'+approveBtn+
+          '<button class="resv-edit" data-rid="'+r.id+'" style="background:rgba(200,168,75,.15); color:var(--gold-soft);">✏️ แก้ไข</button>'+
+          '<button class="resv-delete" data-rid="'+r.id+'" data-phone="'+r.phone+'" style="background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบ</button>'+
+        '</div></div>';
+    }).join('') : '<div style="color:var(--muted); font-size:13px; text-align:center; padding:30px;">ไม่มีรายการ</div>';
 
-    tbody.querySelectorAll('.resv-approve').forEach(b => b.addEventListener('click', async () => {
+    box.querySelectorAll('.resv-approve').forEach(b => b.addEventListener('click', async () => {
       try {
         await updateDoc(doc(db,'reservations',b.dataset.rid), {status:'approved', updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ', updatedAt: serverTimestamp()});
         if(window.toast) toast('✓ อนุมัติแล้ว');
         renderReservationTable(); renderCapacityOverview();
       } catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
     }));
-    tbody.querySelectorAll('.resv-edit').forEach(b => b.addEventListener('click', () => openResvEditModal(rows.find(r=>r.id===b.dataset.rid))));
-    tbody.querySelectorAll('.resv-delete').forEach(b => b.addEventListener('click', async () => {
+    box.querySelectorAll('.resv-edit').forEach(b => b.addEventListener('click', () => openResvEditModal(rows.find(r=>r.id===b.dataset.rid))));
+    box.querySelectorAll('.resv-delete').forEach(b => b.addEventListener('click', async () => {
       if(!confirm('ยกเลิก/ลบการจองนี้ใช่ไหม? อย่าลืมโทรแจ้งลูกค้าที่เบอร์ '+b.dataset.phone+' ด้วย')) return;
       try {
         await updateDoc(doc(db,'reservations',b.dataset.rid), {status:'cancelled', updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ', updatedAt: serverTimestamp()});
@@ -3250,7 +3282,7 @@ async function renderReservationTable(){
         renderReservationTable(); renderCapacityOverview();
       } catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
     }));
-  } catch(e){ tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</td></tr>'; }
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px; text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
 }
 document.getElementById('resvStatusChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
   document.querySelectorAll('#resvStatusChips .chip').forEach(x=>x.classList.remove('active'));
@@ -3265,8 +3297,11 @@ window.openResvEditModal = (resv) => {
   const dateLabel = new Date(resv.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('resvEditDetail').innerHTML =
     '<b>'+resv.name+'</b> · 📱 '+resv.phone+'<br>'+
-    dateLabel+' เวลา '+resv.slotTime+'<br>'+
-    'โซน '+resv.zone+' · '+resv.partySize+' คน';
+    dateLabel+' เวลา '+resv.slotTime;
+  const zoneSel = document.getElementById('resvEditZone');
+  zoneSel.innerHTML = ZONES_CACHE.map(z => '<option value="'+z.name+'">'+z.name+'</option>').join('');
+  zoneSel.value = resv.zone;
+  document.getElementById('resvEditPartySize').value = resv.partySize;
   document.getElementById('resvEditStatus').value = resv.status;
   document.getElementById('resvCancelWarning').style.display = 'none';
   document.getElementById('resvEditErr').textContent = '';
@@ -3279,10 +3314,14 @@ document.getElementById('resvEditStatus')?.addEventListener('change', (e) => {
 document.getElementById('resvEditSaveBtn')?.addEventListener('click', async () => {
   const errEl = document.getElementById('resvEditErr');
   const newStatus = document.getElementById('resvEditStatus').value;
+  const newZone = document.getElementById('resvEditZone').value;
+  const newPartySize = parseInt(document.getElementById('resvEditPartySize').value, 10);
+  if(!newPartySize || newPartySize <= 0){ errEl.textContent = 'กรุณากรอกจำนวนคนให้ถูกต้อง'; return; }
   errEl.textContent = 'กำลังบันทึก...';
   try {
     await updateDoc(doc(db,'reservations',editingResvId), {
-      status: newStatus, updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ', updatedAt: serverTimestamp()
+      status: newStatus, zone: newZone, partySize: newPartySize,
+      updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ', updatedAt: serverTimestamp()
     });
     document.getElementById('resvEditModal').classList.remove('open');
     if(window.toast) toast('✓ บันทึกแล้ว');
@@ -4215,6 +4254,7 @@ window.loadMySchedule = loadMySchedule;
 (function reapplyDeferredViewsAfterFirebaseReady(){
   const params = new URLSearchParams(location.search);
   if(params.get('view') === 'schedule') renderScheduleGrid();
+  if(params.get('view') === 'reservations' && window.loadReservationAdminData) loadReservationAdminData();
   // หน้าตารางกะของฉัน (พนักงาน) โหลดผ่านการคลิกแท็บเท่านั้น ไม่ผูกกับ URL param แยก จึงไม่ต้องเช็คซ้ำที่นี่
 })();
 
