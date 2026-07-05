@@ -2200,6 +2200,9 @@ document.getElementById('leaveSaveBtn')?.addEventListener('click', async () => {
     });
     document.getElementById('leaveModal').classList.remove('open');
     if(window.toast) toast('✓ บันทึกการลาแล้ว');
+    // รีเฟรชปฏิทินตารางแพลนงานทันที (bug fix: เดิมต้องรีเฟรชหน้าเว็บทั้งหมดถึงจะเห็นข้อมูลลาอัปเดต)
+    if(window.renderScheduleGrid) renderScheduleGrid();
+    if(document.getElementById('dayDetailModal')?.classList.contains('open') && window.renderDayDetailBody) renderDayDetailBody();
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
@@ -2449,32 +2452,32 @@ async function renderScheduleGrid(){
   if(!box) return;
   box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดปฏิทิน...</div>';
 
-  const year = schedAnchorDate.getFullYear();
-  const month = schedAnchorDate.getMonth();
-  document.getElementById('schedWeekLabel').textContent = schedAnchorDate.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+  try {
+    const year = schedAnchorDate.getFullYear();
+    const month = schedAnchorDate.getMonth();
+    document.getElementById('schedWeekLabel').textContent = schedAnchorDate.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
 
-  const firstOfMonth = new Date(year, month, 1);
-  const lastOfMonth = new Date(year, month+1, 0);
-  const gridStart = getMonday(firstOfMonth);
-  const gridEnd = new Date(gridStart);
-  gridEnd.setDate(gridStart.getDate() + 41); // 6 แถว x 7 วัน ครอบคลุมทุกกรณี
+    const firstOfMonth = new Date(year, month, 1);
+    const gridStart = getMonday(firstOfMonth);
+    const gridEnd = new Date(gridStart);
+    gridEnd.setDate(gridStart.getDate() + 41); // 6 แถว x 7 วัน ครอบคลุมทุกกรณี
 
-  await Promise.all([
-    loadScheduleStaff(),
-    loadScheduleData(gridStart, gridEnd),
-    loadLeavesForCalendar(gridStart, gridEnd)
-  ]);
+    await Promise.all([
+      loadScheduleStaff(),
+      loadScheduleData(gridStart, gridEnd),
+      loadLeavesForCalendar(gridStart, gridEnd)
+    ]);
 
-  if(!SCHEDULE_STAFF_CACHE.length){
-    box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">ยังไม่มีพนักงานในระบบ — เพิ่มพนักงานที่หน้า "พนักงาน & เข้างาน" ก่อน</div>';
-    return;
-  }
+    if(!SCHEDULE_STAFF_CACHE.length){
+      box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">ยังไม่มีพนักงานในระบบ — เพิ่มพนักงานที่หน้า "พนักงาน & เข้างาน" ก่อน</div>';
+      return;
+    }
 
-  const todayKey = fmtDateKey(new Date());
-  const dowNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+    const todayKey = fmtDateKey(new Date());
+    const dowNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
 
-  let html = '<div class="cal-grid">';
-  dowNames.forEach(dn => html += '<div class="cal-dow">'+dn+'</div>');
+    let html = '<div class="cal-grid">';
+    dowNames.forEach(dn => html += '<div class="cal-dow">'+dn+'</div>');
 
   const cursor = new Date(gridStart);
   for(let i=0;i<42;i++){
@@ -2503,6 +2506,10 @@ async function renderScheduleGrid(){
   box.querySelectorAll('.cal-cell').forEach(cell => cell.addEventListener('click', () => {
     openDayDetailModal(cell.dataset.date);
   }));
+  } catch(e){
+    console.error('renderScheduleGrid failed', e);
+    box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--danger);">โหลดปฏิทินไม่สำเร็จ: '+e.message+'<br><span style="font-size:11.5px; color:var(--muted);">ลองกด "วันนี้" หรือรีเฟรชหน้าเว็บใหม่</span></div>';
+  }
 }
 
 // ===== Day detail modal (คลิกวันที่ในปฏิทิน) =====
@@ -2544,6 +2551,7 @@ function renderDayDetailBody(){
     openShiftModal(b.dataset.uid, b.dataset.name, dateKey);
   }));
 }
+window.renderDayDetailBody = renderDayDetailBody;
 document.getElementById('dayDetailAddStaffBtn')?.addEventListener('click', () => {
   // เผื่อกรณีพนักงานยังไม่โผล่ในลิสต์ (edge case ไม่ค่อยเกิด) — เปิดให้เลือกจากทุกคนแล้วจัดกะได้เลย
   if(!SCHEDULE_STAFF_CACHE.length){ if(window.toast) toast('ยังไม่มีพนักงานในระบบ'); return; }
