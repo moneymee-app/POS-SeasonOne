@@ -1222,6 +1222,12 @@
     kitchen: 'จอแสดงผลติดหน้าครัว/บาร์ — ออกแบบให้ดูจากระยะไกลบนจอทัชสกรีนขนาดใหญ่',
     customer: 'นี่คือสิ่งที่ลูกค้าเห็นจริงเมื่อสแกน QR ที่โต๊ะ'
   };
+  // บันทึกมุมมองปัจจุบันลง URL (?mode=xxx) กันหลุดไปหน้า default ตอนกด refresh
+  function saveModeToUrl(mode){
+    const url = new URL(location.href);
+    url.searchParams.set('mode', mode);
+    history.replaceState(null, '', url);
+  }
   document.querySelectorAll('.rs-tab').forEach(tab=>{
     tab.addEventListener('click', ()=>{
       document.querySelectorAll('.rs-tab').forEach(t=>t.classList.remove('active'));
@@ -1230,6 +1236,7 @@
       document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
       document.getElementById('mode-'+mode).classList.add('active');
       document.getElementById('rs-note').textContent = rsNotes[mode];
+      saveModeToUrl(mode);
     });
   });
 
@@ -1356,6 +1363,11 @@
   });
 
   // ===== ADMIN NAV (existing) =====
+  function saveViewToUrl(v){
+    const url = new URL(location.href);
+    url.searchParams.set('view', v);
+    history.replaceState(null, '', url);
+  }
   document.querySelectorAll('.nav-item').forEach(item=>{
     item.addEventListener('click', ()=>{
       document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
@@ -1365,6 +1377,7 @@
       document.getElementById('view-'+v).classList.add('active');
       document.getElementById('view-title').textContent = titles[v][0];
       document.getElementById('view-meta').textContent = titles[v][1];
+      saveViewToUrl(v);
     });
   });
 
@@ -1692,6 +1705,21 @@
 
   // ===== TABLE MAP: tap to cycle status =====
   // table status cells are rendered live by the Firebase module script (auto status from real orders)
+
+  // ===== RESTORE STATE FROM URL (กัน refresh แล้วหลุดไปหน้า default) =====
+  (function restoreStateFromUrl(){
+    const params = new URLSearchParams(location.search);
+    const savedMode = params.get('mode');
+    const savedView = params.get('view');
+    if(savedMode){
+      const tab = document.querySelector('.rs-tab[data-mode="'+savedMode+'"]');
+      if(tab) tab.click(); // ใช้ click() เพื่อให้ logic เดิม (เปลี่ยน mode-view, note) ทำงานครบตามปกติ
+    }
+    if(savedView){
+      const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
+      if(item) item.click();
+    }
+  })();
 </script>
 
 <script type="module">
@@ -1889,6 +1917,8 @@ function renderMenuTable(){
     const on = t.classList.toggle('on');
     try {
       await updateDoc(doc(db,'menu',t.dataset.mid), {active:on});
+      const cachedMenu = MENU_CACHE.find(x=>x.id===t.dataset.mid);
+      if(cachedMenu) cachedMenu.active = on; // sync cache ทันที กันหน้าอื่น (เช่น แจ้งของหมด) เห็นข้อมูลเก่าค้าง
       if(window.toast) toast((on?'✓ เปิดขาย':'⏸ ปิดขาย')+'แล้ว — เมนูลูกค้าอัปเดตทันที');
     } catch(e){ t.classList.toggle('on'); if(window.toast) toast('❌ บันทึกไม่สำเร็จ: ต้องล็อกอินเป็น Admin'); }
   }));
@@ -2875,7 +2905,8 @@ function renderSoldOutList(){
   const activeStation = document.querySelector('.kstation.active')?.dataset.station || 'kitchen';
   const list = MENU_CACHE.filter(m => (m.station||'kitchen')===activeStation);
   document.getElementById('soldOutList').innerHTML = list.map(m =>
-    '<div class="bom-row"><span style="flex:1">'+m.name+'</span>'+
+    '<div class="bom-row"><span style="flex:1; display:flex; align-items:center; gap:8px;">'+m.name+
+    '<span class="status '+(m.active?'on':'off')+'">'+(m.active?'🟢 กำลังขาย':'🔴 ของหมด')+'</span></span>'+
     '<button class="btn-mini '+(m.active?'btn-reject':'btn-approve')+'" data-mid="'+m.id+'" data-active="'+m.active+'">'+
     (m.active ? '🚫 แจ้งหมด' : '✓ กลับมาขาย')+'</button></div>').join('');
   document.getElementById('soldOutList').querySelectorAll('button').forEach(b => b.addEventListener('click', async () => {
@@ -2885,6 +2916,10 @@ function renderSoldOutList(){
     b.disabled = true; b.textContent = 'กำลังบันทึก...'; // ล็อกปุ่มกันกดซ้ำระหว่างรอ + โชว์ว่ากำลังทำงานอยู่
     try {
       await updateDoc(doc(db,'menu',mid), {active: nowActive});
+      // อัปเดต MENU_CACHE ในหน่วยความจำทันที ไม่ต้องรอ onSnapshot listener (ซึ่งมีดีเลย์เล็กน้อย)
+      // นี่คือสาเหตุที่ TaBon เจอ: กดแล้วสถานะไม่เปลี่ยนจนกว่าจะรีเฟรชหน้าเว็บ
+      const cachedMenu = MENU_CACHE.find(x=>x.id===mid);
+      if(cachedMenu) cachedMenu.active = nowActive;
       if(!nowActive){
         // เช็คว่ามีออเดอร์ที่กำลังทำอยู่ซึ่งมีเมนูนี้อยู่ไหม (สั่งไปแล้วก่อนของหมด)
         const m = MENU_CACHE.find(x=>x.id===mid);
