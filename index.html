@@ -571,10 +571,28 @@
             <div class="chip active" data-fd="today">วันนี้</div>
             <div class="chip" data-fd="week">7 วันล่าสุด</div>
             <div class="chip" data-fd="month">30 วันล่าสุด</div>
+            <div class="chip" data-fd="custom">📅 เลือกวันที่เอง</div>
           </div>
           <a href="https://docs.google.com/spreadsheets/d/1_placeholder_/edit" target="_blank" class="pill-btn" style="background:var(--night); color:var(--gold-soft); text-decoration:none;">📊 เปิด Google Sheet ฉบับเต็ม</a>
           <button class="pill-btn" id="btnAddExpense" style="background:var(--danger); color:#fff;">➖ บันทึกรายจ่าย</button>
         </div>
+
+        <div id="finCustomRangeBox" style="display:none; background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:16px;">
+          <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">วันที่เริ่มต้น</div>
+              <input type="date" id="finRangeStart" style="background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:9px 12px; color:var(--ink); font-size:13.5px; font-family:inherit;">
+            </div>
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">วันที่สิ้นสุด</div>
+              <input type="date" id="finRangeEnd" style="background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:9px 12px; color:var(--ink); font-size:13.5px; font-family:inherit;">
+            </div>
+            <button class="pill-btn" id="btnApplyFinRange" style="background:var(--gold); color:var(--night);">✓ แสดงผล</button>
+          </div>
+          <div id="finRangeErr" style="font-size:12px; color:#FF8A73; margin-top:8px;"></div>
+        </div>
+
+        <div id="finRangeLabel" style="font-size:12.5px; color:var(--muted); margin-bottom:10px;"></div>
 
         <div class="kpis">
           <div class="kpi"><div class="lbl">รายรับรวม</div><div class="val" id="fin-income" style="color:var(--ok);">—</div></div>
@@ -2348,12 +2366,17 @@ startOrdersListener();
 // ===================== FINANCE: บัญชีรายรับ-รายจ่าย (ล็อต C ข้อ 1) =====================
 let PAID_ORDERS_CACHE = [];
 let EXPENSES_CACHE = [];
-let finRangeDays = 1; // 1=วันนี้, 7=7วัน, 30=30วัน
+let finRangeDays = 1; // 1=วันนี้, 7=7วัน, 30=30วัน (ใช้เมื่อ finCustomRange เป็น null)
+let finCustomRange = null; // {start: Date, end: Date} — ใช้เมื่อเลือก "เลือกวันที่เอง"
 
-function withinRange(ts, days){
+function withinRange(ts){
   if(!ts || !ts.toDate) return false;
-  const cutoff = Date.now() - days*24*60*60*1000;
-  return ts.toDate().getTime() >= cutoff;
+  const t = ts.toDate().getTime();
+  if(finCustomRange){
+    return t >= finCustomRange.start.getTime() && t <= finCustomRange.end.getTime();
+  }
+  const cutoff = Date.now() - finRangeDays*24*60*60*1000;
+  return t >= cutoff;
 }
 
 function renderFinance(){
@@ -2361,8 +2384,18 @@ function renderFinance(){
   const expenseBody = document.getElementById('fin-expense-body');
   if(!incomeBody) return; // หน้านี้ยังไม่ได้เปิดใช้งาน ไม่ต้อง render
 
-  const incomeRows = PAID_ORDERS_CACHE.filter(o => withinRange(o.createdAt, finRangeDays));
-  const expenseRows = EXPENSES_CACHE.filter(e => withinRange(e.createdAt, finRangeDays));
+  const incomeRows = PAID_ORDERS_CACHE.filter(o => withinRange(o.createdAt));
+  const expenseRows = EXPENSES_CACHE.filter(e => withinRange(e.createdAt));
+
+  const rangeLabelEl = document.getElementById('finRangeLabel');
+  if(rangeLabelEl){
+    if(finCustomRange){
+      const fmt = d => d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+      rangeLabelEl.textContent = '📅 กำลังดูช่วง '+fmt(finCustomRange.start)+' – '+fmt(finCustomRange.end);
+    } else {
+      rangeLabelEl.textContent = '';
+    }
+  }
 
   const totalIncome = incomeRows.reduce((s,o)=>s+(o.total||0),0);
   const totalExpense = expenseRows.reduce((s,e)=>s+(e.amount||0),0);
@@ -2536,9 +2569,38 @@ function renderPendingConfirm(orders){
 document.getElementById('finDateChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
   document.querySelectorAll('#finDateChips .chip').forEach(x=>x.classList.remove('active'));
   c.classList.add('active');
+  const rangeBox = document.getElementById('finCustomRangeBox');
+  if(c.dataset.fd === 'custom'){
+    rangeBox.style.display = 'block';
+    // ตั้งค่าเริ่มต้นให้สะดวก: ถ้ายังไม่เคยเลือก ใส่ช่วง 7 วันล่าสุดเป็นค่าเริ่มต้นในช่อง
+    const startInput = document.getElementById('finRangeStart');
+    const endInput = document.getElementById('finRangeEnd');
+    if(!startInput.value){
+      const today = new Date();
+      const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
+      endInput.value = today.toISOString().slice(0,10);
+      startInput.value = weekAgo.toISOString().slice(0,10);
+    }
+    return; // รอผู้ใช้กด "✓ แสดงผล" ไม่ filter ทันที
+  }
+  rangeBox.style.display = 'none';
+  finCustomRange = null; // กลับไปใช้โหมด relative (days) ตามปกติ
   finRangeDays = c.dataset.fd==='today' ? 1 : (c.dataset.fd==='week' ? 7 : 30);
   renderFinance();
 }));
+
+document.getElementById('btnApplyFinRange')?.addEventListener('click', () => {
+  const errEl = document.getElementById('finRangeErr');
+  const startVal = document.getElementById('finRangeStart').value;
+  const endVal = document.getElementById('finRangeEnd').value;
+  if(!startVal || !endVal){ errEl.textContent = 'กรุณาเลือกวันที่เริ่มต้นและสิ้นสุดให้ครบ'; return; }
+  const start = new Date(startVal + 'T00:00:00');
+  const end = new Date(endVal + 'T23:59:59');
+  if(start.getTime() > end.getTime()){ errEl.textContent = 'วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด'; return; }
+  errEl.textContent = '';
+  finCustomRange = { start, end };
+  renderFinance();
+});
 
 document.getElementById('btnAddExpense')?.addEventListener('click', () => {
   document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
