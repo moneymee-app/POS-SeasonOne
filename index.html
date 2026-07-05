@@ -351,32 +351,39 @@
   .tmap{ display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:10px; }
 
   /* ===== SCHEDULE (ตารางแพลนงาน) ===== */
-  .sched-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
-  .sched-grid{ display:grid; min-width:900px; }
-  .sched-head-row{ display:grid; grid-template-columns:160px repeat(7,1fr); background:var(--cream); position:sticky; top:0; z-index:2; }
-  .sched-head-cell{ padding:10px 8px; font-size:12px; text-align:center; color:var(--gold-soft); font-weight:600; border-left:1px solid var(--line); }
-  .sched-head-cell:first-child{ border-left:none; text-align:left; padding-left:14px; }
-  .sched-head-cell .dow{ font-size:10px; color:var(--muted); font-weight:400; }
-  .sched-head-cell.is-today{ background:rgba(200,168,75,.15); }
-  .sched-row{ display:grid; grid-template-columns:160px repeat(7,1fr); border-top:1px solid var(--line); }
-  .sched-name-cell{ padding:10px 14px; font-size:13px; display:flex; align-items:center; gap:8px; }
-  .sched-cell{ border-left:1px solid var(--line); padding:6px; min-height:56px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
-  .sched-cell:hover{ background:rgba(200,168,75,.08); }
   .sched-shift{ width:100%; border-radius:7px; padding:5px 4px; font-size:11px; text-align:center; line-height:1.35; }
   .sched-shift.morning{ background:rgba(200,168,75,.18); color:var(--gold-soft); }
   .sched-shift.evening{ background:rgba(62,138,224,.18); color:#8AC4FF; }
   .sched-shift.full{ background:rgba(62,224,122,.15); color:#3EE07A; }
   .sched-shift.custom{ background:rgba(228,178,58,.15); color:var(--warn); }
   .sched-shift.off{ background:rgba(228,72,58,.1); color:#FF8A73; }
-  .sched-empty-cell{ color:var(--muted); font-size:11px; }
   .sched-nav-btn{ width:34px; height:34px; border-radius:8px; background:var(--paper); border:1px solid var(--line); color:var(--gold-soft); font-size:15px; }
   .sched-week-label{ font-size:14px; font-weight:600; color:var(--gold-soft); min-width:180px; text-align:center; }
-  .sched-mode-tabs{ display:flex; gap:6px; }
-  .sched-mode-tab{ padding:8px 14px; border-radius:8px; font-size:12.5px; background:var(--paper); border:1px solid var(--line); color:var(--muted); }
-  .sched-mode-tab.active{ background:var(--forest); color:#fff; border-color:var(--forest); }
   .shift-quick-opt{ padding:12px 14px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line); font-size:13px; margin-bottom:8px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
   .shift-quick-opt:hover{ border-color:var(--gold); }
   .shift-quick-opt.selected{ border-color:var(--gold); background:rgba(200,168,75,.1); }
+
+  /* ===== SCHEDULE CALENDAR (ปฏิทินเดือน) ===== */
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .cal-dow{ text-align:center; font-size:11.5px; color:var(--muted); padding:6px 0; }
+  .cal-cell{ background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:8px; min-height:88px; cursor:pointer; transition:border-color .12s; display:flex; flex-direction:column; }
+  .cal-cell:hover{ border-color:var(--gold); }
+  .cal-cell.other-month{ opacity:.35; }
+  .cal-cell.is-today{ border-color:var(--gold); background:rgba(200,168,75,.08); }
+  .cal-daynum{ font-size:13px; font-weight:600; color:var(--ink); margin-bottom:4px; }
+  .cal-counts{ display:flex; flex-wrap:wrap; gap:4px; font-size:11px; font-weight:700; }
+  .cal-count-morning{ color:#E4CD8C; }
+  .cal-count-evening{ color:#8AC4FF; }
+  .cal-count-full{ color:#3EE07A; }
+  .cal-count-custom{ color:#E4B23A; }
+  .cal-count-leave{ color:#FF8A73; }
+  .cal-empty-hint{ font-size:10.5px; color:var(--muted); margin-top:auto; }
+
+  /* ===== DAY DETAIL MODAL ===== */
+  .day-detail-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px dashed rgba(200,168,75,.15); }
+  .day-detail-row:last-child{ border-bottom:none; }
+  .day-detail-name{ font-size:13.5px; font-weight:600; }
+  .day-detail-position{ font-size:11.5px; color:var(--muted); }
   .tcell{ aspect-ratio:1; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Sarabun',sans-serif; font-size:20px; font-weight:700; cursor:pointer; border:2px solid; gap:4px; }
   .tcell.free{ border-color:#3EE07A; color:#3EE07A; background:rgba(62,224,122,.07); }
   .tcell.busy{ border-color:var(--gold); color:var(--gold-soft); background:rgba(200,168,75,.1); }
@@ -830,24 +837,17 @@
             <button class="sched-nav-btn" id="schedNextBtn">›</button>
             <button class="pill-btn" id="schedTodayBtn" style="background:var(--night); color:var(--gold-soft);">วันนี้</button>
           </div>
-          <div class="sched-mode-tabs">
-            <div class="sched-mode-tab active" data-sm="week">รายสัปดาห์</div>
-            <div class="sched-mode-tab" data-sm="day">รายวัน</div>
-            <div class="sched-mode-tab" data-sm="month">รายเดือน</div>
-          </div>
         </div>
-        <div class="sched-wrap">
-          <div id="schedGridBox">
-            <div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดตาราง...</div>
-          </div>
+        <div id="schedCalendarBox">
+          <div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดปฏิทิน...</div>
         </div>
         <div style="font-size:11.5px; color:var(--muted); margin-top:10px;">
-          <span class="sched-shift morning" style="display:inline-block; padding:3px 8px;">🌅 เช้า</span>
-          <span class="sched-shift evening" style="display:inline-block; padding:3px 8px; margin-left:6px;">🌆 บ่าย-ค่ำ</span>
-          <span class="sched-shift full" style="display:inline-block; padding:3px 8px; margin-left:6px;">☀️ เต็มวัน</span>
-          <span class="sched-shift custom" style="display:inline-block; padding:3px 8px; margin-left:6px;">⏰ กำหนดเอง</span>
-          <span class="sched-shift off" style="display:inline-block; padding:3px 8px; margin-left:6px;">✕ วันหยุด</span>
-          — คลิกช่องว่างเพื่อจัดกะ
+          <span style="color:#E4CD8C;">🌅 เช้า</span> ·
+          <span style="color:#8AC4FF;">🌆 บ่าย-ค่ำ</span> ·
+          <span style="color:#3EE07A;">☀️ เต็มวัน</span> ·
+          <span style="color:#E4B23A;">⏰ กำหนดเอง</span> ·
+          <span style="color:#FF8A73;">📝 ลา</span>
+          — คลิกวันที่เพื่อดูรายละเอียด/จัดกะ
         </div>
       </section>
 
@@ -875,6 +875,12 @@
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card-head"><h3>🏷️ จัดการตำแหน่งงาน</h3><button class="pill-btn" id="btnAddPosition" style="background:var(--gold); color:var(--night);">＋ เพิ่มตำแหน่ง</button></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">ตำแหน่งเหล่านี้ใช้ตอนเพิ่มพนักงานและตอนจัดกะในตารางแพลนงาน</div>
+          <div id="positionList"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
         </div>
 
         <div class="card" style="margin-top:18px;">
@@ -966,14 +972,13 @@
       </div>
 
       <div class="staff-panel" id="staff-panel-schedule">
+        <div class="toolbar" style="justify-content:space-between;">
+          <div style="font-size:13px; color:var(--muted);">แสดงกะที่ Admin จัดให้ล่วงหน้า 8 สัปดาห์</div>
+          <button class="pill-btn" id="btnRequestLeave" style="background:var(--gold); color:var(--night);">📝 ขอลาล่วงหน้า</button>
+        </div>
         <table class="sched-table">
-          <thead><tr><th>วัน</th><th>กะ</th><th>สถานะ</th></tr></thead>
-          <tbody>
-            <tr><td>เสาร์ 1 ก.ค.</td><td>11:00–19:00</td><td><span class="status on">วันนี้</span></td></tr>
-            <tr><td>อาทิตย์ 2 ก.ค.</td><td>17:00–24:00</td><td>—</td></tr>
-            <tr><td>จันทร์ 3 ก.ค.</td><td>หยุด</td><td>—</td></tr>
-            <tr><td>อังคาร 4 ก.ค.</td><td>11:00–19:00</td><td>—</td></tr>
-          </tbody>
+          <thead><tr><th>วัน</th><th>กะ</th><th>ตำแหน่ง</th><th>สถานะ</th></tr></thead>
+          <tbody id="myScheduleBody"><tr><td colspan="4" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1234,17 +1239,32 @@
 </div>
 
 <!-- ===== ADD STAFF MODAL ===== -->
+<!-- ===== EDIT STAFF MODAL (แก้ไขข้อมูลพนักงาน) ===== -->
+<div class="modal-back" id="editStaffModal">
+  <div class="modal">
+    <h3>✏️ แก้ไขข้อมูลพนักงาน</h3>
+    <div class="sub">แก้ชื่อ/ตำแหน่ง/เวลากะได้ — เปลี่ยนเบอร์โทร/PIN ไม่ได้ที่นี่ (ผูกกับระบบล็อกอิน)</div>
+    <input type="text" id="editStfName" placeholder="ชื่อเล่น">
+    <select id="editStfRole"></select>
+    <div style="font-size:11.5px;color:var(--muted);margin:6px 0 4px;">เวลากะเริ่มงาน (ใช้คำนวณสาย/มาก่อนเวลา)</div>
+    <input type="time" id="editStfShiftStart">
+    <div style="font-size:11.5px;color:var(--muted);margin:10px 0 4px;">รูปภาพพนักงาน</div>
+    <input type="file" id="editStfPhotoFile" accept="image/*">
+    <div id="editStfPhotoPreview" style="margin:8px 0; display:none;"><img style="width:60px; height:60px; border-radius:50%; object-fit:cover;"></div>
+    <div id="editStfErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('editStaffModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="editStfSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-back" id="staffModal">
   <div class="modal">
     <h3>👤 เพิ่มพนักงานใหม่</h3>
     <div class="sub">พนักงานล็อกอินด้วย "เบอร์โทร + PIN" ไม่ต้องมีอีเมล — ตั้งค่าที่นี่ครั้งเดียว</div>
     <input type="text" id="stfName" placeholder="ชื่อเล่น เช่น พี่รุ่ง">
-    <select id="stfRole">
-      <option value="เสิร์ฟ">เสิร์ฟ</option>
-      <option value="ครัว">ครัว</option>
-      <option value="บาร์">บาร์</option>
-      <option value="หัวหน้ากะ/แคชเชียร์">หัวหน้ากะ / แคชเชียร์</option>
-    </select>
+    <select id="stfRole"></select>
     <input type="text" id="stfPhone" placeholder="เบอร์โทร 10 หลัก เช่น 0812345678" maxlength="10">
     <input type="text" id="stfPin" placeholder="PIN 6 หลัก (ค่าเริ่มต้น = เบอร์ 6 ตัวท้าย)" maxlength="10">
     <div style="font-size:11.5px;color:var(--muted);margin:6px 0 4px;">เวลากะเริ่มงาน (ใช้คำนวณสาย/มาก่อนเวลา)</div>
@@ -1278,11 +1298,61 @@
   </div>
 </div>
 
+<!-- ===== REQUEST LEAVE MODAL (พนักงานขอลาล่วงหน้าเอง) ===== -->
+<div class="modal-back" id="requestLeaveModal">
+  <div class="modal">
+    <h3>📝 ขอลาล่วงหน้า</h3>
+    <div class="sub">ส่งคำขอลาให้แอดมิน — ระบบจะบันทึกทันที (แจ้งแอดมินทราบผ่านหน้าพนักงาน & เข้างาน)</div>
+    <input type="date" id="reqLeaveDate">
+    <select id="reqLeaveType">
+      <option value="ลาป่วย">ลาป่วย</option>
+      <option value="ลากิจ">ลากิจ</option>
+      <option value="ลาพักร้อน">ลาพักร้อน</option>
+      <option value="อื่นๆ">อื่นๆ</option>
+    </select>
+    <input type="text" id="reqLeaveNote" placeholder="เหตุผลการลา (ถ้ามี)">
+    <div id="reqLeaveErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('requestLeaveModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="reqLeaveSaveBtn">✓ ส่งคำขอลา</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DAY DETAIL MODAL (รายละเอียดวันในปฏิทิน) ===== -->
+<div class="modal-back" id="dayDetailModal">
+  <div class="modal" style="max-width:480px;">
+    <h3>📅 <span id="dayDetailDateLabel">-</span></h3>
+    <div class="sub">คลิกที่พนักงานเพื่อจัดกะ หรือกด "＋ เพิ่มพนักงานเข้ากะ" ด้านล่าง</div>
+    <div id="dayDetailBody" style="max-height:50vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <button class="btn-lg b-ghost" id="dayDetailAddStaffBtn" style="width:100%; margin-bottom:10px;">＋ เพิ่มพนักงานเข้ากะวันนี้</button>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('dayDetailModal').classList.remove('open')" style="width:100%;">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== POSITION MANAGE MODAL (จัดการตำแหน่งงาน) ===== -->
+<div class="modal-back" id="positionModal">
+  <div class="modal">
+    <h3 id="positionModalTitle">🏷️ เพิ่มตำแหน่งงาน</h3>
+    <input type="text" id="positionName" placeholder="ชื่อตำแหน่ง เช่น ครัว, เสิร์ฟ, บาร์">
+    <div id="positionErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('positionModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="positionSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== SHIFT ASSIGN MODAL (จัดกะพนักงาน) ===== -->
 <div class="modal-back" id="shiftModal">
   <div class="modal">
     <h3>🗓️ จัดกะ — <span id="shiftStaffName">-</span></h3>
     <div class="sub" id="shiftDateLabel">-</div>
+
+    <div class="lbl2">ตำแหน่งสำหรับกะนี้</div>
+    <select id="shiftPositionSelect" style="margin-bottom:14px;"></select>
 
     <div id="shiftQuickOpts">
       <div class="shift-quick-opt" data-preset="morning">
@@ -1428,6 +1498,7 @@
       tab.classList.add('active');
       document.querySelectorAll('.staff-panel').forEach(p=>p.classList.remove('active'));
       document.getElementById('staff-panel-'+tab.dataset.staffTab).classList.add('active');
+      if(tab.dataset.staffTab === 'schedule' && window.loadMySchedule) loadMySchedule();
     });
   });
 
@@ -1938,6 +2009,16 @@ window.currentTable = currentTable; // ให้สคริปต์แรก (
 const custTableLabelEl = document.getElementById('custTableLabel');
 if(custTableLabelEl) custTableLabelEl.textContent = currentTable;
 
+// Helper กลาง: แปลง Date เป็น "YYYY-MM-DD" ตาม local timezone (ห้ามใช้ toISOString().slice(0,10)
+// เพราะแปลงเป็น UTC ก่อนตัด ทำให้วันที่เพี้ยนสำหรับผู้ใช้ในไทย UTC+7 โดยเฉพาะเวลาก่อนตี 7)
+function toLocalDateKey(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+window.toLocalDateKey = toLocalDateKey;
+
 window.fbLoginClick = () => {
   if(auth.currentUser){ if(confirm('ออกจากระบบ?')) signOut(auth); }
   else document.getElementById('loginModal').classList.add('open');
@@ -2062,16 +2143,24 @@ async function loadStaff(){
     grid.innerHTML = rows.map(s => {
       const initials = (s.name||'?').replace(/[^ก-๙a-zA-Z]/g,'').slice(0,2);
       const isActive = s.active !== false;
-      return '<div class="staff-card" data-uid="'+s.uid+'"><div class="av">'+initials+'</div><div style="flex:1">'+
+      const avatarHtml = s.photoData
+        ? '<div class="av" style="background-image:url(\''+s.photoData+'\'); background-size:cover; background-position:center; color:transparent;"></div>'
+        : '<div class="av">'+initials+'</div>';
+      return '<div class="staff-card" data-uid="'+s.uid+'">'+avatarHtml+'<div style="flex:1">'+
         '<div class="nm">'+s.name+'</div><div class="role">'+(s.position||'พนักงาน')+' · 📱 '+s.phone+'</div>'+
         '<div class="clock">'+(isActive?'🟢 ใช้งานได้':'🔴 ปิดใช้งาน')+'</div>'+
         '<div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">'+
+          '<button class="btn-mini stf-edit" data-uid="'+s.uid+'" style="background:rgba(200,168,75,.15); color:var(--gold-soft);">✏️ แก้ไข</button>'+
           '<button class="btn-mini stf-toggle" data-uid="'+s.uid+'" data-active="'+isActive+'" style="background:'+(isActive?'rgba(228,72,58,.15)':'rgba(62,224,122,.15)')+'; color:'+(isActive?'#FF8A73':'#3EE07A')+';">'+(isActive?'⏸ ปิดใช้งาน':'▶ เปิดใช้งาน')+'</button>'+
           '<button class="btn-mini stf-leave" data-uid="'+s.uid+'" data-name="'+s.name+'" style="background:rgba(228,178,58,.15); color:#E4B23A;">📝 บันทึกลา</button>'+
           '<button class="btn-mini stf-del" data-uid="'+s.uid+'" data-name="'+s.name+'" style="background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบ</button>'+
         '</div></div></div>';
     }).join('');
 
+    grid.querySelectorAll('.stf-edit').forEach(b => b.addEventListener('click', () => {
+      const staffData = rows.find(s=>s.uid===b.dataset.uid);
+      if(staffData) openEditStaffModal(staffData);
+    }));
     grid.querySelectorAll('.stf-leave').forEach(b => b.addEventListener('click', () => openLeaveModal(b.dataset.uid, b.dataset.name)));
     grid.querySelectorAll('.stf-toggle').forEach(b => b.addEventListener('click', async () => {
       const nowActive = b.dataset.active !== 'true';
@@ -2088,7 +2177,7 @@ async function loadStaff(){
 // ===================== บันทึกการลา (HR) =====================
 window.openLeaveModal = (uid, name) => {
   document.getElementById('leaveStaffName').textContent = name;
-  document.getElementById('leaveDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('leaveDate').value = toLocalDateKey(new Date());
   document.getElementById('leaveNote').value = '';
   document.getElementById('leaveErr').textContent = '';
   document.getElementById('leaveModal').dataset.uid = uid;
@@ -2111,6 +2200,55 @@ document.getElementById('leaveSaveBtn')?.addEventListener('click', async () => {
     });
     document.getElementById('leaveModal').classList.remove('open');
     if(window.toast) toast('✓ บันทึกการลาแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+// ===================== แก้ไขข้อมูลพนักงาน =====================
+let editingStaffUid = null;
+window.openEditStaffModal = (staffData) => {
+  editingStaffUid = staffData.uid;
+  document.getElementById('editStfName').value = staffData.name || '';
+  refreshEditStaffRoleOptions(staffData.position);
+  document.getElementById('editStfShiftStart').value = staffData.shiftStart || '11:00';
+  document.getElementById('editStfPhotoFile').value = '';
+  const preview = document.getElementById('editStfPhotoPreview');
+  if(staffData.photoData){
+    preview.querySelector('img').src = staffData.photoData;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+  document.getElementById('editStfErr').textContent = '';
+  document.getElementById('editStaffModal').classList.add('open');
+};
+function refreshEditStaffRoleOptions(currentValue){
+  const sel = document.getElementById('editStfRole');
+  sel.innerHTML = POSITIONS_CACHE.map(p => '<option value="'+p.name+'">'+p.name+'</option>').join('');
+  if(currentValue && POSITIONS_CACHE.some(p=>p.name===currentValue)) sel.value = currentValue;
+}
+document.getElementById('editStfPhotoFile')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const dataUrl = await fileToDataUrl(file);
+  const preview = document.getElementById('editStfPhotoPreview');
+  preview.querySelector('img').src = dataUrl;
+  preview.style.display = 'block';
+});
+document.getElementById('editStfSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('editStfErr');
+  const name = document.getElementById('editStfName').value.trim();
+  const position = document.getElementById('editStfRole').value;
+  const shiftStart = document.getElementById('editStfShiftStart').value || '11:00';
+  if(!name){ errEl.textContent = 'กรุณากรอกชื่อ'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const data = { name, position, shiftStart };
+    const file = document.getElementById('editStfPhotoFile').files[0];
+    if(file) data.photoData = await fileToDataUrl(file);
+    await updateDoc(doc(db,'users',editingStaffUid), data);
+    document.getElementById('editStaffModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกข้อมูลพนักงานแล้ว');
+    loadStaff();
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
@@ -2211,8 +2349,8 @@ document.getElementById('hrDateChips')?.querySelectorAll('.chip').forEach(c => c
     if(!startInput.value){
       const today = new Date();
       const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
-      endInput.value = today.toISOString().slice(0,10);
-      startInput.value = weekAgo.toISOString().slice(0,10);
+      endInput.value = toLocalDateKey(today);
+      startInput.value = toLocalDateKey(weekAgo);
     }
     return;
   }
@@ -2241,11 +2379,11 @@ document.getElementById('btnApplyHrRange')?.addEventListener('click', () => {
 window.loadHrStats = loadHrStats;
 loadHrStats();
 
-// ===================== ตารางแพลนงาน (Weekly Schedule) =====================
+// ===================== ตารางแพลนงาน (Monthly Calendar) =====================
 let SCHEDULE_STAFF_CACHE = [];
-let SCHEDULE_DATA_CACHE = {}; // key: uid+'|'+date -> {startTime, endTime, isOff}
-let schedAnchorDate = new Date(); // วันที่ใช้อ้างอิงคำนวณสัปดาห์/เดือนที่แสดง
-let schedMode = 'week'; // week | day | month
+let SCHEDULE_DATA_CACHE = {}; // key: uid+'|'+date -> {startTime, endTime, isOff, position}
+let LEAVES_CACHE_FOR_CAL = {}; // key: uid+'|'+date -> leave entry
+let schedAnchorDate = new Date(); // เดือนที่กำลังแสดงอยู่
 const MAX_WEEKS_AHEAD = 8; // แสดงล่วงหน้าได้สูงสุด 8 สัปดาห์ตามที่ TaBon ระบุ
 
 function getMonday(d){
@@ -2256,7 +2394,7 @@ function getMonday(d){
   date.setHours(0,0,0,0);
   return date;
 }
-function fmtDateKey(d){ return d.toISOString().slice(0,10); }
+function fmtDateKey(d){ return toLocalDateKey(d); }
 function fmtThaiShort(d){ return d.toLocaleDateString('th-TH',{day:'numeric',month:'short'}); }
 
 function shiftTypeOf(entry){
@@ -2285,34 +2423,47 @@ async function loadScheduleData(startDate, endDate){
   } catch(e){ console.warn('loadScheduleData failed', e); }
 }
 
-function renderScheduleWeekLabel(monday, sunday){
-  document.getElementById('schedWeekLabel').textContent = fmtThaiShort(monday) + ' – ' + fmtThaiShort(sunday);
+async function loadLeavesForCalendar(startDate, endDate){
+  try {
+    const qs = await getDocs(query(collection(db,'leaves'),
+      where('date','>=', fmtDateKey(startDate)), where('date','<=', fmtDateKey(endDate))));
+    LEAVES_CACHE_FOR_CAL = {};
+    qs.forEach(d => { const v = d.data(); LEAVES_CACHE_FOR_CAL[v.uid+'|'+v.date] = v; });
+  } catch(e){ console.warn('loadLeavesForCalendar failed', e); }
+}
+
+function countShiftsForDay(dateKey){
+  // นับจำนวนพนักงานแต่ละประเภทกะ + จำนวนคนลา สำหรับวันที่ dateKey (ใช้แสดงตัวเลขในช่องปฏิทินก่อนคลิก)
+  const counts = { morning:0, evening:0, full:0, custom:0, leave:0 };
+  SCHEDULE_STAFF_CACHE.forEach(s => {
+    const entry = SCHEDULE_DATA_CACHE[s.uid+'|'+dateKey];
+    const type = shiftTypeOf(entry);
+    if(type && type !== 'off') counts[type]++;
+    if(LEAVES_CACHE_FOR_CAL[s.uid+'|'+dateKey]) counts.leave++;
+  });
+  return counts;
 }
 
 async function renderScheduleGrid(){
-  const box = document.getElementById('schedGridBox');
+  const box = document.getElementById('schedCalendarBox');
   if(!box) return;
-  box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดตาราง...</div>';
+  box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดปฏิทิน...</div>';
 
-  let daysToShow = [];
-  if(schedMode === 'day'){
-    daysToShow = [new Date(schedAnchorDate)];
-  } else if(schedMode === 'month'){
-    const first = new Date(schedAnchorDate.getFullYear(), schedAnchorDate.getMonth(), 1);
-    const last = new Date(schedAnchorDate.getFullYear(), schedAnchorDate.getMonth()+1, 0);
-    for(let d = new Date(first); d <= last; d.setDate(d.getDate()+1)) daysToShow.push(new Date(d));
-  } else {
-    const monday = getMonday(schedAnchorDate);
-    for(let i=0;i<7;i++){ const d = new Date(monday); d.setDate(monday.getDate()+i); daysToShow.push(d); }
-  }
+  const year = schedAnchorDate.getFullYear();
+  const month = schedAnchorDate.getMonth();
+  document.getElementById('schedWeekLabel').textContent = schedAnchorDate.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
 
-  const rangeStart = daysToShow[0];
-  const rangeEnd = daysToShow[daysToShow.length-1];
-  if(schedMode === 'week') renderScheduleWeekLabel(rangeStart, rangeEnd);
-  else if(schedMode === 'day') document.getElementById('schedWeekLabel').textContent = rangeStart.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'});
-  else document.getElementById('schedWeekLabel').textContent = schedAnchorDate.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month+1, 0);
+  const gridStart = getMonday(firstOfMonth);
+  const gridEnd = new Date(gridStart);
+  gridEnd.setDate(gridStart.getDate() + 41); // 6 แถว x 7 วัน ครอบคลุมทุกกรณี
 
-  await Promise.all([loadScheduleStaff(), loadScheduleData(rangeStart, rangeEnd)]);
+  await Promise.all([
+    loadScheduleStaff(),
+    loadScheduleData(gridStart, gridEnd),
+    loadLeavesForCalendar(gridStart, gridEnd)
+  ]);
 
   if(!SCHEDULE_STAFF_CACHE.length){
     box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--muted);">ยังไม่มีพนักงานในระบบ — เพิ่มพนักงานที่หน้า "พนักงาน & เข้างาน" ก่อน</div>';
@@ -2322,38 +2473,82 @@ async function renderScheduleGrid(){
   const todayKey = fmtDateKey(new Date());
   const dowNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
 
-  let html = '<div class="sched-grid">';
-  html += '<div class="sched-head-row">';
-  html += '<div class="sched-head-cell">พนักงาน</div>';
-  daysToShow.forEach(d => {
-    const isToday = fmtDateKey(d) === todayKey;
-    html += '<div class="sched-head-cell'+(isToday?' is-today':'')+'">'+fmtThaiShort(d)+'<div class="dow">'+dowNames[d.getDay()]+'</div></div>';
-  });
-  html += '</div>';
+  let html = '<div class="cal-grid">';
+  dowNames.forEach(dn => html += '<div class="cal-dow">'+dn+'</div>');
 
-  SCHEDULE_STAFF_CACHE.forEach(s => {
-    html += '<div class="sched-row">';
-    html += '<div class="sched-name-cell"><b>'+s.name+'</b></div>';
-    daysToShow.forEach(d => {
-      const dateKey = fmtDateKey(d);
-      const entry = SCHEDULE_DATA_CACHE[s.uid+'|'+dateKey];
-      const type = shiftTypeOf(entry);
-      let cellContent = '<span class="sched-empty-cell">+ จัดกะ</span>';
-      if(type){
-        const timeTxt = entry.isOff ? '' : '<br>'+entry.startTime+'-'+entry.endTime;
-        cellContent = '<div class="sched-shift '+type+'">'+SHIFT_LABEL[type]+timeTxt+'</div>';
-      }
-      html += '<div class="sched-cell" data-uid="'+s.uid+'" data-name="'+s.name+'" data-date="'+dateKey+'">'+cellContent+'</div>';
-    });
-    html += '</div>';
-  });
+  const cursor = new Date(gridStart);
+  for(let i=0;i<42;i++){
+    const dateKey = fmtDateKey(cursor);
+    const isOtherMonth = cursor.getMonth() !== month;
+    const isToday = dateKey === todayKey;
+    const counts = countShiftsForDay(dateKey);
+    const hasAny = counts.morning || counts.evening || counts.full || counts.custom || counts.leave;
+
+    let countsHtml = '';
+    if(counts.morning) countsHtml += '<span class="cal-count-morning">🌅'+counts.morning+'</span>';
+    if(counts.evening) countsHtml += '<span class="cal-count-evening">🌆'+counts.evening+'</span>';
+    if(counts.full) countsHtml += '<span class="cal-count-full">☀️'+counts.full+'</span>';
+    if(counts.custom) countsHtml += '<span class="cal-count-custom">⏰'+counts.custom+'</span>';
+    if(counts.leave) countsHtml += '<span class="cal-count-leave">📝'+counts.leave+'</span>';
+
+    html += '<div class="cal-cell'+(isOtherMonth?' other-month':'')+(isToday?' is-today':'')+'" data-date="'+dateKey+'">'+
+      '<div class="cal-daynum">'+cursor.getDate()+'</div>'+
+      (hasAny ? '<div class="cal-counts">'+countsHtml+'</div>' : '<div class="cal-empty-hint">ว่าง</div>')+
+      '</div>';
+    cursor.setDate(cursor.getDate()+1);
+  }
   html += '</div>';
   box.innerHTML = html;
 
-  box.querySelectorAll('.sched-cell').forEach(cell => cell.addEventListener('click', () => {
-    openShiftModal(cell.dataset.uid, cell.dataset.name, cell.dataset.date);
+  box.querySelectorAll('.cal-cell').forEach(cell => cell.addEventListener('click', () => {
+    openDayDetailModal(cell.dataset.date);
   }));
 }
+
+// ===== Day detail modal (คลิกวันที่ในปฏิทิน) =====
+let dayDetailCtx = { date:null };
+window.openDayDetailModal = (dateKey) => {
+  dayDetailCtx.date = dateKey;
+  const dateObj = new Date(dateKey+'T00:00:00');
+  document.getElementById('dayDetailDateLabel').textContent = dateObj.toLocaleDateString('th-TH',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  renderDayDetailBody();
+  document.getElementById('dayDetailModal').classList.add('open');
+};
+function renderDayDetailBody(){
+  const body = document.getElementById('dayDetailBody');
+  const dateKey = dayDetailCtx.date;
+  if(!SCHEDULE_STAFF_CACHE.length){ body.innerHTML = '<div style="color:var(--muted);">ยังไม่มีพนักงาน</div>'; return; }
+
+  body.innerHTML = SCHEDULE_STAFF_CACHE.map(s => {
+    const entry = SCHEDULE_DATA_CACHE[s.uid+'|'+dateKey];
+    const leave = LEAVES_CACHE_FOR_CAL[s.uid+'|'+dateKey];
+    const type = shiftTypeOf(entry);
+    let statusHtml;
+    if(leave){
+      statusHtml = '<span style="color:#FF8A73;">📝 ลา ('+(leave.type||'ไม่ระบุ')+')</span>';
+    } else if(type){
+      const timeTxt = entry.isOff ? '' : ' '+entry.startTime+'-'+entry.endTime;
+      const posTxt = entry.position ? ' · '+entry.position : '';
+      statusHtml = '<span>'+SHIFT_LABEL[type]+timeTxt+posTxt+'</span>';
+    } else {
+      statusHtml = '<span style="color:var(--muted);">ยังไม่จัดกะ</span>';
+    }
+    return '<div class="day-detail-row">'+
+      '<div><div class="day-detail-name">'+s.name+'</div><div class="day-detail-position">ตำแหน่งประจำ: '+(s.position||'-')+'</div></div>'+
+      '<div style="display:flex; align-items:center; gap:10px;">'+statusHtml+
+      '<button class="icon-sm day-detail-assign" data-uid="'+s.uid+'" data-name="'+s.name+'">🗓️</button></div>'+
+      '</div>';
+  }).join('');
+
+  body.querySelectorAll('.day-detail-assign').forEach(b => b.addEventListener('click', () => {
+    openShiftModal(b.dataset.uid, b.dataset.name, dateKey);
+  }));
+}
+document.getElementById('dayDetailAddStaffBtn')?.addEventListener('click', () => {
+  // เผื่อกรณีพนักงานยังไม่โผล่ในลิสต์ (edge case ไม่ค่อยเกิด) — เปิดให้เลือกจากทุกคนแล้วจัดกะได้เลย
+  if(!SCHEDULE_STAFF_CACHE.length){ if(window.toast) toast('ยังไม่มีพนักงานในระบบ'); return; }
+  renderDayDetailBody(); // รีเฟรชให้เห็นครบทุกคนอีกครั้ง (กรณีเพิ่งเพิ่มพนักงานใหม่)
+});
 
 // ===== Shift assign modal =====
 let shiftModalCtx = { uid:null, date:null };
@@ -2363,7 +2558,14 @@ window.openShiftModal = (uid, name, dateKey) => {
   const dateObj = new Date(dateKey+'T00:00:00');
   document.getElementById('shiftDateLabel').textContent = dateObj.toLocaleDateString('th-TH',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
   document.getElementById('shiftErr').textContent = '';
+
   const existing = SCHEDULE_DATA_CACHE[uid+'|'+dateKey];
+  const staffData = SCHEDULE_STAFF_CACHE.find(s=>s.uid===uid);
+  const posSel = document.getElementById('shiftPositionSelect');
+  posSel.innerHTML = POSITIONS_CACHE.map(p => '<option value="'+p.name+'">'+p.name+'</option>').join('');
+  const defaultPosition = existing?.position || staffData?.position;
+  if(defaultPosition && POSITIONS_CACHE.some(p=>p.name===defaultPosition)) posSel.value = defaultPosition;
+
   document.getElementById('shiftCustomStart').value = existing?.startTime || '';
   document.getElementById('shiftCustomEnd').value = existing?.endTime || '';
   document.querySelectorAll('.shift-quick-opt').forEach(o => o.classList.remove('selected'));
@@ -2386,16 +2588,18 @@ async function saveShiftEntry(data){
   const errEl = document.getElementById('shiftErr');
   errEl.textContent = 'กำลังบันทึก...';
   try {
+    const position = document.getElementById('shiftPositionSelect').value;
     const docId = 'SCH_'+shiftModalCtx.uid+'_'+shiftModalCtx.date;
     await setDoc(doc(db,'schedules',docId), {
       uid: shiftModalCtx.uid, date: shiftModalCtx.date,
-      ...data,
+      ...data, position,
       updatedBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ',
       updatedAt: serverTimestamp()
     });
     document.getElementById('shiftModal').classList.remove('open');
     if(window.toast) toast('✓ จัดกะแล้ว');
-    renderScheduleGrid();
+    await renderScheduleGrid();
+    if(document.getElementById('dayDetailModal').classList.contains('open')) renderDayDetailBody();
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 }
 
@@ -2419,43 +2623,105 @@ document.getElementById('shiftClearBtn')?.addEventListener('click', async () => 
     await deleteDoc(doc(db,'schedules',docId));
     document.getElementById('shiftModal').classList.remove('open');
     if(window.toast) toast('🗑️ ล้างกะแล้ว');
-    renderScheduleGrid();
+    await renderScheduleGrid();
+    if(document.getElementById('dayDetailModal').classList.contains('open')) renderDayDetailBody();
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
-// ===== Navigation =====
+// ===== Navigation (เลื่อนเดือน) =====
 document.getElementById('schedPrevBtn')?.addEventListener('click', () => {
-  if(schedMode==='day') schedAnchorDate.setDate(schedAnchorDate.getDate()-1);
-  else if(schedMode==='month') schedAnchorDate.setMonth(schedAnchorDate.getMonth()-1);
-  else schedAnchorDate.setDate(schedAnchorDate.getDate()-7);
+  schedAnchorDate.setMonth(schedAnchorDate.getMonth()-1);
   renderScheduleGrid();
 });
 document.getElementById('schedNextBtn')?.addEventListener('click', () => {
-  if(schedMode==='day') schedAnchorDate.setDate(schedAnchorDate.getDate()+1);
-  else if(schedMode==='month') schedAnchorDate.setMonth(schedAnchorDate.getMonth()+1);
-  else {
-    // จำกัดไม่ให้เลื่อนไปเกิน 8 สัปดาห์ล่วงหน้าจากวันนี้ ตามที่ TaBon ระบุ
-    const weeksFromNow = Math.round((getMonday(schedAnchorDate).getTime() + 7*86400000 - getMonday(new Date()).getTime()) / (7*86400000));
-    if(weeksFromNow >= MAX_WEEKS_AHEAD){
-      if(window.toast) toast('📅 แสดงล่วงหน้าได้สูงสุด '+MAX_WEEKS_AHEAD+' สัปดาห์');
-      return;
-    }
-    schedAnchorDate.setDate(schedAnchorDate.getDate()+7);
+  // จำกัดไม่ให้เลื่อนไปเกิน 8 สัปดาห์ล่วงหน้าจากวันนี้ ตามที่ TaBon ระบุ
+  const weeksFromNow = Math.round((getMonday(schedAnchorDate).getTime() + 35*86400000 - getMonday(new Date()).getTime()) / (7*86400000));
+  if(weeksFromNow >= MAX_WEEKS_AHEAD){
+    if(window.toast) toast('📅 แสดงล่วงหน้าได้สูงสุด '+MAX_WEEKS_AHEAD+' สัปดาห์');
+    return;
   }
+  schedAnchorDate.setMonth(schedAnchorDate.getMonth()+1);
   renderScheduleGrid();
 });
 document.getElementById('schedTodayBtn')?.addEventListener('click', () => {
   schedAnchorDate = new Date();
   renderScheduleGrid();
 });
-document.querySelectorAll('.sched-mode-tab').forEach(tab => tab.addEventListener('click', () => {
-  document.querySelectorAll('.sched-mode-tab').forEach(t=>t.classList.remove('active'));
-  tab.classList.add('active');
-  schedMode = tab.dataset.sm;
-  renderScheduleGrid();
-}));
 
 window.renderScheduleGrid = renderScheduleGrid;
+
+
+// ===================== ระบบจัดการตำแหน่งงาน (positions) =====================
+let POSITIONS_CACHE = [];
+
+function refreshStaffRoleOptions(){
+  const sel = document.getElementById('stfRole');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = POSITIONS_CACHE.map(p => '<option value="'+p.name+'">'+p.name+'</option>').join('');
+  if(prev && POSITIONS_CACHE.some(p=>p.name===prev)) sel.value = prev;
+}
+function refreshShiftPositionOptions(){
+  // dropdown เลือกตำแหน่งในหน้าจัดกะจะถูกเติมข้อมูลตอนเปิด modal จริง (ดู openShiftModal) — ฟังก์ชันนี้แค่ trigger ให้แน่ใจว่า cache พร้อมแล้ว
+}
+
+function seedDefaultPositions(){
+  // สร้างตำแหน่งเริ่มต้น 4 อัน ครั้งแรกที่ยังไม่มี collection นี้เลย — แก้ไข/ลบได้ทั้งหมดในภายหลัง
+  ['เสิร์ฟ','ครัว','บาร์','หัวหน้ากะ/แคชเชียร์'].forEach(name => {
+    setDoc(doc(db,'positions', name.replace(/[\/\s]+/g,'_')), {name}).catch(()=>{});
+  });
+}
+
+function renderPositionList(){
+  const box = document.getElementById('positionList');
+  if(!box) return;
+  if(!POSITIONS_CACHE.length){
+    box.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีตำแหน่งงาน</div>';
+    return;
+  }
+  box.innerHTML = POSITIONS_CACHE.map(p =>
+    '<div class="bom-row"><span style="flex:1">'+p.name+'</span>'+
+    '<button class="icon-sm pos-edit" data-pid="'+p.id+'" data-name="'+p.name+'">✏️</button>'+
+    '<button class="icon-sm pos-del" data-pid="'+p.id+'" data-name="'+p.name+'">🗑️</button></div>'
+  ).join('');
+  box.querySelectorAll('.pos-edit').forEach(b => b.addEventListener('click', () => openPositionModal(b.dataset.pid, b.dataset.name)));
+  box.querySelectorAll('.pos-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบตำแหน่ง "'+b.dataset.name+'" ใช่ไหม? พนักงานที่ตั้งตำแหน่งนี้ไว้จะไม่ถูกลบ แต่ต้องเลือกตำแหน่งใหม่เอง')) return;
+    try { await deleteDoc(doc(db,'positions',b.dataset.pid)); if(window.toast) toast('🗑️ ลบตำแหน่งแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
+  }));
+}
+
+let editingPositionId = null;
+window.openPositionModal = (pid, name) => {
+  editingPositionId = pid || null;
+  document.getElementById('positionModalTitle').textContent = pid ? '✏️ แก้ไขตำแหน่งงาน' : '🏷️ เพิ่มตำแหน่งงาน';
+  document.getElementById('positionName').value = name || '';
+  document.getElementById('positionErr').textContent = '';
+  document.getElementById('positionModal').classList.add('open');
+};
+document.getElementById('btnAddPosition')?.addEventListener('click', () => openPositionModal(null, null));
+document.getElementById('positionSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('positionErr');
+  const name = document.getElementById('positionName').value.trim();
+  if(!name){ errEl.textContent = 'กรุณากรอกชื่อตำแหน่ง'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const docId = editingPositionId || name.replace(/[\/\s]+/g,'_')+'_'+Date.now();
+    await setDoc(doc(db,'positions',docId), {name});
+    document.getElementById('positionModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกตำแหน่งแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+onSnapshot(collection(db,'positions'), (qs) => {
+  POSITIONS_CACHE = []; qs.forEach(d => POSITIONS_CACHE.push({id:d.id, ...d.data()}));
+  if(POSITIONS_CACHE.length === 0) seedDefaultPositions();
+  renderPositionList();
+  refreshStaffRoleOptions(); // อัปเดตตัวเลือกตำแหน่งในฟอร์มเพิ่มพนักงานด้วย
+  refreshShiftPositionOptions(); // อัปเดตตัวเลือกตำแหน่งในตอนจัดกะด้วย
+}, e => console.warn('positions listener failed', e));
+
 
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
@@ -3110,8 +3376,8 @@ document.getElementById('finDateChips')?.querySelectorAll('.chip').forEach(c => 
     if(!startInput.value){
       const today = new Date();
       const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
-      endInput.value = today.toISOString().slice(0,10);
-      startInput.value = weekAgo.toISOString().slice(0,10);
+      endInput.value = toLocalDateKey(today);
+      startInput.value = toLocalDateKey(weekAgo);
     }
     return; // รอผู้ใช้กด "✓ แสดงผล" ไม่ filter ทันที
   }
@@ -3135,7 +3401,7 @@ document.getElementById('btnApplyFinRange')?.addEventListener('click', () => {
 });
 
 document.getElementById('btnAddExpense')?.addEventListener('click', () => {
-  document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('expDate').value = toLocalDateKey(new Date());
   document.getElementById('expNote').value = '';
   document.getElementById('expAmount').value = '';
   document.getElementById('expErr').textContent = '';
@@ -3174,6 +3440,85 @@ clockBtnEl?.addEventListener('click', async () => {
     });
     if(window.toast) toast(isClockedIn ? '✓ บันทึกเวลาเข้างานแล้ว' : '✓ บันทึกเวลาออกงานแล้ว');
   } catch(e){ if(window.toast) toast('❌ บันทึกไม่สำเร็จ: '+e.message); }
+});
+
+// ===================== ตารางกะของฉัน (พนักงานดูจริง จาก Firestore) =====================
+async function loadMySchedule(){
+  const tbody = document.getElementById('myScheduleBody');
+  if(!tbody) return;
+  const user = auth.currentUser;
+  if(!user){ tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted); text-align:center; padding:20px;">กรุณาเข้าสู่ระบบก่อน</td></tr>'; return; }
+
+  try {
+    const today = new Date();
+    const rangeEnd = new Date(today);
+    rangeEnd.setDate(today.getDate() + 56); // แสดงล่วงหน้า 8 สัปดาห์ ตรงกับฝั่ง Admin
+
+    const [schedSnap, leaveSnap] = await Promise.all([
+      getDocs(query(collection(db,'schedules'), where('uid','==',user.uid),
+        where('date','>=', toLocalDateKey(today)), where('date','<=', toLocalDateKey(rangeEnd)))),
+      getDocs(query(collection(db,'leaves'), where('uid','==',user.uid),
+        where('date','>=', toLocalDateKey(today)), where('date','<=', toLocalDateKey(rangeEnd))))
+    ]);
+
+    const schedByDate = {}; schedSnap.forEach(d => { const v = d.data(); schedByDate[v.date] = v; });
+    const leaveByDate = {}; leaveSnap.forEach(d => { const v = d.data(); leaveByDate[v.date] = v; });
+
+    const todayKey = toLocalDateKey(today);
+    const dowNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+    const rows = [];
+    for(let i=0;i<56;i++){
+      const d = new Date(today); d.setDate(today.getDate()+i);
+      const dateKey = toLocalDateKey(d);
+      const sched = schedByDate[dateKey];
+      const leave = leaveByDate[dateKey];
+      if(!sched && !leave) continue; // แสดงเฉพาะวันที่มีข้อมูล ไม่ให้ตารางยาวเกินจำเป็น
+      const dayLabel = dowNames[d.getDay()]+' '+d.getDate()+' '+d.toLocaleDateString('th-TH',{month:'short'});
+      let shiftTxt = '-', posTxt = '-';
+      if(leave){ shiftTxt = '📝 ลา ('+(leave.type||'-')+')'; }
+      else if(sched){
+        shiftTxt = sched.isOff ? 'หยุด' : sched.startTime+'–'+sched.endTime;
+        posTxt = sched.position || '-';
+      }
+      const statusTxt = dateKey === todayKey ? '<span class="status on">วันนี้</span>' : '—';
+      rows.push('<tr><td>'+dayLabel+'</td><td>'+shiftTxt+'</td><td>'+posTxt+'</td><td>'+statusTxt+'</td></tr>');
+    }
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="4" style="color:var(--muted); text-align:center; padding:20px;">ยังไม่มีการจัดกะล่วงหน้า</td></tr>';
+  } catch(e){
+    console.warn('loadMySchedule failed', e);
+    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger); text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</td></tr>';
+  }
+}
+window.loadMySchedule = loadMySchedule;
+
+// ===================== ขอลาล่วงหน้า (พนักงานส่งเอง) =====================
+document.getElementById('btnRequestLeave')?.addEventListener('click', () => {
+  if(!auth.currentUser){ if(window.toast) toast('❌ ต้องเข้าสู่ระบบก่อน'); return; }
+  document.getElementById('reqLeaveDate').value = toLocalDateKey(new Date());
+  document.getElementById('reqLeaveNote').value = '';
+  document.getElementById('reqLeaveErr').textContent = '';
+  document.getElementById('requestLeaveModal').classList.add('open');
+});
+document.getElementById('reqLeaveSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('reqLeaveErr');
+  const user = auth.currentUser;
+  if(!user){ errEl.textContent = 'กรุณาเข้าสู่ระบบก่อน'; return; }
+  const dateVal = document.getElementById('reqLeaveDate').value;
+  const type = document.getElementById('reqLeaveType').value;
+  const note = document.getElementById('reqLeaveNote').value.trim();
+  if(!dateVal){ errEl.textContent = 'กรุณาเลือกวันที่ลา'; return; }
+  errEl.textContent = 'กำลังส่งคำขอ...';
+  try {
+    const leaveId = 'LEAVE'+Date.now();
+    await setDoc(doc(db,'leaves',leaveId), {
+      uid: user.uid, date: dateVal, type, note,
+      recordedBy: user.email || user.uid, requestedByStaff: true,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('requestLeaveModal').classList.remove('open');
+    if(window.toast) toast('✓ ส่งคำขอลาแล้ว — แอดมินจะเห็นในระบบ');
+    loadMySchedule();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
 // ===================== โหลดเมนู (Item 7,8,13 ผูกกับข้อมูลสด) =====================
