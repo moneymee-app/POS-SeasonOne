@@ -859,9 +859,34 @@
       <!-- ========== RESERVATIONS (จองโต๊ะล่วงหน้า) ========== -->
       <section class="view" id="view-reservations">
         <div class="card" style="margin-bottom:18px;">
-          <div class="card-head"><h3>⏰ ช่วงเวลาที่เปิดรับจอง</h3><button class="pill-btn" id="btnAddSlot" style="background:var(--gold); color:var(--night);">＋ เพิ่มช่วงเวลา</button></div>
-          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">เปิด/ปิดแต่ละช่วงเวลาได้ตามต้องการ — ลูกค้าจะเลือกได้เฉพาะช่วงที่เปิดอยู่เท่านั้น</div>
-          <div id="slotList"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
+          <div class="card-head"><h3>⏰ เปิดช่วงเวลารับจอง</h3></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">เลือกเวลาเริ่ม-ปิดรับจองก่อน แล้วคลิกเลือกวันที่ในปฏิทินด้านล่าง (เลือกได้หลายวันพร้อมกัน) แล้วกดบันทึกทีเดียว</div>
+          <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-bottom:10px;">
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">เวลาเริ่มเปิดจอง</div>
+              <select id="bulkSlotStart"></select>
+            </div>
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">เวลาปิดรับจอง</div>
+              <select id="bulkSlotEnd"></select>
+            </div>
+            <button class="pill-btn" id="btnBulkCreateSlots" style="background:var(--gold); color:var(--night);">✓ สร้างช่วงเปิดจองให้วันที่เลือกไว้ (<span id="selectedDaysCount">0</span> วัน)</button>
+            <button class="pill-btn" id="btnClearDaySelection" style="background:var(--night); color:var(--gold-soft);">✕ ล้างวันที่เลือก</button>
+          </div>
+          <div id="bulkSlotErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:10px;"></div>
+
+          <div class="toolbar" style="justify-content:space-between; margin-top:14px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button class="sched-nav-btn" id="resvCalPrevBtn">‹</button>
+              <div class="sched-week-label" id="resvCalMonthLabel">-</div>
+              <button class="sched-nav-btn" id="resvCalNextBtn">›</button>
+              <button class="pill-btn" id="resvCalTodayBtn" style="background:var(--night); color:var(--gold-soft);">วันนี้</button>
+            </div>
+          </div>
+          <div id="resvCalendarBox">
+            <div style="padding:40px; text-align:center; color:var(--muted);">กำลังโหลดปฏิทิน...</div>
+          </div>
+          <div style="font-size:11.5px; color:var(--muted); margin-top:10px;">🟢 มีช่วงเปิดจองแล้ว · 🟡 กำลังเลือก (คลิกซ้ำเพื่อยกเลิกเลือก) · คลิกวันที่มีช่วงเปิดจองแล้วเพื่อแก้ไข/ลบทีละวัน</div>
         </div>
 
         <div class="card" style="margin-bottom:18px;">
@@ -1338,16 +1363,23 @@
   </div>
 </div>
 
-<!-- ===== RESERVATION SLOT MODAL (Admin จัดการช่วงเวลาจอง) ===== -->
-<div class="modal-back" id="slotModal">
+<!-- ===== RESERVATION DAY DETAIL MODAL (Admin แก้ไข/ลบช่วงเปิดจองทีละวัน) ===== -->
+<div class="modal-back" id="resvDayModal">
   <div class="modal">
-    <h3 id="slotModalTitle">⏰ เพิ่มช่วงเวลาจอง</h3>
-    <input type="text" id="slotTime" placeholder="เวลา เช่น 11:00">
-    <input type="text" id="slotLabel" placeholder="ชื่อช่วง (ถ้ามี) เช่น รอบเที่ยง">
-    <div id="slotErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <h3>📅 ช่วงเปิดจอง — <span id="resvDayDateLabel">-</span></h3>
+    <div class="sub">แก้ไขเวลา เปิด/ปิด หรือลบช่วงเปิดจองของวันนี้ได้ทีละรายการ</div>
+    <div id="resvDaySlotList" style="max-height:40vh; overflow-y:auto; margin-bottom:14px;"></div>
+
+    <div class="lbl2" style="margin-top:10px;">เพิ่มอีกช่วงในวันนี้</div>
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <select id="resvDayNewStart" style="flex:1;"></select>
+      <select id="resvDayNewEnd" style="flex:1;"></select>
+    </div>
+    <button class="btn-lg b-ghost" id="resvDayAddBtn" style="width:100%; margin-bottom:10px;">＋ เพิ่มช่วงนี้</button>
+
+    <div id="resvDayErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
-      <button class="btn-lg b-ghost" onclick="document.getElementById('slotModal').classList.remove('open')">ยกเลิก</button>
-      <button class="btn-lg b-gold" id="slotSaveBtn">✓ บันทึก</button>
+      <button class="btn-lg b-ghost" onclick="document.getElementById('resvDayModal').classList.remove('open')" style="width:100%;">ปิด</button>
     </div>
   </div>
 </div>
@@ -2839,62 +2871,169 @@ onSnapshot(collection(db,'positions'), (qs) => {
   refreshShiftPositionOptions(); // อัปเดตตัวเลือกตำแหน่งในตอนจัดกะด้วย
 }, e => console.warn('positions listener failed', e));
 
-// ===================== ระบบจองโต๊ะล่วงหน้า (ล็อต C ข้อ 6) =====================
-let RESERVATION_SLOTS_CACHE = [];
+// ===================== ระบบจองโต๊ะล่วงหน้า (ล็อต C ข้อ 6 — ปรับใหม่เป็นปฏิทิน) =====================
+let RESERVATION_SLOTS_CACHE = []; // แต่ละตัวคือ {id, date, startTime, endTime, active}
+let resvCalAnchorDate = new Date();
+let selectedReservationDays = new Set(); // เก็บ date key ที่ Admin กำลังเลือกไว้ในปฏิทิน (ยังไม่บันทึก)
 
-// ---------- ฝั่ง Admin: จัดการช่วงเวลาที่เปิดจอง ----------
-function renderSlotList(){
-  const box = document.getElementById('slotList');
+const HOUR_OPTIONS_HTML = Array.from({length:24}, (_,h) => {
+  const label = String(h).padStart(2,'0')+':00';
+  return '<option value="'+label+'">'+label+'</option>';
+}).join('');
+
+function fillHourDropdowns(){
+  ['bulkSlotStart','bulkSlotEnd','resvDayNewStart','resvDayNewEnd'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = HOUR_OPTIONS_HTML;
+  });
+  const endSel = document.getElementById('bulkSlotEnd');
+  if(endSel) endSel.value = '21:00'; // ค่าเริ่มต้นที่สะดวก แก้ได้เสมอ
+  const dayEndSel = document.getElementById('resvDayNewEnd');
+  if(dayEndSel) dayEndSel.value = '21:00';
+}
+
+// ---------- ปฏิทิน Admin: แสดงเดือน + จุดเขียวถ้ามีช่วงเปิดจองแล้ว + ทองถ้ากำลังเลือกอยู่ ----------
+async function renderReservationCalendar(){
+  const box = document.getElementById('resvCalendarBox');
   if(!box) return;
-  if(!RESERVATION_SLOTS_CACHE.length){ box.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีช่วงเวลาที่เปิดจอง</div>'; return; }
-  const sorted = [...RESERVATION_SLOTS_CACHE].sort((a,b)=>a.time.localeCompare(b.time));
-  box.innerHTML = sorted.map(s =>
-    '<div class="bom-row"><span style="flex:1">'+s.time+(s.label?' — '+s.label:'')+
+  try {
+    const year = resvCalAnchorDate.getFullYear();
+    const month = resvCalAnchorDate.getMonth();
+    document.getElementById('resvCalMonthLabel').textContent = resvCalAnchorDate.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+
+    const firstOfMonth = new Date(year, month, 1);
+    const gridStart = getMonday(firstOfMonth);
+    const gridEnd = new Date(gridStart); gridEnd.setDate(gridStart.getDate()+41);
+
+    const qs = await getDocs(query(collection(db,'reservationSlots'),
+      where('date','>=', toLocalDateKey(gridStart)), where('date','<=', toLocalDateKey(gridEnd))));
+    RESERVATION_SLOTS_CACHE = []; qs.forEach(d => RESERVATION_SLOTS_CACHE.push({id:d.id, ...d.data()}));
+
+    const datesWithSlots = new Set(RESERVATION_SLOTS_CACHE.map(s=>s.date));
+    const todayKey = toLocalDateKey(new Date());
+    const dowNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+    let html = '<div class="cal-grid">';
+    dowNames.forEach(dn => html += '<div class="cal-dow">'+dn+'</div>');
+    const cursor = new Date(gridStart);
+    for(let i=0;i<42;i++){
+      const dateKey = toLocalDateKey(cursor);
+      const isOtherMonth = cursor.getMonth() !== month;
+      const isToday = dateKey === todayKey;
+      const isSelected = selectedReservationDays.has(dateKey);
+      const hasSlots = datesWithSlots.has(dateKey);
+      let dotHtml = '';
+      if(isSelected) dotHtml = '<div class="cal-counts"><span style="color:var(--gold);">● กำลังเลือก</span></div>';
+      else if(hasSlots) dotHtml = '<div class="cal-counts"><span style="color:var(--ok);">● เปิดจองแล้ว</span></div>';
+      else dotHtml = '<div class="cal-empty-hint">ว่าง</div>';
+      html += '<div class="cal-cell'+(isOtherMonth?' other-month':'')+(isToday?' is-today':'')+(isSelected?' is-today':'')+'" data-date="'+dateKey+'" style="'+(isSelected?'border-color:var(--gold); background:rgba(200,168,75,.12);':'')+'">'+
+        '<div class="cal-daynum">'+cursor.getDate()+'</div>'+dotHtml+'</div>';
+      cursor.setDate(cursor.getDate()+1);
+    }
+    html += '</div>';
+    box.innerHTML = html;
+
+    box.querySelectorAll('.cal-cell').forEach(cell => cell.addEventListener('click', () => {
+      const dateKey = cell.dataset.date;
+      const hasSlots = datesWithSlots.has(dateKey);
+      if(hasSlots){
+        // วันที่มีช่วงเปิดจองอยู่แล้ว → เปิด modal แก้ไข/ลบทีละวันทันที (ไม่ใช่โหมดเลือกหลายวัน)
+        openResvDayModal(dateKey);
+      } else {
+        // วันว่าง → toggle การเลือกสำหรับสร้างแบบ bulk
+        if(selectedReservationDays.has(dateKey)) selectedReservationDays.delete(dateKey);
+        else selectedReservationDays.add(dateKey);
+        document.getElementById('selectedDaysCount').textContent = selectedReservationDays.size;
+        renderReservationCalendar();
+      }
+    }));
+  } catch(e){
+    box.innerHTML = '<div style="padding:40px; text-align:center; color:var(--danger);">โหลดปฏิทินไม่สำเร็จ: '+e.message+'</div>';
+  }
+}
+
+document.getElementById('resvCalPrevBtn')?.addEventListener('click', () => { resvCalAnchorDate.setMonth(resvCalAnchorDate.getMonth()-1); renderReservationCalendar(); });
+document.getElementById('resvCalNextBtn')?.addEventListener('click', () => { resvCalAnchorDate.setMonth(resvCalAnchorDate.getMonth()+1); renderReservationCalendar(); });
+document.getElementById('resvCalTodayBtn')?.addEventListener('click', () => { resvCalAnchorDate = new Date(); renderReservationCalendar(); });
+document.getElementById('btnClearDaySelection')?.addEventListener('click', () => {
+  selectedReservationDays.clear();
+  document.getElementById('selectedDaysCount').textContent = '0';
+  renderReservationCalendar();
+});
+
+// ---------- สร้างช่วงเปิดจองแบบ bulk (เลือกเวลาก่อน แล้วเลือกหลายวัน) ----------
+document.getElementById('btnBulkCreateSlots')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('bulkSlotErr');
+  const startTime = document.getElementById('bulkSlotStart').value;
+  const endTime = document.getElementById('bulkSlotEnd').value;
+  if(!selectedReservationDays.size){ errEl.textContent = 'กรุณาคลิกเลือกวันที่ในปฏิทินก่อนอย่างน้อย 1 วัน'; return; }
+  if(startTime >= endTime){ errEl.textContent = 'เวลาเริ่มต้องมาก่อนเวลาปิด'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const days = [...selectedReservationDays];
+    await Promise.all(days.map(dateKey => {
+      const docId = 'SLOT_'+dateKey+'_'+startTime.replace(':','')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+      return setDoc(doc(db,'reservationSlots',docId), {date:dateKey, startTime, endTime, active:true});
+    }));
+    errEl.textContent = '';
+    selectedReservationDays.clear();
+    document.getElementById('selectedDaysCount').textContent = '0';
+    if(window.toast) toast('✓ เปิดช่วงเวลาให้ '+days.length+' วันแล้ว');
+    renderReservationCalendar();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+// ---------- แก้ไข/ลบ/เปิด-ปิด ทีละวัน ----------
+let currentResvDayKey = null;
+window.openResvDayModal = (dateKey) => {
+  currentResvDayKey = dateKey;
+  const dateObj = new Date(dateKey+'T00:00:00');
+  document.getElementById('resvDayDateLabel').textContent = dateObj.toLocaleDateString('th-TH',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('resvDayErr').textContent = '';
+  renderResvDaySlotList();
+  document.getElementById('resvDayModal').classList.add('open');
+};
+function renderResvDaySlotList(){
+  const box = document.getElementById('resvDaySlotList');
+  const daySlots = RESERVATION_SLOTS_CACHE.filter(s=>s.date===currentResvDayKey).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  if(!daySlots.length){ box.innerHTML = '<div style="color:var(--muted); font-size:13px;">ยังไม่มีช่วงเปิดจองในวันนี้</div>'; return; }
+  box.innerHTML = daySlots.map(s =>
+    '<div class="bom-row"><span style="flex:1">'+s.startTime+' – '+s.endTime+
     '<span class="status '+(s.active?'on':'off')+'" style="margin-left:8px;">'+(s.active?'เปิดรับจอง':'ปิด')+'</span></span>'+
     '<button class="btn-mini '+(s.active?'btn-reject':'btn-approve')+'" data-sid="'+s.id+'" data-active="'+s.active+'" data-action="toggle">'+(s.active?'ปิด':'เปิด')+'</button>'+
-    '<button class="icon-sm slot-edit" data-sid="'+s.id+'">✏️</button>'+
-    '<button class="icon-sm slot-del" data-sid="'+s.id+'" data-time="'+s.time+'">🗑️</button></div>'
+    '<button class="icon-sm resvday-del" data-sid="'+s.id+'">🗑️</button></div>'
   ).join('');
   box.querySelectorAll('button[data-action="toggle"]').forEach(b => b.addEventListener('click', async () => {
-    try { await updateDoc(doc(db,'reservationSlots',b.dataset.sid), {active: !(b.dataset.active==='true')}); }
+    try { await updateDoc(doc(db,'reservationSlots',b.dataset.sid), {active: !(b.dataset.active==='true')}); await refreshDaySlotsFromServer(); renderResvDaySlotList(); renderReservationCalendar(); }
     catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
   }));
-  box.querySelectorAll('.slot-edit').forEach(b => b.addEventListener('click', () => openSlotModal(b.dataset.sid)));
-  box.querySelectorAll('.slot-del').forEach(b => b.addEventListener('click', async () => {
-    if(!confirm('ลบช่วงเวลา "'+b.dataset.time+'" ใช่ไหม?')) return;
-    try { await deleteDoc(doc(db,'reservationSlots',b.dataset.sid)); if(window.toast) toast('🗑️ ลบแล้ว'); }
+  box.querySelectorAll('.resvday-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบช่วงเวลานี้ใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'reservationSlots',b.dataset.sid)); await refreshDaySlotsFromServer(); renderResvDaySlotList(); renderReservationCalendar(); if(window.toast) toast('🗑️ ลบแล้ว'); }
     catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
   }));
 }
-let editingSlotId = null;
-window.openSlotModal = (sid) => {
-  editingSlotId = sid || null;
-  document.getElementById('slotModalTitle').textContent = sid ? '✏️ แก้ไขช่วงเวลาจอง' : '⏰ เพิ่มช่วงเวลาจอง';
-  const existing = sid ? RESERVATION_SLOTS_CACHE.find(s=>s.id===sid) : null;
-  document.getElementById('slotTime').value = existing?.time || '';
-  document.getElementById('slotLabel').value = existing?.label || '';
-  document.getElementById('slotErr').textContent = '';
-  document.getElementById('slotModal').classList.add('open');
-};
-document.getElementById('btnAddSlot')?.addEventListener('click', () => openSlotModal(null));
-document.getElementById('slotSaveBtn')?.addEventListener('click', async () => {
-  const errEl = document.getElementById('slotErr');
-  const time = document.getElementById('slotTime').value.trim();
-  const label = document.getElementById('slotLabel').value.trim();
-  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){ errEl.textContent = 'กรุณากรอกเวลาให้ถูกต้อง เช่น 11:00'; return; }
+async function refreshDaySlotsFromServer(){
+  const qs = await getDocs(query(collection(db,'reservationSlots'), where('date','==',currentResvDayKey)));
+  RESERVATION_SLOTS_CACHE = RESERVATION_SLOTS_CACHE.filter(s=>s.date!==currentResvDayKey);
+  qs.forEach(d => RESERVATION_SLOTS_CACHE.push({id:d.id, ...d.data()}));
+}
+document.getElementById('resvDayAddBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('resvDayErr');
+  const startTime = document.getElementById('resvDayNewStart').value;
+  const endTime = document.getElementById('resvDayNewEnd').value;
+  if(startTime >= endTime){ errEl.textContent = 'เวลาเริ่มต้องมาก่อนเวลาปิด'; return; }
   errEl.textContent = 'กำลังบันทึก...';
   try {
-    const docId = editingSlotId || 'SLOT_'+time.replace(':','')+'_'+Date.now();
-    await setDoc(doc(db,'reservationSlots',docId), {time, label, active: true});
-    document.getElementById('slotModal').classList.remove('open');
-    if(window.toast) toast('✓ บันทึกช่วงเวลาแล้ว');
+    const docId = 'SLOT_'+currentResvDayKey+'_'+startTime.replace(':','')+'_'+Date.now();
+    await setDoc(doc(db,'reservationSlots',docId), {date:currentResvDayKey, startTime, endTime, active:true});
+    errEl.textContent = '';
+    await refreshDaySlotsFromServer();
+    renderResvDaySlotList();
+    renderReservationCalendar();
+    if(window.toast) toast('✓ เพิ่มช่วงเวลาแล้ว');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
-onSnapshot(collection(db,'reservationSlots'), (qs) => {
-  RESERVATION_SLOTS_CACHE = []; qs.forEach(d => RESERVATION_SLOTS_CACHE.push({id:d.id, ...d.data()}));
-  renderSlotList();
-  refreshCustomerSlotOptions();
-}, e => console.warn('reservationSlots listener failed', e));
 
 // ---------- ความจุที่นั่งตามโซน (ใช้ทั้งฝั่งลูกค้าเช็คก่อนจอง และ Admin ดูภาพรวม) ----------
 function calcZoneCapacity(zoneName){
@@ -2909,13 +3048,24 @@ async function getApprovedReservationsFor(dateKey, slotTime, zoneName){
 }
 
 // ---------- ฝั่งลูกค้า: ฟอร์มจองโต๊ะ ----------
-function refreshCustomerSlotOptions(){
+async function refreshCustomerSlotOptionsForDate(dateKey){
   const sel = document.getElementById('resvSlotTime');
   if(!sel) return;
-  const activeSlots = RESERVATION_SLOTS_CACHE.filter(s=>s.active).sort((a,b)=>a.time.localeCompare(b.time));
-  sel.innerHTML = activeSlots.length
-    ? activeSlots.map(s => '<option value="'+s.time+'">'+s.time+(s.label?' — '+s.label:'')+'</option>').join('')
-    : '<option value="">ขณะนี้ยังไม่เปิดรับจอง</option>';
+  if(!dateKey){ sel.innerHTML = '<option value="">เลือกวันที่ก่อนเพื่อดูช่วงเวลาที่เปิดจอง</option>'; return; }
+  try {
+    const qs = await getDocs(query(collection(db,'reservationSlots'), where('date','==',dateKey), where('active','==',true)));
+    const daySlots = []; qs.forEach(d => daySlots.push(d.data()));
+    daySlots.sort((a,b)=>a.startTime.localeCompare(b.startTime));
+    if(!daySlots.length){ sel.innerHTML = '<option value="">วันนี้ยังไม่เปิดรับจอง</option>'; return; }
+    // แต่ละช่วง (เช่น 11:00-21:00) แตกเป็นตัวเลือกทีละชั่วโมงให้ลูกค้าเลือกเวลาที่แน่นอน
+    const hourOptions = [];
+    daySlots.forEach(slot => {
+      let h = parseInt(slot.startTime.split(':')[0], 10);
+      const endH = parseInt(slot.endTime.split(':')[0], 10);
+      for(; h < endH; h++){ hourOptions.push(String(h).padStart(2,'0')+':00'); }
+    });
+    sel.innerHTML = [...new Set(hourOptions)].sort().map(t => '<option value="'+t+'">'+t+'</option>').join('');
+  } catch(e){ sel.innerHTML = '<option value="">โหลดไม่สำเร็จ</option>'; }
 }
 function refreshCustomerZoneOptions(){
   const sel = document.getElementById('resvZone');
@@ -2929,10 +3079,11 @@ document.getElementById('btnOpenReservation')?.addEventListener('click', () => {
   document.getElementById('resvPartySize').value = '';
   document.getElementById('resvCapacityNote').textContent = '';
   document.getElementById('resvErr').textContent = '';
-  refreshCustomerSlotOptions();
+  refreshCustomerSlotOptionsForDate(toLocalDateKey(new Date()));
   refreshCustomerZoneOptions();
   document.getElementById('reservationModal').classList.add('open');
 });
+document.getElementById('resvDate')?.addEventListener('change', (e) => refreshCustomerSlotOptionsForDate(e.target.value));
 document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
   const errEl = document.getElementById('resvErr');
   const name = document.getElementById('resvName').value.trim();
@@ -2960,7 +3111,6 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
     if(window.toast) toast('✓ ส่งคำขอจองแล้ว — รอทางร้านยืนยันนะครับ');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
-// เช็คความจุแบบ real-time ตอนเลือกช่วงเวลา/โซน/จำนวนคน (ก่อนกดส่งจริง) ให้ลูกค้าเห็นล่วงหน้า
 ['resvDate','resvSlotTime','resvZone','resvPartySize'].forEach(id => {
   document.getElementById(id)?.addEventListener('change', async () => {
     const date = document.getElementById('resvDate').value;
@@ -2980,6 +3130,8 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
 // ---------- ฝั่ง Admin: รายการคำขอจอง + ความจุภาพรวม ----------
 let resvStatusFilter = 'pending';
 async function loadReservationAdminData(){
+  fillHourDropdowns();
+  await renderReservationCalendar();
   await renderCapacityOverview();
   await renderReservationTable();
 }
