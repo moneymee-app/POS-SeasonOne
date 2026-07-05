@@ -702,7 +702,7 @@
         <div id="expiryAlertBox" style="display:none; margin-bottom:16px;"></div>
 
         <table>
-          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>ราคาทุน/หน่วย</th><th>วันหมดอายุ</th></tr></thead>
+          <thead><tr><th>วัตถุดิบ</th><th>หมวด</th><th>คงเหลือ</th><th>ขั้นต่ำ (Min)</th><th>สถานะ</th><th>ราคาทุน/หน่วย</th><th>วันหมดอายุ</th><th></th></tr></thead>
           <tbody id="ingTableBody"></tbody>
         </table>
 
@@ -1180,7 +1180,7 @@
 <!-- ===== ADD INGREDIENT MODAL ===== -->
 <div class="modal-back" id="ingModal">
   <div class="modal">
-    <h3>📦 เพิ่มวัตถุดิบใหม่</h3>
+    <h3 id="ingModalTitle">📦 เพิ่มวัตถุดิบใหม่</h3>
     <input type="text" id="ingName" placeholder="ชื่อวัตถุดิบ">
     <select id="ingCat">
       <option value="เนื้อสัตว์">เนื้อสัตว์/อาหารทะเล</option>
@@ -1202,6 +1202,7 @@
       <button class="btn-lg b-ghost" onclick="document.getElementById('ingModal').classList.remove('open')">ยกเลิก</button>
       <button class="btn-lg b-gold" id="ingSave">✓ บันทึก</button>
     </div>
+    <button class="btn-lg" id="ingDeleteBtn" style="display:none; width:100%; margin-top:8px; background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบวัตถุดิบนี้</button>
   </div>
 </div>
 
@@ -2868,7 +2869,8 @@ function ingRowHtml(i){
   return '<tr><td><div class="cell-item"><div class="thumb">📦</div>'+i.name+'</div></td>'+
     '<td>'+i.category+'</td><td>'+i.qty+' '+i.unit+'</td><td>'+i.min+' '+i.unit+'</td>'+
     '<td><span class="status '+statusCls+'">'+statusTxt+'</span></td><td>฿'+Number(i.cost||0).toLocaleString()+'</td>'+
-    '<td>'+expiryHtml+'</td></tr>';
+    '<td>'+expiryHtml+'</td>'+
+    '<td><div class="row-actions"><div class="icon-sm ing-edit" data-iid="'+i.id+'">✏️</div><div class="icon-sm ing-del" data-iid="'+i.id+'" data-name="'+i.name+'">🗑️</div></div></td></tr>';
 }
 function renderIngTable(){
   const tbody = document.getElementById('ingTableBody');
@@ -2878,7 +2880,7 @@ function renderIngTable(){
   const cat = activeChip ? activeChip.dataset.cat : 'ทั้งหมด';
   let items = ING_CACHE.filter(i => !q || i.name.toLowerCase().includes(q));
   if(cat !== 'ทั้งหมด') items = items.filter(i => i.category === cat);
-  tbody.innerHTML = items.length ? items.map(ingRowHtml).join('') : '<tr><td colspan="7" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบวัตถุดิบที่ค้นหา</td></tr>';
+  tbody.innerHTML = items.length ? items.map(ingRowHtml).join('') : '<tr><td colspan="8" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบวัตถุดิบที่ค้นหา</td></tr>';
 
   document.getElementById('kpi-ing-total').textContent = ING_CACHE.length;
   document.getElementById('kpi-ing-low').textContent = ING_CACHE.filter(i=>i.qty>0 && i.qty<=i.min).length;
@@ -2886,6 +2888,13 @@ function renderIngTable(){
   const totalValue = ING_CACHE.reduce((s,i)=>s+(i.qty*(i.cost||0)),0);
   document.getElementById('kpi-ing-value').textContent = '฿'+Math.round(totalValue).toLocaleString();
   renderExpiryAlerts();
+
+  tbody.querySelectorAll('.ing-edit').forEach(b => b.addEventListener('click', () => openIngModal(b.dataset.iid)));
+  tbody.querySelectorAll('.ing-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบวัตถุดิบ "'+b.dataset.name+'" ใช่ไหม? กู้คืนไม่ได้ (สูตร BOM ที่ใช้วัตถุดิบนี้จะยังอยู่ แต่จะอ้างอิงถึงวัตถุดิบที่ไม่มีแล้ว)')) return;
+    try { await deleteDoc(doc(db,'ingredients',b.dataset.iid)); if(window.toast) toast('🗑️ ลบวัตถุดิบแล้ว'); }
+    catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
+  }));
 }
 function renderExpiryAlerts(){
   const box = document.getElementById('expiryAlertBox');
@@ -2948,10 +2957,39 @@ document.getElementById('ingCat')?.addEventListener('change', () => {
   }
 });
 
-document.getElementById('btnAddIng')?.addEventListener('click', () => {
-  ['ingName','ingUnit','ingQty','ingMin','ingCost','ingPurchaseDate','ingExpiryDate'].forEach(id=>document.getElementById(id).value='');
+let editingIngId = null;
+window.openIngModal = (iid) => {
+  editingIngId = iid || null;
+  document.getElementById('ingModalTitle').textContent = iid ? '✏️ แก้ไขวัตถุดิบ' : '📦 เพิ่มวัตถุดิบใหม่';
   document.getElementById('ingErr').textContent = '';
+  if(iid){
+    const ing = ING_CACHE.find(x=>x.id===iid);
+    document.getElementById('ingName').value = ing?.name || '';
+    document.getElementById('ingCat').value = ing?.category || 'อื่นๆ';
+    document.getElementById('ingUnit').value = ing?.unit || '';
+    document.getElementById('ingQty').value = ing?.qty ?? '';
+    document.getElementById('ingMin').value = ing?.min ?? '';
+    document.getElementById('ingCost').value = ing?.cost ?? '';
+    document.getElementById('ingPurchaseDate').value = ing?.purchaseDate || '';
+    document.getElementById('ingExpiryDate').value = ing?.expiryDate || '';
+    document.getElementById('ingDeleteBtn').style.display = 'block';
+  } else {
+    ['ingName','ingUnit','ingQty','ingMin','ingCost','ingPurchaseDate','ingExpiryDate'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ingCat').value = 'เนื้อสัตว์';
+    document.getElementById('ingDeleteBtn').style.display = 'none';
+  }
   document.getElementById('ingModal').classList.add('open');
+};
+document.getElementById('btnAddIng')?.addEventListener('click', () => openIngModal(null));
+document.getElementById('ingDeleteBtn')?.addEventListener('click', async () => {
+  if(!editingIngId) return;
+  const name = document.getElementById('ingName').value;
+  if(!confirm('ลบวัตถุดิบ "'+name+'" ใช่ไหม? กู้คืนไม่ได้')) return;
+  try {
+    await deleteDoc(doc(db,'ingredients',editingIngId));
+    document.getElementById('ingModal').classList.remove('open');
+    if(window.toast) toast('🗑️ ลบวัตถุดิบแล้ว');
+  } catch(e){ if(window.toast) toast('❌ ลบไม่สำเร็จ: '+e.message); }
 });
 document.getElementById('ingSave').onclick = async () => {
   const errEl = document.getElementById('ingErr');
@@ -2966,10 +3004,10 @@ document.getElementById('ingSave').onclick = async () => {
   if(!name || !unit){ errEl.textContent = 'กรอกชื่อและหน่วยให้ครบ'; return; }
   errEl.textContent = 'กำลังบันทึก...';
   try {
-    const newId = 'I'+Date.now();
-    await setDoc(doc(db,'ingredients',newId), {name,category,unit,qty,min,cost,purchaseDate,expiryDate});
+    const targetId = editingIngId || ('I'+Date.now());
+    await setDoc(doc(db,'ingredients',targetId), {name,category,unit,qty,min,cost,purchaseDate,expiryDate});
     document.getElementById('ingModal').classList.remove('open');
-    if(window.toast) toast('✓ เพิ่มวัตถุดิบแล้ว');
+    if(window.toast) toast(editingIngId ? '✓ บันทึกการแก้ไขแล้ว' : '✓ เพิ่มวัตถุดิบแล้ว');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 };
 
