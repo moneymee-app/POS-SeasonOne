@@ -1065,6 +1065,7 @@
       <div class="staff-tab active" data-staff-tab="orders">ออเดอร์ที่ต้องเสิร์ฟ</div>
       <div class="staff-tab" data-staff-tab="takeorder">สั่งแทนลูกค้า</div>
       <div class="staff-tab" data-staff-tab="tablemap">ผังโต๊ะ</div>
+      <div class="staff-tab" data-staff-tab="checkin">🚪 เช็คอินลูกค้า</div>
       <div class="staff-tab" data-staff-tab="schedule">ตารางกะของฉัน</div>
     </div>
     <div class="staff-content">
@@ -1116,6 +1117,30 @@
       <div class="staff-panel" id="staff-panel-tablemap">
         <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">แตะโต๊ะเพื่อดูว่ากำลังทานอยู่ไหม และดูประวัติออเดอร์ย้อนหลังได้</div>
         <div id="staffTableZonesLive"><div class="empty"><div class="ic">🪑</div>กำลังโหลดผังโต๊ะ...</div></div>
+      </div>
+
+      <div class="staff-panel" id="staff-panel-checkin">
+        <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">ค้นด้วยเบอร์โทรลูกค้า — ถ้าเคยจองไว้จะดึงข้อมูลมาให้ ถ้าไม่เคยจอง (walk-in) กรอกใหม่ได้เลย</div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <input type="text" id="checkinSearchPhone" placeholder="เบอร์โทรลูกค้า" maxlength="10" style="flex:1;">
+          <button class="pill-btn" id="checkinSearchBtn" style="background:var(--gold); color:var(--night);">🔍 ค้นหา</button>
+        </div>
+        <div id="checkinFormBox" style="display:none;">
+          <input type="text" id="checkinName" placeholder="ชื่อลูกค้า">
+          <select id="checkinZone"></select>
+          <input type="text" id="checkinPartySize" placeholder="จำนวนคน">
+          <div class="lbl2">เลือกโต๊ะที่ว่างอยู่ตอนนี้</div>
+          <select id="checkinTable"></select>
+          <div id="checkinReservationNote" style="font-size:12px; color:var(--ok); margin-bottom:8px;"></div>
+          <div id="checkinErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+          <button class="btn-lg b-gold" id="checkinConfirmBtn" style="width:100%;">✓ เช็คอิน + สร้าง QR</button>
+        </div>
+        <div id="checkinQrResultBox" style="display:none; text-align:center; margin-top:16px; padding:20px; background:var(--paper); border:1px solid var(--gold); border-radius:12px;">
+          <div style="font-size:13px; color:var(--muted); margin-bottom:10px;">QR สำหรับวันนี้ — โต๊ะ <span id="checkinResultTable">-</span></div>
+          <div id="checkinQrCanvas" style="width:200px; height:200px; margin:0 auto;"></div>
+          <div style="font-size:12px; color:var(--muted); margin-top:10px;">ปริ้นหรือถ่ายจอไปวางที่โต๊ะให้ลูกค้าสแกน (ใช้ได้ถึงเที่ยงคืนวันนี้เท่านั้น)</div>
+          <button class="pill-btn" id="checkinNewBtn" style="margin-top:14px; background:var(--night); color:var(--gold-soft);">＋ เช็คอินคนถัดไป</button>
+        </div>
       </div>
 
       <div class="staff-panel" id="staff-panel-schedule">
@@ -1849,6 +1874,7 @@
       document.querySelectorAll('.staff-panel').forEach(p=>p.classList.remove('active'));
       document.getElementById('staff-panel-'+tab.dataset.staffTab).classList.add('active');
       if(tab.dataset.staffTab === 'schedule' && window.loadMySchedule) loadMySchedule();
+      if(tab.dataset.staffTab === 'checkin' && window.resetCheckinForm) resetCheckinForm();
     });
   });
 
@@ -4184,6 +4210,141 @@ async function renderBomSummary(){
     tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="2" style="color:var(--muted);">ยังไม่มีสูตรอาหารที่บันทึกไว้</td></tr>';
   } catch(e){ console.warn('renderBomSummary failed', e); }
 }
+
+// ===================== ระบบเช็คอินหน้าร้าน + QR รายวัน (เฟส 1: โครงสร้างข้อมูลพื้นฐาน) =====================
+// Schema ของ checkins/{id}:
+//   phone, name, table, zone, partySize, date (YYYY-MM-DD ของวันที่เช็คอิน),
+//   qrCode (รหัสสุ่มสำหรับ URL ?checkin=), reservationId (ผูกกับการจอง ถ้ามี, ไม่งั้น null),
+//   checkedInBy (staff/admin ที่เช็คอินให้), checkedInAt, active (false เมื่อหมดอายุเที่ยงคืนหรือเช็คเอาท์)
+
+function generateDailyQrCode(){
+  // สุ่มรหัส 10 ตัวอักษร (ตัวเลข+ตัวอักษรพิมพ์เล็ก) กันเดา QR ของโต๊ะอื่น
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let code = '';
+  for(let i=0;i<10;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+async function createCheckin({phone, name, table, zone, partySize, reservationId}){
+  const dateKey = toLocalDateKey(new Date());
+  const qrCode = generateDailyQrCode();
+  const checkinId = 'CHECKIN_'+dateKey+'_'+qrCode;
+  await setDoc(doc(db,'checkins',checkinId), {
+    phone, name, table, zone, partySize, date: dateKey,
+    qrCode, reservationId: reservationId || null,
+    checkedInBy: auth.currentUser?.email || auth.currentUser?.uid || 'ไม่ทราบชื่อ',
+    checkedInAt: serverTimestamp(), active: true
+  });
+  return { checkinId, qrCode, dateKey };
+}
+
+async function findCheckinByQrCode(qrCode){
+  // ใช้ตอนลูกค้าสแกน QR รายวัน (?checkin=รหัส) เพื่อตรวจว่ายังใช้ได้ไหม (วันเดียวกัน + active)
+  const todayKey = toLocalDateKey(new Date());
+  try {
+    const q = query(collection(db,'checkins'), where('qrCode','==',qrCode), where('date','==',todayKey), where('active','==',true));
+    const qs = await getDocs(q);
+    if(qs.empty) return null;
+    let result = null;
+    qs.forEach(d => { result = {id:d.id, ...d.data()}; });
+    return result;
+  } catch(e){ console.warn('findCheckinByQrCode failed', e); return null; }
+}
+window.createCheckin = createCheckin;
+window.findCheckinByQrCode = findCheckinByQrCode;
+
+// ===================== หน้าเช็คอินลูกค้า (เฟส 2 — ฝั่งพนักงาน/Admin) =====================
+let checkinFoundReservation = null; // เก็บการจองที่เจอไว้ (ถ้ามี) เพื่อใช้ตอนกดยืนยันเช็คอิน
+
+window.resetCheckinForm = function(){
+  document.getElementById('checkinSearchPhone').value = '';
+  document.getElementById('checkinFormBox').style.display = 'none';
+  document.getElementById('checkinQrResultBox').style.display = 'none';
+  document.getElementById('checkinReservationNote').textContent = '';
+  document.getElementById('checkinErr').textContent = '';
+  checkinFoundReservation = null;
+};
+
+function refreshCheckinZoneOptions(selectedZone){
+  const sel = document.getElementById('checkinZone');
+  sel.innerHTML = ZONES_CACHE.map(z => '<option value="'+z.name+'">'+z.name+'</option>').join('');
+  if(selectedZone && ZONES_CACHE.some(z=>z.name===selectedZone)) sel.value = selectedZone;
+}
+async function refreshCheckinTableOptions(){
+  // แสดงเฉพาะโต๊ะที่ยังไม่มีใครนั่งอยู่ตอนนี้ (เทียบกับ ALL_ACTIVE_ORDERS ที่มีอยู่แล้วในระบบ)
+  const sel = document.getElementById('checkinTable');
+  const busyTables = new Set((window.ALL_ACTIVE_ORDERS||[]).map(o=>o.table));
+  const freeTables = TABLES_CACHE.filter(t => t.active !== false && !busyTables.has(t.name));
+  sel.innerHTML = freeTables.length
+    ? freeTables.map(t => '<option value="'+t.name+'">'+t.name+' ('+t.zone+', '+(t.seats||4)+' ที่นั่ง)</option>').join('')
+    : '<option value="">ไม่มีโต๊ะว่างตอนนี้</option>';
+}
+
+document.getElementById('checkinSearchBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('checkinErr');
+  const phone = document.getElementById('checkinSearchPhone').value.replace(/\D/g,'');
+  if(phone.length < 9){ errEl.textContent = ''; if(window.toast) toast('กรุณากรอกเบอร์โทรให้ถูกต้อง'); return; }
+  errEl.textContent = '';
+  checkinFoundReservation = null;
+  document.getElementById('checkinReservationNote').textContent = '';
+
+  try {
+    // ค้นการจองที่ยัง "อนุมัติแล้ว" และยังไม่เคยเช็คอิน (วันที่ตรงกับวันนี้หรืออนาคตใกล้ๆ)
+    const todayKey = toLocalDateKey(new Date());
+    const qs = await getDocs(query(collection(db,'reservations'), where('phone','==',phone), where('status','==','approved')));
+    const matches = []; qs.forEach(d => matches.push({id:d.id, ...d.data()}));
+    // เลือกอันที่ตรงกับวันนี้ก่อน ถ้าไม่มีก็เอาอันล่าสุด
+    const todayMatch = matches.find(m => m.date === todayKey);
+    const chosen = todayMatch || matches[0] || null;
+
+    if(chosen){
+      checkinFoundReservation = chosen;
+      document.getElementById('checkinName').value = chosen.name;
+      refreshCheckinZoneOptions(chosen.zone);
+      document.getElementById('checkinPartySize').value = chosen.partySize;
+      document.getElementById('checkinReservationNote').textContent = '✓ เจอการจองของ '+chosen.name+' ('+chosen.date+' '+chosen.slotTime+') — แก้ไขได้ถ้าจำเป็น';
+    } else {
+      document.getElementById('checkinName').value = '';
+      refreshCheckinZoneOptions(null);
+      document.getElementById('checkinPartySize').value = '';
+      document.getElementById('checkinReservationNote').textContent = 'ไม่พบการจอง — กรอกข้อมูลใหม่สำหรับลูกค้า walk-in ได้เลย';
+    }
+    await refreshCheckinTableOptions();
+    document.getElementById('checkinFormBox').style.display = 'block';
+    document.getElementById('checkinQrResultBox').style.display = 'none';
+  } catch(e){ if(window.toast) toast('❌ ค้นหาไม่สำเร็จ: '+e.message); }
+});
+
+document.getElementById('checkinConfirmBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('checkinErr');
+  const phone = document.getElementById('checkinSearchPhone').value.replace(/\D/g,'');
+  const name = document.getElementById('checkinName').value.trim();
+  const zone = document.getElementById('checkinZone').value;
+  const partySize = parseInt(document.getElementById('checkinPartySize').value, 10);
+  const table = document.getElementById('checkinTable').value;
+  if(!name || !zone || !partySize || partySize<=0 || !table){ errEl.textContent = 'กรุณากรอกข้อมูลให้ครบและเลือกโต๊ะ'; return; }
+  errEl.textContent = 'กำลังเช็คอิน...';
+  try {
+    const { checkinId, qrCode, dateKey } = await createCheckin({
+      phone, name, table, zone, partySize,
+      reservationId: checkinFoundReservation ? checkinFoundReservation.id : null
+    });
+    // ถ้าเช็คอินจากการจอง ให้ปิดสถานะการจองนั้นเป็น "เช็คอินแล้ว" กันเช็คอินซ้ำ/กันชนกับระบบ No-show
+    if(checkinFoundReservation){
+      await updateDoc(doc(db,'reservations',checkinFoundReservation.id), {status:'checked_in', checkinId});
+    }
+    errEl.textContent = '';
+    document.getElementById('checkinFormBox').style.display = 'none';
+    document.getElementById('checkinResultTable').textContent = table;
+    document.getElementById('checkinQrResultBox').style.display = 'block';
+    const qrBox = document.getElementById('checkinQrCanvas');
+    qrBox.innerHTML = '';
+    const checkinUrl = location.origin + location.pathname + '?checkin=' + qrCode;
+    new QRCode(qrBox, { text: checkinUrl, width:200, height:200, colorDark:'#0D0D0D', colorLight:'#ffffff' });
+    if(window.toast) toast('✓ เช็คอินสำเร็จ! QR ใช้ได้ถึงเที่ยงคืนวันนี้');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+document.getElementById('checkinNewBtn')?.addEventListener('click', () => window.resetCheckinForm());
 
 async function loadIngredients(){
   try {
