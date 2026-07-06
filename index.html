@@ -1204,6 +1204,7 @@
 <!-- ========== CUSTOMER MODE (ลูกค้า) ========== -->
 <div class="mode-view" id="mode-customer">
   <div class="cust-shell">
+    <div id="checkinVerifyBanner" style="display:none; background:rgba(200,168,75,.15); border:1px solid var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:10px; font-size:13px; text-align:center;">⏳ กำลังตรวจสอบ...</div>
     <div class="cust-topbar">
       <div style="height:150px; border-radius:16px; margin:0 0 14px; background-image:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.85)), url('https://drive.google.com/thumbnail?id=1mzdC73REUp71OzAE7J_eHDE2srDHdQpl&sz=w800'); background-size:cover; background-position:center; display:flex; align-items:flex-end; padding:14px; border:1px solid rgba(200,168,75,.25);">
         <div style="text-align:left;">
@@ -2386,7 +2387,8 @@ try { enableIndexedDbPersistence(db); } catch(e){}
 
 let ROLE = null;
 const urlParams = new URLSearchParams(location.search);
-let currentTable = urlParams.get('table') || 'A1';
+const checkinQrParam = urlParams.get('checkin');
+let currentTable = urlParams.get('table') || (checkinQrParam ? 'กำลังตรวจสอบ...' : 'A1');
 window.currentTable = currentTable; // ให้สคริปต์แรก (ปุ่มชำระเงินฝั่งลูกค้า) ใช้ค่านี้ได้ แทน hardcode
 const custTableLabelEl = document.getElementById('custTableLabel');
 if(custTableLabelEl) custTableLabelEl.textContent = currentTable;
@@ -4252,6 +4254,31 @@ async function findCheckinByQrCode(qrCode){
 }
 window.createCheckin = createCheckin;
 window.findCheckinByQrCode = findCheckinByQrCode;
+
+// ===================== ตรวจสอบ QR รายวันตอนโหลดหน้า (เฟส 3 — ฝั่งลูกค้า) =====================
+if(checkinQrParam){
+  const verifyBanner = document.getElementById('checkinVerifyBanner');
+  if(verifyBanner) verifyBanner.style.display = 'block';
+  findCheckinByQrCode(checkinQrParam).then(checkin => {
+    if(checkin){
+      // QR ยังใช้ได้ (วันเดียวกัน + active) — อัปเดตเลขโต๊ะให้ถูกต้องตามที่พนักงานเช็คอินไว้
+      currentTable = checkin.table;
+      window.currentTable = currentTable;
+      if(custTableLabelEl) custTableLabelEl.textContent = currentTable;
+      if(verifyBanner) verifyBanner.style.display = 'none';
+    } else {
+      // ไม่พบ หรือ QR หมดอายุแล้ว (ข้ามวัน/ถูกปิดใช้งาน)
+      if(verifyBanner){
+        verifyBanner.style.background = 'rgba(228,72,58,.15)';
+        verifyBanner.style.borderColor = 'var(--danger)';
+        verifyBanner.innerHTML = '⚠️ QR นี้หมดอายุหรือไม่พบข้อมูล กรุณาติดต่อพนักงานเพื่อเช็คอินใหม่';
+      }
+    }
+  }).catch(e => {
+    console.warn('checkin verify failed', e);
+    if(verifyBanner) verifyBanner.style.display = 'none'; // ถ้าเช็คไม่ได้ (เช่น เน็ตหลุด) ไม่บล็อกลูกค้า ให้ใช้ต่อได้ตามปกติ
+  });
+}
 
 // ===================== หน้าเช็คอินลูกค้า (เฟส 2 — ฝั่งพนักงาน/Admin) =====================
 let checkinFoundReservation = null; // เก็บการจองที่เจอไว้ (ถ้ามี) เพื่อใช้ตอนกดยืนยันเช็คอิน
