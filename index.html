@@ -493,6 +493,7 @@
       <div class="nav-item" data-view="staff"><span class="ic">👥</span> พนักงาน &amp; เข้างาน</div>
       <div class="nav-item" data-view="schedule"><span class="ic">🗓️</span> ตารางแพลนงาน</div>
       <div class="nav-item" data-view="reservations"><span class="ic">📅</span> จองโต๊ะล่วงหน้า</div>
+      <div class="nav-item" data-view="members"><span class="ic">🎁</span> สมาชิก/แต้มสะสม</div>
 
       <div class="nav-group-label">ระบบ</div>
       <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> ตั้งค่าร้าน</div>
@@ -953,6 +954,35 @@
         </div>
       </section>
 
+      <!-- ========== MEMBERS (สมาชิก/แต้มสะสม) ========== -->
+      <section class="view" id="view-members">
+        <div class="card" style="margin-bottom:18px;">
+          <div class="card-head"><h3>⚙️ ตั้งค่าอัตราแต้มสะสม</h3></div>
+          <div style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">ทุกยอดใช้จ่าย (บาท)</div>
+              <input type="text" id="pointsRateBaht" placeholder="เช่น 100" style="width:140px;">
+            </div>
+            <div style="padding-bottom:11px; color:var(--muted);">=</div>
+            <div>
+              <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">ได้กี่แต้ม</div>
+              <input type="text" id="pointsRatePoints" placeholder="เช่น 1" style="width:100px;">
+            </div>
+            <button class="pill-btn" id="btnSavePointsRate" style="background:var(--gold); color:var(--night);">✓ บันทึกอัตรา</button>
+          </div>
+          <div id="pointsRateErr" style="font-size:12.5px;color:#FF8A73;margin-top:8px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>👥 รายชื่อสมาชิก</h3></div>
+          <div class="search" style="margin-bottom:14px;">🔍 <input id="memberSearchInput" placeholder="ค้นหาชื่อหรือเบอร์โทร"></div>
+          <table>
+            <thead><tr><th>ชื่อ</th><th>เบอร์โทร</th><th>แต้มสะสม</th><th>ยอดใช้จ่ายสะสม</th><th>สมัครเมื่อ</th></tr></thead>
+            <tbody id="memberTableBody"><tr><td colspan="5" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- ========== SETTINGS ========== -->
       <section class="view" id="view-settings">
         <div class="grid-2">
@@ -1143,6 +1173,7 @@
         </div>
       </div>
       <button class="cta-btn" id="btnOpenReservation" style="width:100%; margin-top:10px;">📅 จองโต๊ะล่วงหน้า</button>
+      <button class="cta-btn" id="btnOpenMember" style="width:100%; margin-top:8px; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁 สมาชิก / ดูแต้มสะสม</button>
     </div>
     <div class="cust-cats">
       <div class="cust-cat active">ทั้งหมด</div>
@@ -1454,6 +1485,71 @@
   </div>
 </div>
 
+<!-- ===== MEMBER DETAIL MODAL (Admin ดูประวัติสมาชิกรายคน) ===== -->
+<div class="modal-back" id="memberDetailModal">
+  <div class="modal">
+    <h3>👤 <span id="memberDetailName">-</span></h3>
+    <div class="sub">📱 <span id="memberDetailPhone">-</span> · สมัครเมื่อ <span id="memberDetailJoined">-</span></div>
+    <div style="display:flex; gap:12px; margin:14px 0;">
+      <div style="flex:1; background:rgba(200,168,75,.1); border-radius:10px; padding:12px; text-align:center;">
+        <div style="font-size:11px; color:var(--muted);">แต้มสะสม</div>
+        <div style="font-size:22px; font-weight:700; color:var(--gold-soft);"><span id="memberDetailPoints">0</span></div>
+      </div>
+      <div style="flex:1; background:rgba(62,224,122,.1); border-radius:10px; padding:12px; text-align:center;">
+        <div style="font-size:11px; color:var(--muted);">ยอดใช้จ่ายสะสม</div>
+        <div style="font-size:22px; font-weight:700; color:var(--ok);">฿<span id="memberDetailSpent">0</span></div>
+      </div>
+    </div>
+    <div class="lbl2">ประวัติการมาใช้บริการ</div>
+    <div id="memberDetailVisits" style="max-height:35vh; overflow-y:auto; margin-bottom:14px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('memberDetailModal').classList.remove('open')" style="width:100%;">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MEMBER MODAL (ลูกค้าสมัครสมาชิก/ดูแต้ม) ===== -->
+<div class="modal-back" id="memberModal">
+  <div class="modal">
+    <div id="memberCheckView">
+      <h3>🎁 สมาชิก / แต้มสะสม</h3>
+      <div class="sub">กรอกเบอร์โทรเพื่อดูแต้ม หรือสมัครสมาชิกใหม่</div>
+      <input type="text" id="memberCheckPhone" placeholder="เบอร์โทรศัพท์" maxlength="10">
+      <div id="memberCheckErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+      <div class="btn-row">
+        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')">ปิด</button>
+        <button class="btn-lg b-gold" id="memberCheckBtn">✓ ตรวจสอบ</button>
+      </div>
+    </div>
+
+    <div id="memberSignupView" style="display:none;">
+      <h3>🎉 สมัครสมาชิกใหม่</h3>
+      <div class="sub">กรอกชื่อเพื่อสมัคร — เริ่มสะสมแต้มได้ทันที</div>
+      <input type="text" id="memberSignupName" placeholder="ชื่อ">
+      <div id="memberSignupErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+      <div class="btn-row">
+        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')">ยกเลิก</button>
+        <button class="btn-lg b-gold" id="memberSignupBtn">✓ สมัครสมาชิก</button>
+      </div>
+    </div>
+
+    <div id="memberProfileView" style="display:none;">
+      <h3>🎁 <span id="memberProfileName">-</span></h3>
+      <div class="sub">สมาชิกตั้งแต่ <span id="memberProfileJoined">-</span></div>
+      <div style="background:rgba(200,168,75,.1); border:1px solid rgba(200,168,75,.3); border-radius:12px; padding:16px; text-align:center; margin:14px 0;">
+        <div style="font-size:12px; color:var(--muted);">แต้มสะสมปัจจุบัน</div>
+        <div style="font-size:34px; font-weight:700; color:var(--gold-soft);"><span id="memberProfilePoints">0</span> แต้ม</div>
+        <div style="font-size:11.5px; color:var(--muted); margin-top:4px;">ยอดใช้จ่ายสะสม ฿<span id="memberProfileSpent">0</span></div>
+      </div>
+      <div class="lbl2">ประวัติการมาใช้บริการล่าสุด</div>
+      <div id="memberVisitHistory" style="max-height:30vh; overflow-y:auto; margin-bottom:10px;"></div>
+      <div class="btn-row">
+        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')" style="width:100%;">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TABLE RESERVATION MODAL (ลูกค้าจองโต๊ะล่วงหน้า) ===== -->
 <div class="modal-back" id="reservationModal">
   <div class="modal">
@@ -1582,6 +1678,9 @@
     <div class="sub" id="payRoleNote"></div>
     <div class="bill-lines" id="billLines"></div>
     <div class="bill-total"><span>รวมทั้งสิ้น</span><span id="billTotal">฿0</span></div>
+
+    <div class="lbl2">เบอร์สมาชิก (ถ้ามี — สะสมแต้มอัตโนมัติ)</div>
+    <input type="text" id="payMemberPhone" placeholder="เบอร์โทรสมาชิก (ไม่บังคับ)" maxlength="10">
 
     <div class="lbl2">วิธีชำระ</div>
     <div class="seg" id="paySeg">
@@ -1745,6 +1844,7 @@
     staff: ['พนักงาน & การเข้างาน', 'วันนี้เข้างานแล้ว 4 จาก 6 คน'],
     schedule: ['ตารางแพลนงาน', 'คลิกที่ช่องเพื่อจัดกะพนักงาน — แสดงล่วงหน้า 8 สัปดาห์'],
     reservations: ['จองโต๊ะล่วงหน้า', 'จัดการช่วงเวลาที่เปิดจอง + อนุมัติ/ยกเลิกคำขอจอง'],
+    members: ['สมาชิก/แต้มสะสม', 'ดูรายชื่อสมาชิก ประวัติการมาใช้บริการ และตั้งค่าอัตราแต้ม'],
     settings: ['ตั้งค่าร้าน', 'ข้อมูลร้านและสิทธิ์การเข้าถึง']
   };
 
@@ -1811,6 +1911,7 @@
       if(v === 'staff' && window.loadHrStats) loadHrStats(); // รีเฟรชสถิติ HR ทุกครั้งที่เปิดหน้านี้ (ข้อมูลอาจเปลี่ยนตั้งแต่โหลดครั้งแรก)
       if(v === 'schedule' && window.renderScheduleGrid) renderScheduleGrid();
       if(v === 'reservations' && window.loadReservationAdminData) loadReservationAdminData();
+      if(v === 'members' && window.loadMembersAdminData) loadMembersAdminData();
     });
   });
 
@@ -3330,6 +3431,172 @@ document.getElementById('resvEditSaveBtn')?.addEventListener('click', async () =
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
+// ===================== ระบบสมาชิก/แต้มสะสม (ล็อต C ข้อ 7) =====================
+let POINTS_RATE_CACHE = { baht: 100, points: 1 }; // ค่าเริ่มต้น: ทุก 100 บาท ได้ 1 แต้ม (แก้ได้เสมอ)
+
+async function loadPointsRate(){
+  try {
+    const snap = await getDoc(doc(db,'settings','pointsRate'));
+    if(snap.exists()) POINTS_RATE_CACHE = snap.data();
+  } catch(e){ console.warn('loadPointsRate failed', e); }
+}
+
+// ---------- ฝั่งลูกค้า: สมัครสมาชิก / ดูแต้ม ----------
+let memberCheckPhoneValue = null;
+document.getElementById('btnOpenMember')?.addEventListener('click', () => {
+  document.getElementById('memberCheckView').style.display = 'block';
+  document.getElementById('memberSignupView').style.display = 'none';
+  document.getElementById('memberProfileView').style.display = 'none';
+  document.getElementById('memberCheckPhone').value = '';
+  document.getElementById('memberCheckErr').textContent = '';
+  document.getElementById('memberModal').classList.add('open');
+});
+document.getElementById('memberCheckBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('memberCheckErr');
+  const phone = document.getElementById('memberCheckPhone').value.replace(/\D/g,'');
+  if(phone.length < 9){ errEl.textContent = 'กรุณากรอกเบอร์โทรให้ถูกต้อง'; return; }
+  errEl.textContent = 'กำลังตรวจสอบ...';
+  memberCheckPhoneValue = phone;
+  try {
+    const snap = await getDoc(doc(db,'members',phone));
+    if(snap.exists()){
+      showMemberProfile(snap.data());
+    } else {
+      errEl.textContent = '';
+      document.getElementById('memberCheckView').style.display = 'none';
+      document.getElementById('memberSignupView').style.display = 'block';
+      document.getElementById('memberSignupName').value = '';
+      document.getElementById('memberSignupErr').textContent = '';
+    }
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+document.getElementById('memberSignupBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('memberSignupErr');
+  const name = document.getElementById('memberSignupName').value.trim();
+  if(!name){ errEl.textContent = 'กรุณากรอกชื่อ'; return; }
+  errEl.textContent = 'กำลังสมัคร...';
+  try {
+    const data = { phone: memberCheckPhoneValue, name, points: 0, totalSpent: 0, joinedAt: serverTimestamp() };
+    await setDoc(doc(db,'members',memberCheckPhoneValue), data);
+    if(window.toast) toast('🎉 สมัครสมาชิกสำเร็จ!');
+    showMemberProfile(data);
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+async function showMemberProfile(memberData){
+  document.getElementById('memberCheckView').style.display = 'none';
+  document.getElementById('memberSignupView').style.display = 'none';
+  document.getElementById('memberProfileView').style.display = 'block';
+  document.getElementById('memberProfileName').textContent = memberData.name;
+  document.getElementById('memberProfilePoints').textContent = memberData.points || 0;
+  document.getElementById('memberProfileSpent').textContent = (memberData.totalSpent||0).toLocaleString();
+  const joinedDate = memberData.joinedAt?.toDate ? memberData.joinedAt.toDate() : new Date();
+  document.getElementById('memberProfileJoined').textContent = joinedDate.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
+
+  const historyBox = document.getElementById('memberVisitHistory');
+  historyBox.innerHTML = '<div style="color:var(--muted); font-size:12.5px;">กำลังโหลด...</div>';
+  try {
+    const qs = await getDocs(query(collection(db,'memberVisits'), where('phone','==',memberCheckPhoneValue)));
+    const visits = []; qs.forEach(d => visits.push(d.data()));
+    visits.sort((a,b) => (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0));
+    historyBox.innerHTML = visits.length ? visits.slice(0,10).map(v => {
+      const dt = v.createdAt?.toDate ? v.createdAt.toDate().toLocaleDateString('th-TH',{day:'numeric',month:'short'}) : '-';
+      return '<div class="day-detail-row"><span>'+dt+'</span><span>฿'+(v.amount||0).toLocaleString()+' (+'+(v.pointsEarned||0)+' แต้ม)</span></div>';
+    }).join('') : '<div style="color:var(--muted); font-size:12.5px;">ยังไม่มีประวัติการใช้บริการ</div>';
+  } catch(e){ historyBox.innerHTML = '<div style="color:var(--danger); font-size:12.5px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+document.getElementById('memberModal')?.querySelectorAll('h3').forEach(() => {}); // (no-op, กันเผื่ออนาคตเพิ่ม close-all listener)
+
+// ---------- คำนวณแต้มที่จะได้ + บันทึกประวัติการใช้บริการ (เรียกตอนปิดบิลสำเร็จ) ----------
+async function recordMemberVisitIfApplicable(phoneRaw, totalAmount){
+  const phone = (phoneRaw||'').replace(/\D/g,'');
+  if(!phone || phone.length < 9) return; // ไม่มีเบอร์สมาชิกผูกกับบิลนี้ ข้ามไปเงียบๆ
+  try {
+    const memberRef = doc(db,'members',phone);
+    const memberSnap = await getDoc(memberRef);
+    if(!memberSnap.exists()) return; // เบอร์นี้ไม่ใช่สมาชิก ข้ามไป ไม่ error
+    const pointsEarned = POINTS_RATE_CACHE.baht > 0 ? Math.floor((totalAmount / POINTS_RATE_CACHE.baht) * POINTS_RATE_CACHE.points) : 0;
+    const current = memberSnap.data();
+    await updateDoc(memberRef, {
+      points: (current.points||0) + pointsEarned,
+      totalSpent: (current.totalSpent||0) + totalAmount
+    });
+    await setDoc(doc(collection(db,'memberVisits')), {
+      phone, amount: totalAmount, pointsEarned, createdAt: serverTimestamp()
+    });
+  } catch(e){ console.warn('recordMemberVisitIfApplicable failed (ไม่กระทบการปิดบิล):', e); }
+}
+window.recordMemberVisitIfApplicable = recordMemberVisitIfApplicable;
+
+// ---------- ฝั่ง Admin: ตั้งค่าอัตราแต้ม + รายชื่อสมาชิก ----------
+let MEMBERS_CACHE = [];
+async function loadMembersAdminData(){
+  await loadPointsRate();
+  document.getElementById('pointsRateBaht').value = POINTS_RATE_CACHE.baht;
+  document.getElementById('pointsRatePoints').value = POINTS_RATE_CACHE.points;
+  await renderMemberTable();
+}
+window.loadMembersAdminData = loadMembersAdminData;
+
+document.getElementById('btnSavePointsRate')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('pointsRateErr');
+  const baht = parseFloat(document.getElementById('pointsRateBaht').value);
+  const points = parseFloat(document.getElementById('pointsRatePoints').value);
+  if(!baht || baht <= 0 || !points || points <= 0){ errEl.textContent = 'กรุณากรอกตัวเลขให้ถูกต้อง'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    await setDoc(doc(db,'settings','pointsRate'), {baht, points});
+    POINTS_RATE_CACHE = {baht, points};
+    errEl.textContent = '';
+    if(window.toast) toast('✓ บันทึกอัตราแต้มแล้ว');
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+async function renderMemberTable(){
+  const tbody = document.getElementById('memberTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted); text-align:center; padding:20px;">กำลังโหลด...</td></tr>';
+  try {
+    const qs = await getDocs(collection(db,'members'));
+    MEMBERS_CACHE = []; qs.forEach(d => MEMBERS_CACHE.push({id:d.id, ...d.data()}));
+    renderMemberTableFiltered();
+  } catch(e){ tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</td></tr>'; }
+}
+function renderMemberTableFiltered(){
+  const tbody = document.getElementById('memberTableBody');
+  const q = (document.getElementById('memberSearchInput')?.value || '').trim().toLowerCase();
+  const filtered = MEMBERS_CACHE.filter(m => !q || m.name.toLowerCase().includes(q) || m.phone.includes(q));
+  tbody.innerHTML = filtered.length ? filtered.map(m => {
+    const joinedDate = m.joinedAt?.toDate ? m.joinedAt.toDate().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}) : '-';
+    return '<tr class="member-row" data-mid="'+m.id+'" style="cursor:pointer;"><td>'+m.name+'</td><td>📱 '+m.phone+'</td><td>'+(m.points||0)+' แต้ม</td><td>฿'+(m.totalSpent||0).toLocaleString()+'</td><td>'+joinedDate+'</td></tr>';
+  }).join('') : '<tr><td colspan="5" style="color:var(--muted); text-align:center; padding:30px;">ไม่พบสมาชิก</td></tr>';
+  tbody.querySelectorAll('.member-row').forEach(row => row.addEventListener('click', () => openMemberDetailModal(row.dataset.mid)));
+}
+document.getElementById('memberSearchInput')?.addEventListener('input', renderMemberTableFiltered);
+
+window.openMemberDetailModal = async (mid) => {
+  const member = MEMBERS_CACHE.find(m=>m.id===mid);
+  if(!member) return;
+  document.getElementById('memberDetailName').textContent = member.name;
+  document.getElementById('memberDetailPhone').textContent = member.phone;
+  document.getElementById('memberDetailPoints').textContent = member.points || 0;
+  document.getElementById('memberDetailSpent').textContent = (member.totalSpent||0).toLocaleString();
+  const joinedDate = member.joinedAt?.toDate ? member.joinedAt.toDate().toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'}) : '-';
+  document.getElementById('memberDetailJoined').textContent = joinedDate;
+
+  const historyBox = document.getElementById('memberDetailVisits');
+  historyBox.innerHTML = '<div style="color:var(--muted); font-size:12.5px;">กำลังโหลด...</div>';
+  document.getElementById('memberDetailModal').classList.add('open');
+  try {
+    const qs = await getDocs(query(collection(db,'memberVisits'), where('phone','==',member.phone)));
+    const visits = []; qs.forEach(d => visits.push(d.data()));
+    visits.sort((a,b) => (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0));
+    historyBox.innerHTML = visits.length ? visits.map(v => {
+      const dt = v.createdAt?.toDate ? v.createdAt.toDate().toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}) : '-';
+      return '<div class="day-detail-row"><span>'+dt+'</span><span>฿'+(v.amount||0).toLocaleString()+' (+'+(v.pointsEarned||0)+' แต้ม)</span></div>';
+    }).join('') : '<div style="color:var(--muted); font-size:12.5px;">ยังไม่มีประวัติการใช้บริการ</div>';
+  } catch(e){ historyBox.innerHTML = '<div style="color:var(--danger); font-size:12.5px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+};
+
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
   return '<tr data-mid="'+m.id+'"><td><div class="cell-item"><div class="thumb" style="background-image:url(\''+photoUrl(m.photoData||m.photoId)+'\'); background-size:cover; background-position:center;"></div>'+m.name+'</div></td>'+
@@ -4647,6 +4914,9 @@ window.onBillFinished = async (payCtx) => {
       deductStockForOrders(orders);
       // สร้าง payment record แยก (ใหม่) — เก็บเฉพาะตอนเงินเข้าจริงเท่านั้น ใช้สำหรับ sync เข้า Sheet แท็บ Payments
       const totalAmount = orders.reduce((s,o)=>s+(o.total||0),0);
+      // บันทึกแต้มสะสม/ประวัติสมาชิก ถ้ามีการกรอกเบอร์สมาชิกไว้ (ไม่บังคับ ไม่มีก็ข้ามเงียบๆ)
+      const memberPhoneInput = document.getElementById('payMemberPhone')?.value;
+      if(window.recordMemberVisitIfApplicable) recordMemberVisitIfApplicable(memberPhoneInput, totalAmount);
       const paymentId = 'PAY'+Date.now();
       try {
         await setDoc(doc(db,'payments',paymentId), {
