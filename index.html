@@ -4458,39 +4458,79 @@ window.sendStaffCall = async () => {
 };
 
 function renderStaffCalls(calls){
-  // แสดงเฉพาะฝั่ง staff/admin เท่านั้น (ลูกค้าไม่ควรเห็นการเรียกของโต๊ะอื่น)
+  // แสดงเฉพาะฝั่ง staff/admin เท่านั้น (ลูกค้าไม่ควรเห็นการแจ้งเตือนของโต๊ะอื่น)
   if(!ROLE){
     const existing = document.getElementById('staffCallBanner');
     if(existing) existing.remove();
     return;
   }
+  const payments = window.LATEST_AWAITING_CONFIRM_CACHE || [];
+  const pendingResv = window.LATEST_PENDING_RESV_CACHE || [];
+  const totalCount = calls.length + payments.length + pendingResv.length;
+
   const bells = document.querySelectorAll('.icon-btn .dot');
-  bells.forEach(dot => { dot.style.display = calls.length ? 'block' : 'none'; });
+  bells.forEach(dot => { dot.style.display = totalCount ? 'block' : 'none'; });
 
   let banner = document.getElementById('staffCallBanner');
-  if(!calls.length){
+  if(!totalCount){
     if(banner) banner.remove();
     return;
   }
-  const html = calls.map(c => {
+  const callsHtml = calls.map(c => {
     const mins = c.createdAt?.toDate ? Math.round((Date.now()-c.createdAt.toDate().getTime())/60000) : 0;
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.2);">'+
       '<span>🔔 โต๊ะ <b>'+c.table+'</b> เรียกพนักงาน · '+mins+' นาทีที่แล้ว</span>'+
       '<button class="btn-mini btn-approve" data-cid="'+c.id+'">✓ รับทราบแล้ว</button></div>';
   }).join('');
+  const paymentsHtml = payments.map(o => {
+    const mins = o.reportedPaidAt?.toDate ? Math.round((Date.now()-o.reportedPaidAt.toDate().getTime())/60000) : 0;
+    return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.2);">'+
+      '<span>💰 โต๊ะ <b>'+o.table+'</b> แจ้งชำระเงินแล้ว · '+mins+' นาทีที่แล้ว</span>'+
+      '<button class="btn-mini btn-approve go-payments-page">ไปตรวจสอบ</button></div>';
+  }).join('');
+  const resvHtml = pendingResv.map(r => {
+    const mins = r.createdAt?.toDate ? Math.round((Date.now()-r.createdAt.toDate().getTime())/60000) : 0;
+    return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.2);">'+
+      '<span>📅 <b>'+r.name+'</b> ขอจองโต๊ะ ('+r.partySize+' คน) · '+mins+' นาทีที่แล้ว</span>'+
+      '<button class="btn-mini btn-approve go-reservations-page">ไปดู</button></div>';
+  }).join('');
+
   if(!banner){
     banner = document.createElement('div');
     banner.id = 'staffCallBanner';
     banner.style.cssText = 'position:fixed; top:56px; right:16px; z-index:150; background:#1C1E18; border:1px solid var(--gold); border-radius:12px; padding:12px 16px; max-width:360px; box-shadow:0 8px 24px rgba(0,0,0,.5); font-size:13px; color:var(--ink);';
     document.body.appendChild(banner);
   }
-  banner.innerHTML = html;
+  banner.innerHTML = callsHtml + paymentsHtml + resvHtml;
   banner.querySelectorAll('button[data-cid]').forEach(b => b.addEventListener('click', async () => {
     try { await updateDoc(doc(db,'calls',b.dataset.cid), {resolved:true}); }
     catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
   }));
+  // ปุ่มลัดพาไปหน้าที่เกี่ยวข้องโดยตรง (ไม่ได้ตัดสถานะเอง แค่ช่วยนำทาง ผู้ใช้ต้องกดจัดการในหน้านั้นเอง)
+  banner.querySelectorAll('.go-payments-page').forEach(b => b.addEventListener('click', () => {
+    const navItem = document.querySelector('.nav-item[data-view="payments"]');
+    if(navItem) navItem.click();
+  }));
+  banner.querySelectorAll('.go-reservations-page').forEach(b => b.addEventListener('click', () => {
+    const navItem = document.querySelector('.nav-item[data-view="reservations"]');
+    if(navItem) navItem.click();
+  }));
 }
 window.renderStaffCalls = renderStaffCalls;
+
+onSnapshot(query(collection(db,'orders'), where('status','==','awaiting_confirm')), (qs) => {
+  const payments = []; qs.forEach(d => payments.push({id:d.id, ...d.data()}));
+  payments.sort((a,b) => (a.reportedPaidAt?.toDate?.()?.getTime()||0) - (b.reportedPaidAt?.toDate?.()?.getTime()||0));
+  window.LATEST_AWAITING_CONFIRM_CACHE = payments;
+  renderStaffCalls(window.LATEST_CALLS_CACHE || []);
+}, e => console.warn('awaiting_confirm notification listener failed', e));
+
+onSnapshot(query(collection(db,'reservations'), where('status','==','pending')), (qs) => {
+  const pendingResv = []; qs.forEach(d => pendingResv.push({id:d.id, ...d.data()}));
+  pendingResv.sort((a,b) => (a.createdAt?.toDate?.()?.getTime()||0) - (b.createdAt?.toDate?.()?.getTime()||0));
+  window.LATEST_PENDING_RESV_CACHE = pendingResv;
+  renderStaffCalls(window.LATEST_CALLS_CACHE || []);
+}, e => console.warn('pending reservation notification listener failed', e));
 
 onSnapshot(query(collection(db,'calls'), where('resolved','==',false)), (qs) => {
   const calls = []; qs.forEach(d => calls.push({id:d.id, ...d.data()}));
