@@ -494,6 +494,7 @@
       <div class="nav-item" data-view="schedule"><span class="ic">🗓️</span> ตารางแพลนงาน</div>
       <div class="nav-item" data-view="reservations"><span class="ic">📅</span> จองโต๊ะล่วงหน้า</div>
       <div class="nav-item" data-view="members"><span class="ic">🎁</span> สมาชิก/แต้มสะสม</div>
+      <div class="nav-item" data-view="promotions"><span class="ic">🎉</span> โปรโมชั่น</div>
 
       <div class="nav-group-label">ระบบ</div>
       <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> ตั้งค่าร้าน</div>
@@ -983,6 +984,20 @@
         </div>
       </section>
 
+      <!-- ========== PROMOTIONS (โปรโมชั่น) ========== -->
+      <section class="view" id="view-promotions">
+        <div class="toolbar" style="justify-content:space-between;">
+          <div class="chip-row" id="promoTypeChips">
+            <div class="chip active" data-pt="all">ทั้งหมด</div>
+            <div class="chip" data-pt="general">ส่วนลดทั่วไป</div>
+            <div class="chip" data-pt="member_perk">สิทธิพิเศษสมาชิก</div>
+            <div class="chip" data-pt="points_redeem">แลกแต้ม</div>
+          </div>
+          <button class="pill-btn" id="btnAddPromotion" style="background:var(--gold); color:var(--night);">＋ สร้างโปรโมชั่น</button>
+        </div>
+        <div id="promotionCardList" style="margin-top:16px;"><div style="color:var(--muted); font-size:13px; text-align:center; padding:20px;">กำลังโหลด...</div></div>
+      </section>
+
       <!-- ========== SETTINGS ========== -->
       <section class="view" id="view-settings">
         <div class="grid-2">
@@ -1172,9 +1187,13 @@
           <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
         </div>
       </div>
-      <button class="cta-btn" id="btnOpenReservation" style="width:100%; margin-top:10px;">📅 จองโต๊ะล่วงหน้า</button>
-      <button class="cta-btn" id="btnOpenMember" style="width:100%; margin-top:8px; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁 สมาชิก / ดูแต้มสะสม</button>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="cta-btn" id="btnOpenReservation" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px;">📅<span>จองโต๊ะ</span></button>
+        <button class="cta-btn" id="btnOpenMemberLogin" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁<span>เข้าระบบ</span></button>
+        <button class="cta-btn" id="btnOpenMemberSignup" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px; background:linear-gradient(135deg,#8A6FD1,#5C4499); color:#fff; box-shadow:0 4px 14px rgba(138,111,209,.3);">🎉<span>สมัครสมาชิก</span></button>
+      </div>
     </div>
+    <div id="customerPromoBanner"></div>
     <div class="cust-cats">
       <div class="cust-cat active">ทั้งหมด</div>
       <div class="cust-cat">อาหารเรียกน้ำย่อย</div>
@@ -1485,6 +1504,37 @@
   </div>
 </div>
 
+<!-- ===== PROMOTION MODAL (Admin สร้าง/แก้ไขโปรโมชั่น) ===== -->
+<div class="modal-back" id="promotionModal">
+  <div class="modal">
+    <h3 id="promotionModalTitle">🎉 สร้างโปรโมชั่น</h3>
+    <input type="text" id="promoName" placeholder="ชื่อโปรโมชั่น เช่น Happy Hour เบียร์ลด 20%">
+    <div class="lbl2">ประเภทโปรโมชั่น</div>
+    <select id="promoType">
+      <option value="general">ส่วนลดทั่วไป (ใช้ได้กับทุกคน)</option>
+      <option value="member_perk">สิทธิพิเศษสมาชิก (ไม่ต้องแลกแต้ม)</option>
+      <option value="points_redeem">แลกแต้มสะสม</option>
+    </select>
+    <div class="lbl2">รูปแบบ</div>
+    <select id="promoValueType">
+      <option value="percent">ลดเป็นเปอร์เซ็นต์ (%)</option>
+      <option value="baht">ลดเป็นจำนวนเงิน (บาท)</option>
+      <option value="freebie">ของแถม/สิทธิ์พิเศษ (ไม่ใช่ส่วนลดเงิน)</option>
+    </select>
+    <input type="text" id="promoValue" placeholder="จำนวน เช่น 20 (สำหรับ % หรือ บาท)">
+    <div id="promoPointsCostBox" style="display:none;">
+      <div class="lbl2">ต้องใช้แต้มสะสมกี่แต้ม</div>
+      <input type="text" id="promoPointsCost" placeholder="เช่น 50">
+    </div>
+    <textarea id="promoNote" placeholder="รายละเอียด/เงื่อนไข (ถ้ามี)" rows="2" style="width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.25); border-radius:8px; padding:10px 12px; color:var(--ink); font-size:13px; font-family:inherit; margin-bottom:10px;"></textarea>
+    <div id="promoErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+    <div class="btn-row">
+      <button class="btn-lg b-ghost" onclick="document.getElementById('promotionModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-gold" id="promoSaveBtn">✓ บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MEMBER DETAIL MODAL (Admin ดูประวัติสมาชิกรายคน) ===== -->
 <div class="modal-back" id="memberDetailModal">
   <div class="modal">
@@ -1524,8 +1574,15 @@
 
     <div id="memberSignupView" style="display:none;">
       <h3>🎉 สมัครสมาชิกใหม่</h3>
-      <div class="sub">กรอกชื่อเพื่อสมัคร — เริ่มสะสมแต้มได้ทันที</div>
+      <div class="sub">กรอกชื่อและเบอร์โทร — เริ่มสะสมแต้มได้ทันที</div>
       <input type="text" id="memberSignupName" placeholder="ชื่อ">
+      <input type="text" id="memberSignupPhone" placeholder="เบอร์โทรศัพท์" maxlength="10">
+      <div style="background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin-bottom:10px;">
+        <label style="display:flex; align-items:start; gap:8px; font-size:11.5px; color:var(--muted); cursor:pointer;">
+          <input type="checkbox" id="memberSignupPdpaCheck" style="margin-top:2px; width:auto;">
+          <span>เราจะเก็บชื่อและเบอร์โทรศัพท์ของท่านเพื่อใช้ในระบบสมาชิกเท่านั้น ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) — กรุณาติ๊กยอมรับก่อนสมัคร</span>
+        </label>
+      </div>
       <div id="memberSignupErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
       <div class="btn-row">
         <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')">ยกเลิก</button>
@@ -1550,6 +1607,18 @@
   </div>
 </div>
 
+<!-- ===== ASK MEMBER INTEREST MODAL (ถามก่อนจองว่าสนใจสมัครสมาชิกไหม) ===== -->
+<div class="modal-back" id="askMemberModal">
+  <div class="modal">
+    <h3>🎁 เป็นสมาชิกร้านเราหรือยัง?</h3>
+    <div class="sub">สมาชิกได้รับสิทธิพิเศษและสะสมแต้มทุกครั้งที่ใช้บริการ — สนใจสมัครไหมครับ?</div>
+    <div class="btn-row" style="flex-direction:column; gap:10px;">
+      <button class="btn-lg b-gold" id="askMemberYesBtn" style="width:100%;">🎉 สนใจ พาไปสมัครสมาชิก</button>
+      <button class="btn-lg b-ghost" id="askMemberNoBtn" style="width:100%;">ไม่สนใจ ไปจองโต๊ะเลย</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== TABLE RESERVATION MODAL (ลูกค้าจองโต๊ะล่วงหน้า) ===== -->
 <div class="modal-back" id="reservationModal">
   <div class="modal">
@@ -1562,6 +1631,12 @@
     <select id="resvZone"></select>
     <input type="text" id="resvPartySize" placeholder="จำนวนคน">
     <div id="resvCapacityNote" style="font-size:12px; color:var(--muted); margin-bottom:8px;"></div>
+    <div style="background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin-bottom:10px;">
+      <label style="display:flex; align-items:start; gap:8px; font-size:11.5px; color:var(--muted); cursor:pointer;">
+        <input type="checkbox" id="resvPdpaCheck" style="margin-top:2px; width:auto;">
+        <span>เราจะเก็บชื่อและเบอร์โทรศัพท์ของท่านเพื่อใช้ติดต่อยืนยันการจองเท่านั้น ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) — กรุณาติ๊กยอมรับก่อนส่งคำขอ</span>
+      </label>
+    </div>
     <div id="resvErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
       <button class="btn-lg b-ghost" onclick="document.getElementById('reservationModal').classList.remove('open')">ยกเลิก</button>
@@ -1845,6 +1920,7 @@
     schedule: ['ตารางแพลนงาน', 'คลิกที่ช่องเพื่อจัดกะพนักงาน — แสดงล่วงหน้า 8 สัปดาห์'],
     reservations: ['จองโต๊ะล่วงหน้า', 'จัดการช่วงเวลาที่เปิดจอง + อนุมัติ/ยกเลิกคำขอจอง'],
     members: ['สมาชิก/แต้มสะสม', 'ดูรายชื่อสมาชิก ประวัติการมาใช้บริการ และตั้งค่าอัตราแต้ม'],
+    promotions: ['โปรโมชั่น', 'สร้าง/แก้ไข/เปิด-ปิด โปรทั่วไป สิทธิพิเศษสมาชิก และแลกแต้ม'],
     settings: ['ตั้งค่าร้าน', 'ข้อมูลร้านและสิทธิ์การเข้าถึง']
   };
 
@@ -1912,6 +1988,7 @@
       if(v === 'schedule' && window.renderScheduleGrid) renderScheduleGrid();
       if(v === 'reservations' && window.loadReservationAdminData) loadReservationAdminData();
       if(v === 'members' && window.loadMembersAdminData) loadMembersAdminData();
+      if(v === 'promotions' && window.loadPromotionsAdminData) loadPromotionsAdminData();
     });
   });
 
@@ -3251,19 +3328,32 @@ function refreshCustomerZoneOptions(){
   sel.innerHTML = ZONES_CACHE.map(z => '<option value="'+z.name+'">'+z.name+'</option>').join('');
 }
 document.getElementById('btnOpenReservation')?.addEventListener('click', () => {
+  document.getElementById('askMemberModal').classList.add('open');
+});
+function openReservationFormDirectly(){
   document.getElementById('resvName').value = '';
   document.getElementById('resvPhone').value = '';
   document.getElementById('resvDate').value = toLocalDateKey(new Date());
   document.getElementById('resvPartySize').value = '';
   document.getElementById('resvCapacityNote').textContent = '';
   document.getElementById('resvErr').textContent = '';
+  document.getElementById('resvPdpaCheck').checked = false;
   refreshCustomerSlotOptionsForDate(toLocalDateKey(new Date()));
   refreshCustomerZoneOptions();
   document.getElementById('reservationModal').classList.add('open');
+}
+document.getElementById('askMemberYesBtn')?.addEventListener('click', () => {
+  document.getElementById('askMemberModal').classList.remove('open');
+  document.getElementById('btnOpenMemberSignup')?.click(); // ลิงก์ไปหน้าสมัครสมาชิกทันที
+});
+document.getElementById('askMemberNoBtn')?.addEventListener('click', () => {
+  document.getElementById('askMemberModal').classList.remove('open');
+  openReservationFormDirectly();
 });
 document.getElementById('resvDate')?.addEventListener('change', (e) => refreshCustomerSlotOptionsForDate(e.target.value));
 document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
   const errEl = document.getElementById('resvErr');
+  if(!document.getElementById('resvPdpaCheck').checked){ errEl.textContent = 'กรุณาติ๊กยอมรับเงื่อนไข PDPA ก่อนส่งคำขอจอง'; return; }
   const name = document.getElementById('resvName').value.trim();
   const phone = document.getElementById('resvPhone').value.replace(/\D/g,'');
   const date = document.getElementById('resvDate').value;
@@ -3443,12 +3533,22 @@ async function loadPointsRate(){
 
 // ---------- ฝั่งลูกค้า: สมัครสมาชิก / ดูแต้ม ----------
 let memberCheckPhoneValue = null;
-document.getElementById('btnOpenMember')?.addEventListener('click', () => {
+document.getElementById('btnOpenMemberLogin')?.addEventListener('click', () => {
   document.getElementById('memberCheckView').style.display = 'block';
   document.getElementById('memberSignupView').style.display = 'none';
   document.getElementById('memberProfileView').style.display = 'none';
   document.getElementById('memberCheckPhone').value = '';
   document.getElementById('memberCheckErr').textContent = '';
+  document.getElementById('memberModal').classList.add('open');
+});
+document.getElementById('btnOpenMemberSignup')?.addEventListener('click', () => {
+  document.getElementById('memberCheckView').style.display = 'none';
+  document.getElementById('memberSignupView').style.display = 'block';
+  document.getElementById('memberProfileView').style.display = 'none';
+  document.getElementById('memberSignupName').value = '';
+  document.getElementById('memberSignupPhone').value = '';
+  document.getElementById('memberSignupPdpaCheck').checked = false;
+  document.getElementById('memberSignupErr').textContent = '';
   document.getElementById('memberModal').classList.add('open');
 });
 document.getElementById('memberCheckBtn')?.addEventListener('click', async () => {
@@ -3466,6 +3566,8 @@ document.getElementById('memberCheckBtn')?.addEventListener('click', async () =>
       document.getElementById('memberCheckView').style.display = 'none';
       document.getElementById('memberSignupView').style.display = 'block';
       document.getElementById('memberSignupName').value = '';
+      document.getElementById('memberSignupPhone').value = phone; // เติมเบอร์ที่เพิ่งกรอกไว้ให้อัตโนมัติ ไม่ต้องพิมพ์ซ้ำ
+      document.getElementById('memberSignupPdpaCheck').checked = false;
       document.getElementById('memberSignupErr').textContent = '';
     }
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
@@ -3473,11 +3575,24 @@ document.getElementById('memberCheckBtn')?.addEventListener('click', async () =>
 document.getElementById('memberSignupBtn')?.addEventListener('click', async () => {
   const errEl = document.getElementById('memberSignupErr');
   const name = document.getElementById('memberSignupName').value.trim();
+  const phone = document.getElementById('memberSignupPhone').value.replace(/\D/g,'');
   if(!name){ errEl.textContent = 'กรุณากรอกชื่อ'; return; }
+  if(phone.length < 9){ errEl.textContent = 'กรุณากรอกเบอร์โทรให้ถูกต้อง'; return; }
+  if(!document.getElementById('memberSignupPdpaCheck').checked){ errEl.textContent = 'กรุณาติ๊กยอมรับเงื่อนไข PDPA ก่อนสมัคร'; return; }
   errEl.textContent = 'กำลังสมัคร...';
   try {
-    const data = { phone: memberCheckPhoneValue, name, points: 0, totalSpent: 0, joinedAt: serverTimestamp() };
-    await setDoc(doc(db,'members',memberCheckPhoneValue), data);
+    // เช็คก่อนว่าเบอร์นี้เป็นสมาชิกอยู่แล้วหรือยัง กันสมัครซ้ำทับข้อมูลเดิม
+    const existing = await getDoc(doc(db,'members',phone));
+    if(existing.exists()){
+      errEl.textContent = '';
+      memberCheckPhoneValue = phone;
+      showMemberProfile(existing.data());
+      if(window.toast) toast('เบอร์นี้เป็นสมาชิกอยู่แล้ว — แสดงข้อมูลเดิมให้');
+      return;
+    }
+    const data = { phone, name, points: 0, totalSpent: 0, joinedAt: serverTimestamp() };
+    await setDoc(doc(db,'members',phone), data);
+    memberCheckPhoneValue = phone;
     if(window.toast) toast('🎉 สมัครสมาชิกสำเร็จ!');
     showMemberProfile(data);
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
@@ -3596,6 +3711,127 @@ window.openMemberDetailModal = async (mid) => {
     }).join('') : '<div style="color:var(--muted); font-size:12.5px;">ยังไม่มีประวัติการใช้บริการ</div>';
   } catch(e){ historyBox.innerHTML = '<div style="color:var(--danger); font-size:12.5px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
 };
+
+// ===================== ระบบโปรโมชั่น (ล็อต C ข้อ 8) =====================
+let PROMOTIONS_CACHE = [];
+let promoTypeFilter = 'all';
+const PROMO_TYPE_LABEL = { general:'ส่วนลดทั่วไป', member_perk:'สิทธิพิเศษสมาชิก', points_redeem:'แลกแต้มสะสม' };
+const PROMO_TYPE_COLOR = { general:'var(--gold-soft)', member_perk:'var(--ok)', points_redeem:'#8AC4FF' };
+
+async function loadPromotionsAdminData(){
+  const box = document.getElementById('promotionCardList');
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--muted); font-size:13px; text-align:center; padding:20px;">กำลังโหลด...</div>';
+  try {
+    const qs = await getDocs(collection(db,'promotions'));
+    PROMOTIONS_CACHE = []; qs.forEach(d => PROMOTIONS_CACHE.push({id:d.id, ...d.data()}));
+    renderPromotionCards();
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px; text-align:center; padding:20px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+window.loadPromotionsAdminData = loadPromotionsAdminData;
+
+function renderPromotionCards(){
+  const box = document.getElementById('promotionCardList');
+  const filtered = promoTypeFilter === 'all' ? PROMOTIONS_CACHE : PROMOTIONS_CACHE.filter(p => p.type === promoTypeFilter);
+  if(!filtered.length){ box.innerHTML = '<div style="color:var(--muted); font-size:13px; text-align:center; padding:30px;">ยังไม่มีโปรโมชั่นในหมวดนี้</div>'; return; }
+  box.innerHTML = filtered.map(p => {
+    let valueTxt = '';
+    if(p.valueType === 'percent') valueTxt = 'ลด '+p.value+'%';
+    else if(p.valueType === 'baht') valueTxt = 'ลด ฿'+p.value;
+    else valueTxt = 'ของแถม/สิทธิ์พิเศษ';
+    const pointsTxt = p.type === 'points_redeem' ? ' · ใช้ '+(p.pointsCost||0)+' แต้ม' : '';
+    return '<div class="resv-card">'+
+      '<div class="resv-card-top">'+
+        '<div><div class="resv-card-name">'+p.name+'</div>'+
+        '<div style="font-size:12px; color:'+PROMO_TYPE_COLOR[p.type]+';">'+PROMO_TYPE_LABEL[p.type]+' · '+valueTxt+pointsTxt+'</div></div>'+
+        '<span class="status '+(p.active?'on':'off')+'">'+(p.active?'เปิดใช้งาน':'ปิด')+'</span>'+
+      '</div>'+
+      (p.note ? '<div style="font-size:12.5px; color:var(--muted); margin:6px 0;">'+p.note+'</div>' : '')+
+      '<div class="resv-card-actions">'+
+        '<button class="promo-toggle" data-pid="'+p.id+'" data-active="'+p.active+'" style="background:'+(p.active?'rgba(228,72,58,.15)':'rgba(62,224,122,.15)')+'; color:'+(p.active?'#FF8A73':'var(--ok)')+';">'+(p.active?'⏸ ปิดใช้งาน':'▶ เปิดใช้งาน')+'</button>'+
+        '<button class="promo-edit" data-pid="'+p.id+'" style="background:rgba(200,168,75,.15); color:var(--gold-soft);">✏️ แก้ไข</button>'+
+        '<button class="promo-delete" data-pid="'+p.id+'" data-name="'+p.name+'" style="background:rgba(228,72,58,.15); color:#FF8A73;">🗑️ ลบ</button>'+
+      '</div></div>';
+  }).join('');
+
+  box.querySelectorAll('.promo-toggle').forEach(b => b.addEventListener('click', async () => {
+    try { await updateDoc(doc(db,'promotions',b.dataset.pid), {active: !(b.dataset.active==='true')}); loadPromotionsAdminData(); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+  box.querySelectorAll('.promo-edit').forEach(b => b.addEventListener('click', () => openPromotionModal(PROMOTIONS_CACHE.find(p=>p.id===b.dataset.pid))));
+  box.querySelectorAll('.promo-delete').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบโปรโมชั่น "'+b.dataset.name+'" ใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'promotions',b.dataset.pid)); if(window.toast) toast('🗑️ ลบแล้ว'); loadPromotionsAdminData(); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+document.getElementById('promoTypeChips')?.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  document.querySelectorAll('#promoTypeChips .chip').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');
+  promoTypeFilter = c.dataset.pt;
+  renderPromotionCards();
+}));
+
+let editingPromoId = null;
+window.openPromotionModal = (promo) => {
+  editingPromoId = promo ? promo.id : null;
+  document.getElementById('promotionModalTitle').textContent = promo ? '✏️ แก้ไขโปรโมชั่น' : '🎉 สร้างโปรโมชั่น';
+  document.getElementById('promoName').value = promo?.name || '';
+  document.getElementById('promoType').value = promo?.type || 'general';
+  document.getElementById('promoValueType').value = promo?.valueType || 'percent';
+  document.getElementById('promoValue').value = promo?.value ?? '';
+  document.getElementById('promoPointsCost').value = promo?.pointsCost ?? '';
+  document.getElementById('promoNote').value = promo?.note || '';
+  document.getElementById('promoPointsCostBox').style.display = (promo?.type === 'points_redeem') ? 'block' : 'none';
+  document.getElementById('promoErr').textContent = '';
+  document.getElementById('promotionModal').classList.add('open');
+};
+document.getElementById('btnAddPromotion')?.addEventListener('click', () => openPromotionModal(null));
+document.getElementById('promoType')?.addEventListener('change', (e) => {
+  document.getElementById('promoPointsCostBox').style.display = (e.target.value === 'points_redeem') ? 'block' : 'none';
+});
+document.getElementById('promoSaveBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('promoErr');
+  const name = document.getElementById('promoName').value.trim();
+  const type = document.getElementById('promoType').value;
+  const valueType = document.getElementById('promoValueType').value;
+  const value = valueType === 'freebie' ? 0 : (parseFloat(document.getElementById('promoValue').value) || 0);
+  const pointsCost = type === 'points_redeem' ? (parseInt(document.getElementById('promoPointsCost').value, 10) || 0) : 0;
+  const note = document.getElementById('promoNote').value.trim();
+  if(!name){ errEl.textContent = 'กรุณากรอกชื่อโปรโมชั่น'; return; }
+  if(type === 'points_redeem' && pointsCost <= 0){ errEl.textContent = 'กรุณากรอกจำนวนแต้มที่ต้องใช้แลก'; return; }
+  errEl.textContent = 'กำลังบันทึก...';
+  try {
+    const docId = editingPromoId || 'PROMO_'+Date.now();
+    await setDoc(doc(db,'promotions',docId), {name, type, valueType, value, pointsCost, note, active: editingPromoId ? (PROMOTIONS_CACHE.find(p=>p.id===editingPromoId)?.active ?? true) : true});
+    document.getElementById('promotionModal').classList.remove('open');
+    if(window.toast) toast('✓ บันทึกโปรโมชั่นแล้ว');
+    loadPromotionsAdminData();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+// ---------- ฝั่งลูกค้า: แสดงโปรโมชั่นที่กำลังเปิดใช้งานอยู่ ----------
+async function renderCustomerPromoBanner(){
+  const box = document.getElementById('customerPromoBanner');
+  if(!box) return;
+  try {
+    const qs = await getDocs(query(collection(db,'promotions'), where('active','==',true)));
+    const promos = []; qs.forEach(d => promos.push(d.data()));
+    if(!promos.length){ box.innerHTML = ''; return; }
+    box.innerHTML = '<div style="padding:0 16px 14px;">'+promos.map(p => {
+      let valueTxt = '';
+      if(p.valueType === 'percent') valueTxt = 'ลด '+p.value+'%';
+      else if(p.valueType === 'baht') valueTxt = 'ลด ฿'+p.value;
+      else valueTxt = 'สิทธิพิเศษ';
+      const pointsTxt = p.type === 'points_redeem' ? ' (ใช้ '+(p.pointsCost||0)+' แต้ม)' : '';
+      const iconEmoji = p.type === 'points_redeem' ? '🎁' : (p.type === 'member_perk' ? '⭐' : '🔥');
+      return '<div style="background:rgba(200,168,75,.1); border:1px solid rgba(200,168,75,.3); border-radius:10px; padding:10px 14px; margin-bottom:8px; font-size:12.5px;">'+
+        iconEmoji+' <b>'+p.name+'</b> — '+valueTxt+pointsTxt+(p.note?'<div style="color:var(--muted); font-size:11.5px; margin-top:3px;">'+p.note+'</div>':'')+
+        '</div>';
+    }).join('')+'</div>';
+  } catch(e){ console.warn('renderCustomerPromoBanner failed', e); }
+}
+renderCustomerPromoBanner();
 
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
