@@ -96,6 +96,21 @@
   }
   .cta-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(200,168,75,.45); }
   .cta-btn:active{ transform:translateY(0); }
+  /* ===== HERO GLASS BUTTONS (โปร่งแสง เห็นภาพพื้นหลังเลือนๆ) ===== */
+  .hero-glass-btn{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:rgba(255,255,255,.10); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(200,168,75,.55); border-radius:14px; color:#fff;
+    font-size:13.5px; font-weight:700; padding:16px 10px; cursor:pointer;
+    transition:background .15s, transform .12s, border-color .15s;
+    text-shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  .hero-glass-btn:hover{ background:rgba(255,255,255,.18); border-color:var(--gold); transform:translateY(-2px); }
+  .hero-glass-btn:active{ transform:translateY(0); }
+  .hero-glass-btn .icon{ font-size:17px; }
+  @media (max-width:520px){
+    .hero-glass-btn{ font-size:11.5px; padding:14px 6px; flex-direction:column; gap:4px; }
+  }
   /* ===== HERO SLIDESHOW ===== */
   .hero-slide{
     position:absolute; inset:0; background-size:cover; background-position:center;
@@ -1236,17 +1251,17 @@
 <div class="mode-view" id="mode-hero">
   <div id="heroSlideshow" style="position:relative; min-height:100vh; overflow:hidden; background:#0D0D0D;">
     <div id="heroSlidesTrack" style="position:absolute; inset:0;"></div>
-    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(13,13,13,.3) 0%, rgba(13,13,13,.55) 55%, rgba(13,13,13,.92) 100%);"></div>
+    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(13,13,13,.25) 0%, rgba(13,13,13,.4) 55%, rgba(13,13,13,.6) 100%);"></div>
 
-    <div style="position:relative; z-index:2; min-height:100vh; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:40px 24px 60px; text-align:center;">
-      <div style="font-size:13px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:8px;">Season One</div>
-      <div style="font-size:32px; font-weight:700; color:#fff; margin-bottom:6px;">Food Drink & Bistro</div>
-      <div style="font-size:14px; color:rgba(255,255,255,.75); margin-bottom:32px;">ขอนแก่น · บรรยากาศดี อาหารอร่อย</div>
+    <div style="position:relative; z-index:2; min-height:100vh; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:40px 24px 60px; text-align:center; text-shadow:0 2px 10px rgba(0,0,0,.7);">
+      <div id="heroShopEyebrow" style="font-size:14px; letter-spacing:.25em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:10px; font-weight:600;">Season One</div>
+      <div id="heroShopName" style="font-family:'Cormorant Garamond',serif; font-size:42px; font-weight:700; color:#fff; margin-bottom:8px; letter-spacing:.01em;">Food Drink & Bistro</div>
+      <div style="font-size:14px; color:rgba(255,255,255,.8); margin-bottom:32px; letter-spacing:.03em;">ขอนแก่น · บรรยากาศดี อาหารอร่อย</div>
 
-      <div style="width:100%; max-width:420px; display:flex; flex-direction:column; gap:10px;">
-        <button class="cta-btn" id="btnOpenReservation" style="width:100%;">📅 จองโต๊ะล่วงหน้า</button>
-        <button class="cta-btn" id="btnOpenMemberLogin" style="width:100%; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁 สมาชิกเข้าระบบ</button>
-        <button class="cta-btn" id="btnOpenMemberSignup" style="width:100%; background:linear-gradient(135deg,#8A6FD1,#5C4499); color:#fff; box-shadow:0 4px 14px rgba(138,111,209,.3);">🎉 สมัครสมาชิกใหม่</button>
+      <div style="width:100%; max-width:520px; display:flex; flex-direction:row; gap:10px;">
+        <button class="hero-glass-btn" id="btnOpenReservation"><span class="icon">📅</span><span>จองโต๊ะล่วงหน้า</span></button>
+        <button class="hero-glass-btn" id="btnOpenMemberLogin"><span class="icon">🎁</span><span>สมาชิกเข้าระบบ</span></button>
+        <button class="hero-glass-btn" id="btnOpenMemberSignup"><span class="icon">🎉</span><span>สมัครสมาชิกใหม่</span></button>
       </div>
     </div>
 
@@ -1264,7 +1279,7 @@
         <div style="position:absolute; inset:0; background:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.85));"></div>
         <div style="position:relative; z-index:2; height:100%; display:flex; align-items:flex-end; padding:14px;">
           <div style="text-align:left;">
-            <div class="eyebrow">Season One · Food Drink &amp; Bistro</div>
+            <div id="menuShopName" class="eyebrow" style="font-size:15px; font-weight:700; letter-spacing:.08em; font-family:'Cormorant Garamond',serif;">Season One · Food Drink &amp; Bistro</div>
             <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
             <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
           </div>
@@ -4097,6 +4112,30 @@ async function initMenuHeaderSlideshow(){
 }
 initMenuHeaderSlideshow();
 
+// เชื่อมชื่อร้านจาก settings/shop ไปแสดงที่หน้า Hero และหน้าเมนู (ไม่ต้องรอ Admin เข้าหน้าตั้งค่าก่อน)
+window.applyShopNameEverywhere = function(name){
+  if(!name) return;
+  // ชื่อร้านเต็มมักมีรูปแบบ "Season One — Food Drink & Bistro" หรือคล้ายกัน — ถ้ามีเครื่องหมายคั่น ให้แยกเป็น 2 บรรทัด (ชื่อหลัก / ประเภทร้าน) สวยงามกว่า
+  const parts = name.split(/—|-|·/).map(p => p.trim()).filter(Boolean);
+  const mainName = parts[0] || name;
+  const subName = parts.length > 1 ? parts.slice(1).join(' · ') : '';
+
+  const heroEyebrow = document.getElementById('heroShopEyebrow');
+  const heroName = document.getElementById('heroShopName');
+  if(heroEyebrow) heroEyebrow.textContent = mainName;
+  if(heroName && subName) heroName.textContent = subName;
+
+  const menuShopName = document.getElementById('menuShopName');
+  if(menuShopName) menuShopName.textContent = name;
+};
+async function loadShopNameForCustomerViews(){
+  try {
+    const snap = await getDoc(doc(db,'settings','shop'));
+    if(snap.exists() && snap.data().name) applyShopNameEverywhere(snap.data().name);
+  } catch(e){ console.warn('loadShopNameForCustomerViews failed', e); }
+}
+loadShopNameForCustomerViews();
+
 
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
@@ -4746,6 +4785,7 @@ document.getElementById('shSave').onclick = async () => {
     document.getElementById('si-phone').textContent = data.phone;
     document.getElementById('si-hours').textContent = data.hours;
     document.getElementById('si-zones').textContent = data.zones;
+    if(window.applyShopNameEverywhere) applyShopNameEverywhere(data.name); // อัปเดตหน้า Hero/เมนูทันที ไม่ต้องรอ refresh
     document.getElementById('shopModal').classList.remove('open');
     if(window.toast) toast('✓ บันทึกข้อมูลร้านแล้ว');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
