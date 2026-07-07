@@ -1139,7 +1139,13 @@
           <div style="font-size:13px; color:var(--muted); margin-bottom:10px;">QR สำหรับวันนี้ — โต๊ะ <span id="checkinResultTable">-</span></div>
           <div id="checkinQrCanvas" style="width:200px; height:200px; margin:0 auto;"></div>
           <div style="font-size:12px; color:var(--muted); margin-top:10px;">ปริ้นหรือถ่ายจอไปวางที่โต๊ะให้ลูกค้าสแกน (ใช้ได้ถึงเที่ยงคืนวันนี้เท่านั้น)</div>
-          <button class="pill-btn" id="checkinNewBtn" style="margin-top:14px; background:var(--night); color:var(--gold-soft);">＋ เช็คอินคนถัดไป</button>
+          <button class="btn-lg b-gold" id="checkinPrintBtn" style="width:100%; margin-top:14px;">🖨️ พิมพ์ QR</button>
+          <button class="pill-btn" id="checkinNewBtn" style="margin-top:10px; background:var(--night); color:var(--gold-soft);">＋ เช็คอินคนถัดไป</button>
+        </div>
+
+        <div style="margin-top:24px;">
+          <div class="lbl2">📋 รายการจองวันนี้ (ยังไม่เช็คอิน)</div>
+          <div id="checkinTodayReservationList"><div style="color:var(--muted); font-size:13px; padding:12px 0;">กำลังโหลด...</div></div>
         </div>
       </div>
 
@@ -4290,7 +4296,49 @@ window.resetCheckinForm = function(){
   document.getElementById('checkinReservationNote').textContent = '';
   document.getElementById('checkinErr').textContent = '';
   checkinFoundReservation = null;
+  loadTodayReservationsForCheckin();
 };
+
+async function loadTodayReservationsForCheckin(){
+  const box = document.getElementById('checkinTodayReservationList');
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--muted); font-size:13px; padding:12px 0;">กำลังโหลด...</div>';
+  try {
+    const todayKey = toLocalDateKey(new Date());
+    const qs = await getDocs(query(collection(db,'reservations'), where('date','==',todayKey), where('status','==','approved')));
+    const rows = []; qs.forEach(d => rows.push({id:d.id, ...d.data()}));
+    rows.sort((a,b) => a.slotTime.localeCompare(b.slotTime));
+    box.innerHTML = rows.length ? rows.map(r =>
+      '<div class="resv-card">'+
+        '<div class="resv-card-top">'+
+          '<div><div class="resv-card-datetime">⏰ '+r.slotTime+'</div>'+
+          '<div class="resv-card-name">'+r.name+'</div><div class="resv-card-phone">📱 '+r.phone+'</div></div>'+
+        '</div>'+
+        '<div class="resv-card-meta"><span>🪑 '+r.zone+'</span><span>👥 '+r.partySize+' คน</span></div>'+
+        '<div class="resv-card-actions"><button class="checkin-quick-btn" data-rid="'+r.id+'" style="background:rgba(200,168,75,.15); color:var(--gold-soft); width:100%; padding:10px; border-radius:9px; font-size:14px; font-weight:600; border:none; cursor:pointer;">✓ เช็คอินคนนี้</button></div>'+
+      '</div>'
+    ).join('') : '<div style="color:var(--muted); font-size:13px; padding:12px 0;">วันนี้ยังไม่มีการจองที่รออยู่</div>';
+
+    box.querySelectorAll('.checkin-quick-btn').forEach(b => b.addEventListener('click', () => {
+      const resv = rows.find(r=>r.id===b.dataset.rid);
+      if(resv) quickFillCheckinFromReservation(resv);
+    }));
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px; padding:12px 0;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+
+async function quickFillCheckinFromReservation(resv){
+  checkinFoundReservation = resv;
+  document.getElementById('checkinSearchPhone').value = resv.phone;
+  document.getElementById('checkinName').value = resv.name;
+  refreshCheckinZoneOptions(resv.zone);
+  document.getElementById('checkinPartySize').value = resv.partySize;
+  document.getElementById('checkinReservationNote').textContent = '✓ เจอการจองของ '+resv.name+' ('+resv.date+' '+resv.slotTime+') — แก้ไขได้ถ้าจำเป็น';
+  document.getElementById('checkinErr').textContent = '';
+  await refreshCheckinTableOptions();
+  document.getElementById('checkinFormBox').style.display = 'block';
+  document.getElementById('checkinQrResultBox').style.display = 'none';
+  document.getElementById('checkinFormBox').scrollIntoView({behavior:'smooth', block:'start'});
+}
 
 function refreshCheckinZoneOptions(selectedZone){
   const sel = document.getElementById('checkinZone');
@@ -4368,10 +4416,41 @@ document.getElementById('checkinConfirmBtn')?.addEventListener('click', async ()
     qrBox.innerHTML = '';
     const checkinUrl = location.origin + location.pathname + '?checkin=' + qrCode;
     new QRCode(qrBox, { text: checkinUrl, width:200, height:200, colorDark:'#0D0D0D', colorLight:'#ffffff' });
+    window.lastCheckinQrUrl = checkinUrl; // เก็บไว้ให้ปุ่มพิมพ์ใช้
+    window.lastCheckinTable = table;
     if(window.toast) toast('✓ เช็คอินสำเร็จ! QR ใช้ได้ถึงเที่ยงคืนวันนี้');
+    loadTodayReservationsForCheckin(); // รีเฟรชรายการจอง กันคนที่เช็คอินไปแล้วยังค้างโชว์อยู่
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 document.getElementById('checkinNewBtn')?.addEventListener('click', () => window.resetCheckinForm());
+
+// พิมพ์ QR — รูปแบบเดียวกับ printBill() (เปิดหน้าต่างใหม่ ขนาดใบเสร็จ แล้วสั่งพิมพ์อัตโนมัติ)
+document.getElementById('checkinPrintBtn')?.addEventListener('click', () => {
+  if(!window.lastCheckinQrUrl){ if(window.toast) toast('❌ ไม่พบข้อมูล QR ที่จะพิมพ์'); return; }
+  const tmp = document.createElement('div');
+  tmp.style.display = 'none';
+  document.body.appendChild(tmp);
+  new QRCode(tmp, { text: window.lastCheckinQrUrl, width:220, height:220, colorDark:'#000000', colorLight:'#ffffff' });
+  setTimeout(() => {
+    const img = tmp.querySelector('img');
+    const canvas = tmp.querySelector('canvas');
+    const imgSrc = img && img.src ? img.src : (canvas ? canvas.toDataURL('image/png') : '');
+    document.body.removeChild(tmp);
+    if(!imgSrc){ if(window.toast) toast('❌ สร้าง QR ไม่สำเร็จ ลองใหม่อีกครั้ง'); return; }
+    let h = '<html><head><meta charset="UTF-8"><title>QR โต๊ะ</title><style>body{font-family:monospace,Sarabun;width:280px;margin:0 auto;font-size:13px;text-align:center;}h4{margin:8px 0;}hr{border:none;border-top:1px dashed #000;}</style></head><body>';
+    h += '<h4>Season One<br>Food Drink & Bistro</h4><hr>';
+    h += '<div style="font-size:16px; font-weight:bold; margin:8px 0;">โต๊ะ '+window.lastCheckinTable+'</div>';
+    h += '<img src="'+imgSrc+'" width="220" height="220"><br>';
+    h += '<div style="margin-top:10px;">สแกนเพื่อสั่งอาหาร</div>';
+    h += '<div style="font-size:11px; color:#555;">ใช้ได้ถึงเที่ยงคืนวันนี้เท่านั้น</div>';
+    h += '<hr><div>ขอบคุณที่ใช้บริการ 🌾</div></body></html>';
+    const w = window.open('','_blank','width=320,height=600');
+    w.document.write(h); w.document.close();
+    setTimeout(()=>w.print(), 300);
+  }, 80);
+});
+
+
 
 async function loadIngredients(){
   try {
