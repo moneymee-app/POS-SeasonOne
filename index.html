@@ -96,6 +96,12 @@
   }
   .cta-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(200,168,75,.45); }
   .cta-btn:active{ transform:translateY(0); }
+  /* ===== HERO SLIDESHOW ===== */
+  .hero-slide{
+    position:absolute; inset:0; background-size:cover; background-position:center;
+    opacity:0; transition:opacity 1.2s ease;
+  }
+  .hero-slide.active{ opacity:1; }
   input[type="date"], input[type="time"]{
     background:rgba(255,255,255,.06); border:1px solid rgba(200,168,75,.35); border-radius:9px;
     padding:11px 14px; color:var(--ink); font-size:14px; font-weight:600; font-family:inherit;
@@ -1031,6 +1037,24 @@
         </div>
 
         <div class="card" style="margin-top:18px;">
+          <div class="card-head"><h3>🖼️ รูปหน้าแรก (Hero Slideshow)</h3></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">รูปที่อัพโหลดตรงนี้จะแสดงสลับกันในหน้าแรกที่ลูกค้าเห็นก่อนเข้าเมนู (ถ้ายังไม่มีรูปเลย จะแสดงพื้นหลังสีพื้นแทน)</div>
+          <input type="file" id="heroImageUploadInput" accept="image/*">
+          <button class="pill-btn" id="btnUploadHeroImage" style="background:var(--gold); color:var(--night);">⬆️ อัพโหลดรูป</button>
+          <div id="heroImageUploadErr" style="font-size:12.5px;color:#FF8A73;margin-top:8px;"></div>
+          <div id="heroImageList" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+          <div class="card-head"><h3>🖼️ รูปหัวเมนู (แยกจากหน้า Hero)</h3></div>
+          <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">รูปที่อัพโหลดตรงนี้จะแสดงสลับกันที่ด้านบนของหน้าเมนูอาหาร (คนละชุดกับรูปหน้าแรก)</div>
+          <input type="file" id="menuHeaderImageUploadInput" accept="image/*">
+          <button class="pill-btn" id="btnUploadMenuHeaderImage" style="background:var(--gold); color:var(--night);">⬆️ อัพโหลดรูป</button>
+          <div id="menuHeaderImageUploadErr" style="font-size:12.5px;color:#FF8A73;margin-top:8px;"></div>
+          <div id="menuHeaderImageList" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:16px;"><div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div></div>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
           <div class="card-head"><h3>📊 ซิงค์ข้อมูลไป Google Sheet</h3></div>
           <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;">
             ระบบซิงค์อัตโนมัติทุกคืนตี 0 (ถ้าตั้งค่า Apps Script Trigger แล้ว) หรือกดปุ่มด้านล่างเพื่อซิงค์ทันที<br>
@@ -1208,21 +1232,42 @@
 </div>
 
 <!-- ========== CUSTOMER MODE (ลูกค้า) ========== -->
+<!-- ========== HERO / LANDING PAGE (หน้าแรกก่อนเข้าเมนู) ========== -->
+<div class="mode-view" id="mode-hero">
+  <div id="heroSlideshow" style="position:relative; min-height:100vh; overflow:hidden; background:#0D0D0D;">
+    <div id="heroSlidesTrack" style="position:absolute; inset:0;"></div>
+    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(13,13,13,.3) 0%, rgba(13,13,13,.55) 55%, rgba(13,13,13,.92) 100%);"></div>
+
+    <div style="position:relative; z-index:2; min-height:100vh; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; padding:40px 24px 60px; text-align:center;">
+      <div style="font-size:13px; letter-spacing:.15em; text-transform:uppercase; color:var(--gold-soft); margin-bottom:8px;">Season One</div>
+      <div style="font-size:32px; font-weight:700; color:#fff; margin-bottom:6px;">Food Drink & Bistro</div>
+      <div style="font-size:14px; color:rgba(255,255,255,.75); margin-bottom:32px;">ขอนแก่น · บรรยากาศดี อาหารอร่อย</div>
+
+      <div style="width:100%; max-width:420px; display:flex; flex-direction:column; gap:10px;">
+        <button class="cta-btn" id="btnOpenReservation" style="width:100%;">📅 จองโต๊ะล่วงหน้า</button>
+        <button class="cta-btn" id="btnOpenMemberLogin" style="width:100%; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁 สมาชิกเข้าระบบ</button>
+        <button class="cta-btn" id="btnOpenMemberSignup" style="width:100%; background:linear-gradient(135deg,#8A6FD1,#5C4499); color:#fff; box-shadow:0 4px 14px rgba(138,111,209,.3);">🎉 สมัครสมาชิกใหม่</button>
+      </div>
+    </div>
+
+    <button id="heroStaffLoginBtn" style="position:absolute; z-index:3; left:14px; bottom:14px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:6px 12px; font-size:11px; cursor:pointer;">พนักงาน Login</button>
+  </div>
+</div>
+
 <div class="mode-view" id="mode-customer">
   <div class="cust-shell">
     <div id="checkinVerifyBanner" style="display:none; background:rgba(200,168,75,.15); border:1px solid var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:10px; font-size:13px; text-align:center;">⏳ กำลังตรวจสอบ...</div>
     <div class="cust-topbar">
-      <div style="height:150px; border-radius:16px; margin:0 0 14px; background-image:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.85)), url('https://drive.google.com/thumbnail?id=1mzdC73REUp71OzAE7J_eHDE2srDHdQpl&sz=w800'); background-size:cover; background-position:center; display:flex; align-items:flex-end; padding:14px; border:1px solid rgba(200,168,75,.25);">
-        <div style="text-align:left;">
-          <div class="eyebrow">Season One · Food Drink &amp; Bistro</div>
-          <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
-          <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
+      <div style="position:relative; height:150px; border-radius:16px; margin:0 0 14px; overflow:hidden; border:1px solid rgba(200,168,75,.25);">
+        <div id="menuHeaderSlidesTrack" style="position:absolute; inset:0;"></div>
+        <div style="position:absolute; inset:0; background:linear-gradient(180deg,rgba(13,13,13,0) 30%,rgba(13,13,13,.85));"></div>
+        <div style="position:relative; z-index:2; height:100%; display:flex; align-items:flex-end; padding:14px;">
+          <div style="text-align:left;">
+            <div class="eyebrow">Season One · Food Drink &amp; Bistro</div>
+            <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
+            <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
+          </div>
         </div>
-      </div>
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button class="cta-btn" id="btnOpenReservation" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px;">📅<span>จองโต๊ะ</span></button>
-        <button class="cta-btn" id="btnOpenMemberLogin" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px; background:linear-gradient(135deg,var(--forest),#1F3810); color:#fff; box-shadow:0 4px 14px rgba(45,80,22,.35);">🎁<span>เข้าระบบ</span></button>
-        <button class="cta-btn" id="btnOpenMemberSignup" style="flex:1; font-size:13px; padding:13px 8px; flex-direction:column; gap:3px; background:linear-gradient(135deg,#8A6FD1,#5C4499); color:#fff; box-shadow:0 4px 14px rgba(138,111,209,.3);">🎉<span>สมัครสมาชิก</span></button>
       </div>
     </div>
     <div id="customerPromoBanner"></div>
@@ -1599,7 +1644,7 @@
       <input type="text" id="memberCheckPhone" placeholder="เบอร์โทรศัพท์" maxlength="10">
       <div id="memberCheckErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
       <div class="btn-row">
-        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')">ปิด</button>
+        <button class="btn-lg b-ghost" onclick="closeModalAndGoToMenu('memberModal')">ปิด</button>
         <button class="btn-lg b-gold" id="memberCheckBtn">✓ ตรวจสอบ</button>
       </div>
     </div>
@@ -1617,7 +1662,7 @@
       </div>
       <div id="memberSignupErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
       <div class="btn-row">
-        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')">ยกเลิก</button>
+        <button class="btn-lg b-ghost" onclick="closeModalAndGoToMenu('memberModal')">ยกเลิก</button>
         <button class="btn-lg b-gold" id="memberSignupBtn">✓ สมัครสมาชิก</button>
       </div>
     </div>
@@ -1633,7 +1678,7 @@
       <div class="lbl2">ประวัติการมาใช้บริการล่าสุด</div>
       <div id="memberVisitHistory" style="max-height:30vh; overflow-y:auto; margin-bottom:10px;"></div>
       <div class="btn-row">
-        <button class="btn-lg b-ghost" onclick="document.getElementById('memberModal').classList.remove('open')" style="width:100%;">ปิด</button>
+        <button class="btn-lg b-ghost" onclick="closeModalAndGoToMenu('memberModal')" style="width:100%;">ปิด</button>
       </div>
     </div>
   </div>
@@ -1671,7 +1716,7 @@
     </div>
     <div id="resvErr" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
     <div class="btn-row">
-      <button class="btn-lg b-ghost" onclick="document.getElementById('reservationModal').classList.remove('open')">ยกเลิก</button>
+      <button class="btn-lg b-ghost" onclick="closeModalAndGoToMenu('reservationModal')">ยกเลิก</button>
       <button class="btn-lg b-gold" id="resvSendBtn">✓ ส่งคำขอจอง</button>
     </div>
   </div>
@@ -2022,6 +2067,8 @@
       if(v === 'reservations' && window.loadReservationAdminData) loadReservationAdminData();
       if(v === 'members' && window.loadMembersAdminData) loadMembersAdminData();
       if(v === 'promotions' && window.loadPromotionsAdminData) loadPromotionsAdminData();
+      if(v === 'settings' && window.loadHeroImages) loadHeroImages();
+      if(v === 'settings' && window.loadMenuHeaderImages) loadMenuHeaderImages();
     });
   });
 
@@ -2356,9 +2403,20 @@
       const params = new URLSearchParams(location.search);
       const savedMode = params.get('mode');
       const savedView = params.get('view');
+      const hasCheckinParam = params.has('checkin');
+      const hasTableParam = params.has('table');
       if(savedMode){
         const tab = document.querySelector('.rs-tab[data-mode="'+savedMode+'"]');
         if(tab) tab.click(); // ใช้ click() เพื่อให้ logic เดิม (เปลี่ยน mode-view, note) ทำงานครบตามปกติ
+      } else if(hasCheckinParam || hasTableParam){
+        // สแกน QR มา (ไม่ว่าจะ ?checkin= หรือ ?table= แบบเก่า) ให้เข้าหน้าเมนูลูกค้าทันที ข้ามหน้า Hero ไปเลย
+        const tab = document.querySelector('.rs-tab[data-mode="customer"]');
+        if(tab) tab.click();
+      } else {
+        // ไม่มี parameter ใดๆ เลย = ลูกค้าเปิดลิงก์ร้านตรงๆ (ไม่ได้สแกน QR) → แสดงหน้า Hero ก่อนเสมอ
+        document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
+        const heroView = document.getElementById('mode-hero');
+        if(heroView) heroView.classList.add('active');
       }
       if(savedView){
         const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
@@ -3122,6 +3180,96 @@ document.getElementById('positionSaveBtn')?.addEventListener('click', async () =
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
 
+// ===================== รูปหน้า Hero (Admin จัดการ) =====================
+let HERO_IMAGES_CACHE = [];
+async function loadHeroImages(){
+  const box = document.getElementById('heroImageList');
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div>';
+  try {
+    const qs = await getDocs(collection(db,'heroImages'));
+    HERO_IMAGES_CACHE = []; qs.forEach(d => HERO_IMAGES_CACHE.push({id:d.id, ...d.data()}));
+    HERO_IMAGES_CACHE.sort((a,b) => (a.order||0) - (b.order||0));
+    renderHeroImageList();
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+window.loadHeroImages = loadHeroImages;
+function renderHeroImageList(){
+  const box = document.getElementById('heroImageList');
+  box.innerHTML = HERO_IMAGES_CACHE.length ? HERO_IMAGES_CACHE.map(img =>
+    '<div style="position:relative; width:120px;">'+
+      '<div style="width:120px; height:80px; border-radius:8px; background-image:url(\''+photoUrl(img.photoData)+'\'); background-size:cover; background-position:center; border:1px solid var(--line);"></div>'+
+      '<button class="hero-img-del" data-hid="'+img.id+'" style="position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:none; font-size:12px; cursor:pointer;">✕</button>'+
+    '</div>'
+  ).join('') : '<div style="color:var(--muted); font-size:13px;">ยังไม่มีรูป — อัพโหลดรูปแรกได้เลย</div>';
+  box.querySelectorAll('.hero-img-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบรูปนี้ออกจากหน้าแรกใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'heroImages',b.dataset.hid)); if(window.toast) toast('🗑️ ลบแล้ว'); loadHeroImages(); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+document.getElementById('btnUploadHeroImage')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('heroImageUploadErr');
+  const fileInput = document.getElementById('heroImageUploadInput');
+  const file = fileInput.files[0];
+  if(!file){ errEl.textContent = 'กรุณาเลือกไฟล์รูปก่อน'; return; }
+  errEl.textContent = 'กำลังอัพโหลด...';
+  try {
+    const photoData = await fileToDataUrl(file);
+    const nextOrder = HERO_IMAGES_CACHE.length ? Math.max(...HERO_IMAGES_CACHE.map(i=>i.order||0)) + 1 : 0;
+    await setDoc(doc(collection(db,'heroImages')), {photoData, order: nextOrder, uploadedAt: serverTimestamp()});
+    errEl.textContent = '';
+    fileInput.value = '';
+    if(window.toast) toast('✓ อัพโหลดรูปแล้ว');
+    loadHeroImages();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
+// ===================== รูปหัวเมนู (Admin จัดการ — แยกจาก Hero) =====================
+let MENU_HEADER_IMAGES_CACHE = [];
+async function loadMenuHeaderImages(){
+  const box = document.getElementById('menuHeaderImageList');
+  if(!box) return;
+  box.innerHTML = '<div style="color:var(--muted); font-size:13px;">กำลังโหลด...</div>';
+  try {
+    const qs = await getDocs(collection(db,'menuHeaderImages'));
+    MENU_HEADER_IMAGES_CACHE = []; qs.forEach(d => MENU_HEADER_IMAGES_CACHE.push({id:d.id, ...d.data()}));
+    MENU_HEADER_IMAGES_CACHE.sort((a,b) => (a.order||0) - (b.order||0));
+    renderMenuHeaderImageList();
+  } catch(e){ box.innerHTML = '<div style="color:var(--danger); font-size:13px;">โหลดไม่สำเร็จ: '+e.message+'</div>'; }
+}
+window.loadMenuHeaderImages = loadMenuHeaderImages;
+function renderMenuHeaderImageList(){
+  const box = document.getElementById('menuHeaderImageList');
+  box.innerHTML = MENU_HEADER_IMAGES_CACHE.length ? MENU_HEADER_IMAGES_CACHE.map(img =>
+    '<div style="position:relative; width:120px;">'+
+      '<div style="width:120px; height:80px; border-radius:8px; background-image:url(\''+photoUrl(img.photoData)+'\'); background-size:cover; background-position:center; border:1px solid var(--line);"></div>'+
+      '<button class="menu-header-img-del" data-hid="'+img.id+'" style="position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; background:var(--danger); color:#fff; border:none; font-size:12px; cursor:pointer;">✕</button>'+
+    '</div>'
+  ).join('') : '<div style="color:var(--muted); font-size:13px;">ยังไม่มีรูป — อัพโหลดรูปแรกได้เลย</div>';
+  box.querySelectorAll('.menu-header-img-del').forEach(b => b.addEventListener('click', async () => {
+    if(!confirm('ลบรูปนี้ออกจากหัวเมนูใช่ไหม?')) return;
+    try { await deleteDoc(doc(db,'menuHeaderImages',b.dataset.hid)); if(window.toast) toast('🗑️ ลบแล้ว'); loadMenuHeaderImages(); }
+    catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
+  }));
+}
+document.getElementById('btnUploadMenuHeaderImage')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('menuHeaderImageUploadErr');
+  const fileInput = document.getElementById('menuHeaderImageUploadInput');
+  const file = fileInput.files[0];
+  if(!file){ errEl.textContent = 'กรุณาเลือกไฟล์รูปก่อน'; return; }
+  errEl.textContent = 'กำลังอัพโหลด...';
+  try {
+    const photoData = await fileToDataUrl(file);
+    const nextOrder = MENU_HEADER_IMAGES_CACHE.length ? Math.max(...MENU_HEADER_IMAGES_CACHE.map(i=>i.order||0)) + 1 : 0;
+    await setDoc(doc(collection(db,'menuHeaderImages')), {photoData, order: nextOrder, uploadedAt: serverTimestamp()});
+    errEl.textContent = '';
+    fileInput.value = '';
+    if(window.toast) toast('✓ อัพโหลดรูปแล้ว');
+    loadMenuHeaderImages();
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+
 onSnapshot(collection(db,'positions'), (qs) => {
   POSITIONS_CACHE = []; qs.forEach(d => POSITIONS_CACHE.push({id:d.id, ...d.data()}));
   if(POSITIONS_CACHE.length === 0) seedDefaultPositions();
@@ -3409,7 +3557,7 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
     await setDoc(doc(db,'reservations',resvId), {
       name, phone, date, slotTime, zone, partySize, status:'pending', createdAt: serverTimestamp()
     });
-    document.getElementById('reservationModal').classList.remove('open');
+    closeModalAndGoToMenu('reservationModal');
     if(window.toast) toast('✓ ส่งคำขอจองแล้ว — รอทางร้านยืนยันนะครับ');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
@@ -3866,6 +4014,73 @@ async function renderCustomerPromoBanner(){
   } catch(e){ console.warn('renderCustomerPromoBanner failed', e); }
 }
 renderCustomerPromoBanner();
+
+// ===================== หน้า Hero (Landing Page) =====================
+// ฟังก์ชันกลาง: ปิด modal แล้วถ้าตอนนี้อยู่หน้า Hero ให้สลับไปหน้าเมนูลูกค้าทันที (ไม่ว่าจะกดยกเลิกหรือทำสำเร็จก็ตาม)
+window.closeModalAndGoToMenu = function(modalId){
+  document.getElementById(modalId)?.classList.remove('open');
+  const heroView = document.getElementById('mode-hero');
+  if(heroView && heroView.classList.contains('active')){
+    const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
+    if(customerTab) customerTab.click();
+  }
+};
+// ปุ่มใน Hero เชื่อมกับ modal เดิมที่มีอยู่แล้ว (จองโต๊ะ/สมาชิกเข้าระบบ/สมัครสมาชิก) โดยแค่กระตุ้นปุ่มเดิมให้ทำงานแทน ไม่ต้องเขียน logic ใหม่ซ้ำ
+// ปุ่ม btnOpenReservation/btnOpenMemberLogin/btnOpenMemberSignup ตอนนี้อยู่ในหน้า Hero โดยตรงแล้ว
+// (ย้ายมาจากหน้าเมนูที่ TaBon สั่งเอาออก) — event listener เดิมของปุ่มเหล่านี้ (ที่ประกาศไว้ก่อนหน้าในไฟล์) ยังใช้ได้ปกติ ไม่ต้องเพิ่มอะไรตรงนี้อีก
+document.getElementById('heroStaffLoginBtn')?.addEventListener('click', () => {
+  const adminTab = document.querySelector('.rs-tab[data-mode="admin"]');
+  if(adminTab) adminTab.click();
+});
+
+// Slideshow: สุ่มรูปเมนูที่มีรูปจริงมาแสดงสลับ (ถ้าไม่มีรูปเลย ใช้พื้นหลังสีพื้นแทน ไม่ error)
+async function initHeroSlideshow(){
+  const track = document.getElementById('heroSlidesTrack');
+  if(!track) return;
+  try {
+    const qs = await getDocs(collection(db,'heroImages'));
+    const rows = []; qs.forEach(d => rows.push({id:d.id, ...d.data()}));
+    if(!rows.length) return; // ยังไม่มีรูปที่ Admin อัพโหลดเลย ปล่อยพื้นหลังสีพื้นจาก CSS ไป ไม่ต้องทำอะไรต่อ
+    rows.sort((a,b) => (a.order||0) - (b.order||0));
+    const photos = rows.map(r => photoUrl(r.photoData));
+    track.innerHTML = photos.map((url,i) => '<div class="hero-slide'+(i===0?' active':'')+'" style="background-image:url(\''+url+'\');"></div>').join('');
+    if(photos.length > 1){
+      let current = 0;
+      setInterval(() => {
+        const slides = track.querySelectorAll('.hero-slide');
+        slides[current].classList.remove('active');
+        current = (current+1) % slides.length;
+        slides[current].classList.add('active');
+      }, 4500);
+    }
+  } catch(e){ console.warn('initHeroSlideshow failed', e); }
+}
+initHeroSlideshow();
+
+// หัวเมนู slideshow — แยกต่างหากจาก Hero ใช้คนละชุดรูป (menuHeaderImages)
+async function initMenuHeaderSlideshow(){
+  const track = document.getElementById('menuHeaderSlidesTrack');
+  if(!track) return;
+  try {
+    const qs = await getDocs(collection(db,'menuHeaderImages'));
+    const rows = []; qs.forEach(d => rows.push({id:d.id, ...d.data()}));
+    if(!rows.length) return; // ยังไม่มีรูปเลย ปล่อยพื้นหลังสีพื้นไป ไม่ต้องทำอะไรต่อ
+    rows.sort((a,b) => (a.order||0) - (b.order||0));
+    const photos = rows.map(r => photoUrl(r.photoData));
+    track.innerHTML = photos.map((url,i) => '<div class="hero-slide'+(i===0?' active':'')+'" style="background-image:url(\''+url+'\');"></div>').join('');
+    if(photos.length > 1){
+      let current = 0;
+      setInterval(() => {
+        const slides = track.querySelectorAll('.hero-slide');
+        slides[current].classList.remove('active');
+        current = (current+1) % slides.length;
+        slides[current].classList.add('active');
+      }, 4500);
+    }
+  } catch(e){ console.warn('initMenuHeaderSlideshow failed', e); }
+}
+initMenuHeaderSlideshow();
+
 
 // ===================== เมนู (Item 7, 8) =====================
 function menuRowHtml(m){
@@ -4414,7 +4629,8 @@ document.getElementById('checkinConfirmBtn')?.addEventListener('click', async ()
     document.getElementById('checkinQrResultBox').style.display = 'block';
     const qrBox = document.getElementById('checkinQrCanvas');
     qrBox.innerHTML = '';
-    const checkinUrl = location.origin + location.pathname + '?checkin=' + qrCode;
+    // Bug fix: ต้องระบุ mode=customer เสมอ ไม่งั้นถ้าเบราว์เซอร์เคยอยู่ Admin/พนักงานมาก่อน สแกน QR แล้วจะค้างอยู่มุมมองเดิม ไม่ไปหน้าเมนูลูกค้า
+    const checkinUrl = location.origin + location.pathname + '?mode=customer&checkin=' + qrCode;
     new QRCode(qrBox, { text: checkinUrl, width:200, height:200, colorDark:'#0D0D0D', colorLight:'#ffffff' });
     window.lastCheckinQrUrl = checkinUrl; // เก็บไว้ให้ปุ่มพิมพ์ใช้
     window.lastCheckinTable = table;
@@ -4774,14 +4990,18 @@ function renderStaffCalls(calls){
     catch(e){ if(window.toast) toast('❌ ไม่สำเร็จ: '+e.message); }
   }));
   // ปุ่มลัดพาไปหน้าที่เกี่ยวข้องโดยตรง (ไม่ได้ตัดสถานะเอง แค่ช่วยนำทาง ผู้ใช้ต้องกดจัดการในหน้านั้นเอง)
-  banner.querySelectorAll('.go-payments-page').forEach(b => b.addEventListener('click', () => {
-    const navItem = document.querySelector('.nav-item[data-view="payments"]');
-    if(navItem) navItem.click();
-  }));
-  banner.querySelectorAll('.go-reservations-page').forEach(b => b.addEventListener('click', () => {
-    const navItem = document.querySelector('.nav-item[data-view="reservations"]');
-    if(navItem) navItem.click();
-  }));
+  // Bug fix: ถ้ากำลังอยู่มุมมองอื่น (เช่น ลูกค้า/ครัว) nav-item ของ Admin section จะหาไม่เจอ/กดไม่ได้ผล
+  // ต้องสลับไปมุมมอง Admin ก่อนเสมอ แล้วค่อยรอ DOM render (setTimeout) ก่อนคลิกไปหน้าที่ต้องการจริง
+  function navigateToAdminView(viewName){
+    const adminTab = document.querySelector('.rs-tab[data-mode="admin"]');
+    if(adminTab) adminTab.click();
+    setTimeout(() => {
+      const navItem = document.querySelector('.nav-item[data-view="'+viewName+'"]');
+      if(navItem) navItem.click();
+    }, 60);
+  }
+  banner.querySelectorAll('.go-payments-page').forEach(b => b.addEventListener('click', () => navigateToAdminView('payments')));
+  banner.querySelectorAll('.go-reservations-page').forEach(b => b.addEventListener('click', () => navigateToAdminView('reservations')));
 }
 window.renderStaffCalls = renderStaffCalls;
 
