@@ -1256,6 +1256,7 @@
 
 <div class="mode-view" id="mode-customer">
   <div class="cust-shell">
+    <button id="btnBackToHero" style="width:100%; background:none; border:1px solid rgba(200,168,75,.3); color:var(--gold-soft); border-radius:10px; padding:9px 12px; font-size:13px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">← Season One Food & Drink Restaurant</button>
     <div id="checkinVerifyBanner" style="display:none; background:rgba(200,168,75,.15); border:1px solid var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:10px; font-size:13px; text-align:center;">⏳ กำลังตรวจสอบ...</div>
     <div class="cust-topbar">
       <div style="position:relative; height:150px; border-radius:16px; margin:0 0 14px; overflow:hidden; border:1px solid rgba(200,168,75,.25);">
@@ -1915,6 +1916,9 @@
       document.getElementById('mode-'+mode).classList.add('active');
       document.getElementById('rs-note').textContent = rsNotes[mode];
       saveModeToUrl(mode);
+      // ซ่อนแถบสลับมุมมอง+ปุ่มเข้าสู่ระบบ ตอนอยู่มุมมองลูกค้า (ลูกค้าไม่ควรเห็นเลย) แสดงกลับมาเฉพาะ admin/staff/kitchen
+      const roleSwitcher = document.querySelector('.role-switcher');
+      if(roleSwitcher) roleSwitcher.style.display = (mode === 'customer') ? 'none' : 'flex';
     });
   });
 
@@ -2417,6 +2421,9 @@
         document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
         const heroView = document.getElementById('mode-hero');
         if(heroView) heroView.classList.add('active');
+        // หน้า Hero ต้องสะอาด ไม่มีแถบควบคุมระบบให้ลูกค้าเห็นเลย
+        const roleSwitcher = document.querySelector('.role-switcher');
+        if(roleSwitcher) roleSwitcher.style.display = 'none';
       }
       if(savedView){
         const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
@@ -4028,6 +4035,15 @@ window.closeModalAndGoToMenu = function(modalId){
 // ปุ่มใน Hero เชื่อมกับ modal เดิมที่มีอยู่แล้ว (จองโต๊ะ/สมาชิกเข้าระบบ/สมัครสมาชิก) โดยแค่กระตุ้นปุ่มเดิมให้ทำงานแทน ไม่ต้องเขียน logic ใหม่ซ้ำ
 // ปุ่ม btnOpenReservation/btnOpenMemberLogin/btnOpenMemberSignup ตอนนี้อยู่ในหน้า Hero โดยตรงแล้ว
 // (ย้ายมาจากหน้าเมนูที่ TaBon สั่งเอาออก) — event listener เดิมของปุ่มเหล่านี้ (ที่ประกาศไว้ก่อนหน้าในไฟล์) ยังใช้ได้ปกติ ไม่ต้องเพิ่มอะไรตรงนี้อีก
+document.getElementById('btnBackToHero')?.addEventListener('click', () => {
+  document.querySelectorAll('.rs-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
+  document.getElementById('mode-hero')?.classList.add('active');
+  const roleSwitcher = document.querySelector('.role-switcher');
+  if(roleSwitcher) roleSwitcher.style.display = 'none';
+  // ล้าง query string ออกด้วย กันกดกลับหน้าแรกแล้ว refresh แล้วเด้งไปหน้าเมนูเหมือนเดิม (เพราะ URL ยังมี mode=customer ค้างอยู่)
+  history.replaceState(null, '', location.pathname);
+});
 document.getElementById('heroStaffLoginBtn')?.addEventListener('click', () => {
   const adminTab = document.querySelector('.rs-tab[data-mode="admin"]');
   if(adminTab) adminTab.click();
