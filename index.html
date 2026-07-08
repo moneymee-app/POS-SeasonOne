@@ -2448,7 +2448,9 @@
       const savedView = params.get('view');
       const hasCheckinParam = params.has('checkin');
       const hasTableParam = params.has('table');
-      if(savedMode){
+      // Bug fix: ?mode=customer ที่ติดมากับ URL ตั้งแต่แรก (จาก bookmark/ลิงก์แชร์ต่อ/ประวัติเบราว์เซอร์)
+      // ต้องไม่ข้าม Gate ตรวจสอบไปเฉยๆ เหมือนที่เคยเป็น — มีแค่ table/checkin เท่านั้นที่ข้ามได้จริง (มาจากการสแกน QR จริง)
+      if(savedMode && savedMode !== 'customer'){
         const tab = document.querySelector('.rs-tab[data-mode="'+savedMode+'"]');
         if(tab) tab.click(); // ใช้ click() เพื่อให้ logic เดิม (เปลี่ยน mode-view, note) ทำงานครบตามปกติ
       } else if(hasCheckinParam || hasTableParam){
@@ -2456,13 +2458,16 @@
         const tab = document.querySelector('.rs-tab[data-mode="customer"]');
         if(tab) tab.click();
       } else {
-        // ไม่มี parameter ใดๆ เลย = ลูกค้าเปิดลิงก์ร้านตรงๆ (ไม่ได้สแกน QR) → แสดงหน้า Hero ก่อนเสมอ
+        // ไม่มี table/checkin เลย (ไม่ว่า mode=customer จะติดมาด้วยหรือไม่ก็ตาม) → แสดงหน้า Hero ก่อนเสมอ
+        // ต้องผ่านปุ่มใน Hero + Gate ตรวจสอบเบอร์โทรก่อน ถึงจะเข้าเมนูได้จริง (กันลิงก์ ?mode=customer ค้างเครื่องข้าม Gate ได้)
         document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
         const heroView = document.getElementById('mode-hero');
         if(heroView) heroView.classList.add('active');
         // หน้า Hero ต้องสะอาด ไม่มีแถบควบคุมระบบให้ลูกค้าเห็นเลย
         const roleSwitcher = document.querySelector('.role-switcher');
         if(roleSwitcher) roleSwitcher.style.display = 'none';
+        // ล้าง ?mode=customer ออกจาก URL ทันที กันสับสน/กันแชร์ลิงก์ต่อแล้วดูเหมือนข้าม Gate ได้
+        if(savedMode === 'customer') history.replaceState(null, '', location.pathname);
       }
       if(savedView){
         const item = document.querySelector('.nav-item[data-view="'+savedView+'"]');
