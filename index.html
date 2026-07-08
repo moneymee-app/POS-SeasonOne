@@ -3567,14 +3567,10 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
   if(!name || phone.length < 9 || !date || !slotTime || !zone || !partySize || partySize <= 0){
     errEl.textContent = 'กรุณากรอกข้อมูลให้ครบและถูกต้อง'; return;
   }
-  errEl.textContent = 'กำลังตรวจสอบที่นั่งว่าง...';
+  errEl.textContent = 'กำลังส่งคำขอ...';
   try {
-    const capacity = calcZoneCapacity(zone);
-    const alreadyBooked = await getApprovedReservationsFor(date, slotTime, zone);
-    if(capacity > 0 && (alreadyBooked + partySize) > capacity){
-      errEl.textContent = '⚠️ ช่วงเวลานี้ที่นั่งไม่พอแล้ว (จองได้แล้ว '+alreadyBooked+'/'+capacity+' ที่นั่ง) กรุณาเลือกช่วงเวลาอื่น';
-      return;
-    }
+    // Bug fix: เอาการเช็คที่นั่งว่างออก เพราะต้องอ่าน reservations ซึ่งลูกค้าไม่มีสิทธิ์อ่าน (กันเห็นข้อมูลคนอื่น)
+    // ส่งคำขอได้ทันที ให้ Admin เป็นคนพิจารณาความจุตอนอนุมัติแทน (มีเครื่องมือ "ความจุที่นั่งวันนี้" ให้ดูอยู่แล้ว)
     const resvId = 'RESV'+Date.now();
     await setDoc(doc(db,'reservations',resvId), {
       name, phone, date, slotTime, zone, partySize, status:'pending', createdAt: serverTimestamp()
@@ -3583,21 +3579,10 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
     if(window.toast) toast('✓ ส่งคำขอจองแล้ว — รอทางร้านยืนยันนะครับ');
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
-['resvDate','resvSlotTime','resvZone','resvPartySize'].forEach(id => {
-  document.getElementById(id)?.addEventListener('change', async () => {
-    const date = document.getElementById('resvDate').value;
-    const slotTime = document.getElementById('resvSlotTime').value;
-    const zone = document.getElementById('resvZone').value;
-    const noteEl = document.getElementById('resvCapacityNote');
-    if(!date || !slotTime || !zone){ noteEl.textContent = ''; return; }
-    const capacity = calcZoneCapacity(zone);
-    if(capacity <= 0){ noteEl.textContent = ''; return; }
-    const booked = await getApprovedReservationsFor(date, slotTime, zone);
-    const pct = Math.round((booked/capacity)*100);
-    noteEl.textContent = 'ที่นั่งจองแล้ว '+booked+'/'+capacity+' ('+pct+'%)';
-    noteEl.style.color = pct >= 80 ? 'var(--danger)' : 'var(--muted)';
-  });
-});
+// Bug fix: ลบการแสดงความจุที่นั่ง real-time ออก เพราะต้องอ่าน reservations ซึ่งลูกค้าไม่มีสิทธิ์อ่าน
+// (เคยทำให้ error "Missing or insufficient permissions" ตอนเปลี่ยนวันที่/เวลา/โซนในฟอร์ม)
+// TaBon ยืนยันว่าลูกค้าไม่ควรเห็นข้อมูลการจองใดๆ เลย แม้แต่ตัวเลขสรุปความจุ — ให้ Admin พิจารณาตอนอนุมัติแทน
+
 
 // ---------- ฝั่ง Admin: รายการคำขอจอง + ความจุภาพรวม ----------
 let resvStatusFilter = 'pending';
