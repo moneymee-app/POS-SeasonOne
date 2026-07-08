@@ -2463,6 +2463,9 @@
         document.querySelectorAll('.mode-view').forEach(m=>m.classList.remove('active'));
         const heroView = document.getElementById('mode-hero');
         if(heroView) heroView.classList.add('active');
+        // Bug fix สำคัญ: ต้องล้าง .rs-tab.active ด้วย ไม่งั้น applyRoleGate() (ที่ทำงานทีหลังตอน Firebase ตอบกลับ auth state)
+        // จะเห็น active tab เป็นค่า default เดิม (admin) ซึ่งไม่ตรงกับ role จริง แล้วสั่ง .click() ทับ Hero ที่เพิ่งตั้งไปทันที
+        document.querySelectorAll('.rs-tab').forEach(t=>t.classList.remove('active'));
         // หน้า Hero ต้องสะอาด ไม่มีแถบควบคุมระบบให้ลูกค้าเห็นเลย
         const roleSwitcher = document.querySelector('.role-switcher');
         if(roleSwitcher) roleSwitcher.style.display = 'none';
@@ -2581,6 +2584,11 @@ function applyRoleGate(){
   document.querySelectorAll('.rs-tab').forEach(t => {
     t.style.display = visible.includes(t.dataset.mode) ? 'flex' : 'none';
   });
+  // Bug fix: ถ้าหน้า Hero กำลังแสดงอยู่ ต้องแยก 2 กรณี —
+  // (1) ไม่ได้ login เลย (ROLE เป็น null) → ปล่อย Hero แสดงต่อ ไม่ auto-click ไป customer (กัน Gate ถูกข้าม)
+  // (2) login เป็น admin/staff จริง → นี่คือเจ้าของร้าน/พนักงานเข้าเว็บมาทำงาน ไม่ใช่ลูกค้า ต้องพากลับเข้า panel ของตัวเองตามปกติ
+  const heroActive = document.getElementById('mode-hero')?.classList.contains('active');
+  if(heroActive && !ROLE) return;
   const active = document.querySelector('.rs-tab.active');
   if(!active || !visible.includes(active.dataset.mode)){
     const first = document.querySelector('.rs-tab[data-mode="'+visible[0]+'"]');
@@ -4866,8 +4874,17 @@ function getStationOf(name){
   return m ? (m.station||'kitchen') : 'kitchen';
 }
 
+// เช็คสิทธิ์ก่อนสั่งอาหารจริง — ต้องมาจาก QR จริง (table/checkin) หรือผ่าน Gate ตรวจสอบเบอร์โทรมาแล้วในเซสชันนี้เท่านั้น
+// ป้องกันกรณีมีช่องทางอื่นใดๆ ที่หลุดเข้าหน้าเมนูได้โดยไม่ผ่านการตรวจสอบ (บล็อกที่ปลายทางการกระทำ ไม่ใช่แค่ทางเข้า)
+function isAllowedToOrder(){
+  return urlParams.has('table') || urlParams.has('checkin') || gatePassedThisSession;
+}
 document.getElementById('custCheckoutBtn')?.addEventListener('click', async () => {
   if(!CUSTCART.length) return;
+  if(!isAllowedToOrder()){
+    if(window.toast) toast('❌ กรุณายืนยันตัวตนก่อนสั่งอาหาร — กลับไปหน้าแรกแล้วกดจองโต๊ะ/เข้าระบบก่อนนะครับ');
+    return;
+  }
   try {
     const items = CUSTCART.map(it => ({name:it.n, qty:it.q, price:it.p, station:getStationOf(it.n)}));
     const total = CUSTCART.reduce((s,i)=>s+i.q*i.p,0);
