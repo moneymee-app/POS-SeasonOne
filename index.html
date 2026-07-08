@@ -1651,6 +1651,30 @@
   </div>
 </div>
 
+<!-- ===== ACCESS GATE MODAL (ตรวจสอบเบอร์โทร+การอนุมัติก่อนเข้าเมนู — เฉพาะทางเข้าจากลิงก์เพจ) ===== -->
+<div class="modal-back" id="accessGateModal">
+  <div class="modal">
+    <div id="gateStep1">
+      <h3>👋 ยินดีต้อนรับ</h3>
+      <div class="sub">กรุณากรอกชื่อและเบอร์โทรที่ใช้จองไว้ เพื่อเข้าใช้งานเมนู</div>
+      <input type="text" id="gateName" placeholder="ชื่อ">
+      <input type="text" id="gatePhone" placeholder="เบอร์โทรศัพท์" maxlength="10">
+      <div id="gateStep1Err" style="font-size:12.5px;color:#FF8A73;margin-bottom:8px;"></div>
+      <button class="btn-lg b-gold" id="gateCheckBtn" style="width:100%;">✓ ตรวจสอบ</button>
+    </div>
+    <div id="gateStep2Pending" style="display:none; text-align:center;">
+      <h3>⏳ รอการอนุมัติ</h3>
+      <div class="sub" style="margin-bottom:16px;">คำขอจองของท่านอยู่ระหว่างรอทางร้านยืนยัน กรุณารอสักครู่แล้วลองใหม่อีกครั้ง หรือติดต่อร้านโดยตรง</div>
+      <button class="btn-lg b-ghost" id="gateBackBtn" style="width:100%;">‹ กลับ</button>
+    </div>
+    <div id="gateStep2Rejected" style="display:none; text-align:center;">
+      <h3>❌ คำขอไม่ได้รับการอนุมัติ</h3>
+      <div class="sub" style="margin-bottom:16px;">ขออภัย คำขอจองของท่านไม่ได้รับการอนุมัติ กรุณาติดต่อร้านโดยตรงหรือส่งคำขอใหม่</div>
+      <button class="btn-lg b-ghost" id="gateRejectedBackBtn" style="width:100%;">‹ กลับ</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MEMBER MODAL (ลูกค้าสมัครสมาชิก/ดูแต้ม) ===== -->
 <div class="modal-back" id="memberModal">
   <div class="modal">
@@ -3569,10 +3593,9 @@ document.getElementById('resvSendBtn')?.addEventListener('click', async () => {
   }
   errEl.textContent = 'กำลังส่งคำขอ...';
   try {
-    // Bug fix: เอาการเช็คที่นั่งว่างออก เพราะต้องอ่าน reservations ซึ่งลูกค้าไม่มีสิทธิ์อ่าน (กันเห็นข้อมูลคนอื่น)
-    // ส่งคำขอได้ทันที ให้ Admin เป็นคนพิจารณาความจุตอนอนุมัติแทน (มีเครื่องมือ "ความจุที่นั่งวันนี้" ให้ดูอยู่แล้ว)
-    const resvId = 'RESV'+Date.now();
-    await setDoc(doc(db,'reservations',resvId), {
+    // Document ID = เบอร์โทรตรงๆ (ไม่ใช่รหัสสุ่ม) — จองซ้ำจะทับข้อมูลเก่าเสมอ ใช้ล่าสุดเป็นหลักตามที่ TaBon ยืนยัน
+    // และทำให้ลูกค้าเช็คสถานะของตัวเองได้ทีหลังผ่าน getDoc(เบอร์โทร) โดยไม่ต้องอ่านข้อมูลคนอื่น (ปลอดภัยตาม Firestore rule ใหม่)
+    await setDoc(doc(db,'reservations',phone), {
       name, phone, date, slotTime, zone, partySize, status:'pending', createdAt: serverTimestamp()
     });
     closeModalAndGoToMenu('reservationModal');
@@ -4024,14 +4047,70 @@ renderCustomerPromoBanner();
 
 // ===================== หน้า Hero (Landing Page) =====================
 // ฟังก์ชันกลาง: ปิด modal แล้วถ้าตอนนี้อยู่หน้า Hero ให้สลับไปหน้าเมนูลูกค้าทันที (ไม่ว่าจะกดยกเลิกหรือทำสำเร็จก็ตาม)
+let gatePassedThisSession = false; // จำไว้ว่าผ่าน Gate สำเร็จแล้วในเซสชันนี้ ไม่ต้องกรอกซ้ำถ้ากดปุ่มอื่นอีก
 window.closeModalAndGoToMenu = function(modalId){
   document.getElementById(modalId)?.classList.remove('open');
   const heroView = document.getElementById('mode-hero');
   if(heroView && heroView.classList.contains('active')){
-    const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
-    if(customerTab) customerTab.click();
+    // ถ้ามี ?table= หรือ ?checkin= อยู่แล้ว (สแกน QR จริง) หรือเคยผ่าน Gate มาแล้วในเซสชันนี้ → เข้าเมนูตรงๆ ได้เลย
+    if(urlParams.has('table') || checkinQrParam || gatePassedThisSession){
+      const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
+      if(customerTab) customerTab.click();
+    } else {
+      // เข้าจากลิงก์เพจ (ไม่มี parameter เลย) — ต้องผ่าน Gate ตรวจสอบเบอร์โทร+การอนุมัติก่อนเสมอ
+      openAccessGate();
+    }
   }
 };
+function openAccessGate(){
+  document.getElementById('gateStep1').style.display = 'block';
+  document.getElementById('gateStep2Pending').style.display = 'none';
+  document.getElementById('gateStep2Rejected').style.display = 'none';
+  document.getElementById('gateName').value = '';
+  document.getElementById('gatePhone').value = '';
+  document.getElementById('gateStep1Err').textContent = '';
+  document.getElementById('accessGateModal').classList.add('open');
+}
+document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('gateStep1Err');
+  const name = document.getElementById('gateName').value.trim();
+  const phone = document.getElementById('gatePhone').value.replace(/\D/g,'');
+  if(!name || phone.length < 9){ errEl.textContent = 'กรุณากรอกชื่อและเบอร์โทรให้ถูกต้อง'; return; }
+  errEl.textContent = 'กำลังตรวจสอบ...';
+  try {
+    // getDoc แบบระบุ ID เดียว (เบอร์โทร) — ปลอดภัยตาม Firestore rule เพราะเช็คจาก actual data จริง
+    const snap = await getDoc(doc(db,'reservations',phone));
+    if(!snap.exists()){
+      // ไม่เคยจองมาก่อนเลย — เปิดฟอร์มจองให้กรอกทันที (ใช้ฟอร์มจองเดิมที่มีอยู่แล้ว)
+      errEl.textContent = '';
+      document.getElementById('accessGateModal').classList.remove('open');
+      openReservationFormDirectly();
+      // เติมชื่อ+เบอร์ที่เพิ่งกรอกไว้ให้อัตโนมัติ ไม่ต้องพิมพ์ซ้ำ
+      document.getElementById('resvName').value = name;
+      document.getElementById('resvPhone').value = phone;
+      return;
+    }
+    const resv = snap.data();
+    if(resv.status === 'approved'){
+      errEl.textContent = '';
+      gatePassedThisSession = true;
+      document.getElementById('accessGateModal').classList.remove('open');
+      const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
+      if(customerTab) customerTab.click();
+      if(window.toast) toast('✓ ยืนยันตัวตนสำเร็จ ยินดีต้อนรับครับ');
+    } else if(resv.status === 'rejected' || resv.status === 'cancelled'){
+      document.getElementById('gateStep1').style.display = 'none';
+      document.getElementById('gateStep2Rejected').style.display = 'block';
+    } else {
+      // pending หรือ checked_in ที่ยังไม่นับเป็น approved ในความหมายนี้ — ถือว่ายังรออยู่
+      document.getElementById('gateStep1').style.display = 'none';
+      document.getElementById('gateStep2Pending').style.display = 'block';
+    }
+  } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
+});
+document.getElementById('gateBackBtn')?.addEventListener('click', () => openAccessGate());
+document.getElementById('gateRejectedBackBtn')?.addEventListener('click', () => openAccessGate());
+
 // ปุ่มใน Hero เชื่อมกับ modal เดิมที่มีอยู่แล้ว (จองโต๊ะ/สมาชิกเข้าระบบ/สมัครสมาชิก) โดยแค่กระตุ้นปุ่มเดิมให้ทำงานแทน ไม่ต้องเขียน logic ใหม่ซ้ำ
 // ปุ่ม btnOpenReservation/btnOpenMemberLogin/btnOpenMemberSignup ตอนนี้อยู่ในหน้า Hero โดยตรงแล้ว
 // (ย้ายมาจากหน้าเมนูที่ TaBon สั่งเอาออก) — event listener เดิมของปุ่มเหล่านี้ (ที่ประกาศไว้ก่อนหน้าในไฟล์) ยังใช้ได้ปกติ ไม่ต้องเพิ่มอะไรตรงนี้อีก
