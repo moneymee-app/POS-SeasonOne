@@ -1258,10 +1258,13 @@
       <div id="heroShopName" style="font-family:'Cormorant Garamond',serif; font-size:42px; font-weight:700; color:#fff; margin-bottom:8px; letter-spacing:.01em;">Food Drink & Bistro</div>
       <div style="font-size:14px; color:rgba(255,255,255,.8); margin-bottom:32px; letter-spacing:.03em;">ขอนแก่น · บรรยากาศดี อาหารอร่อย</div>
 
-      <div style="width:100%; max-width:520px; display:flex; flex-direction:row; gap:10px;">
+      <div style="width:100%; max-width:520px; display:flex; flex-direction:row; gap:10px; flex-wrap:wrap;">
         <button class="hero-glass-btn" id="btnOpenReservation"><span class="icon">📅</span><span>จองโต๊ะล่วงหน้า</span></button>
         <button class="hero-glass-btn" id="btnOpenMemberLogin"><span class="icon">🎁</span><span>สมาชิกเข้าระบบ</span></button>
         <button class="hero-glass-btn" id="btnOpenMemberSignup"><span class="icon">🎉</span><span>สมัครสมาชิกใหม่</span></button>
+      </div>
+      <div style="width:100%; max-width:520px; margin-top:10px;">
+        <button class="hero-glass-btn" id="btnOrderAheadEnter" style="width:100%;"><span class="icon">🍽️</span><span>สั่งอาหารล่วงหน้า (สำหรับผู้ที่จองไว้แล้ว)</span></button>
       </div>
     </div>
 
@@ -1281,7 +1284,10 @@
           <div style="text-align:left;">
             <div id="menuShopName" class="eyebrow" style="font-size:15px; font-weight:700; letter-spacing:.08em; font-family:'Cormorant Garamond',serif;">Season One · Food Drink &amp; Bistro</div>
             <div class="name" style="font-size:22px;">เมนูวันนี้ 🌾</div>
-            <div style="margin-top:6px; background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></div>
+            <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span style="background:rgba(200,168,75,.9); color:#0D0D0D; display:inline-block; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">📍 โต๊ะ <span id="custTableLabel">-</span></span>
+              <span id="custOrderAheadBadge" style="display:none; background:rgba(45,80,22,.9); color:#fff; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700;">👤 <span id="custOrderAheadName">-</span> · 📱 <span id="custOrderAheadPhone">-</span></span>
+            </div>
           </div>
         </div>
       </div>
@@ -1665,12 +1671,20 @@
     <div id="gateStep2Pending" style="display:none; text-align:center;">
       <h3>⏳ รอการอนุมัติ</h3>
       <div class="sub" style="margin-bottom:16px;">คำขอจองของท่านอยู่ระหว่างรอทางร้านยืนยัน กรุณารอสักครู่แล้วลองใหม่อีกครั้ง หรือติดต่อร้านโดยตรง</div>
+      <a id="gateCallShopBtn1" href="tel:" class="btn-lg b-gold" style="width:100%; display:block; text-decoration:none; box-sizing:border-box; margin-bottom:10px;">📞 โทรติดต่อร้าน</a>
       <button class="btn-lg b-ghost" id="gateBackBtn" style="width:100%;">‹ กลับ</button>
     </div>
     <div id="gateStep2Rejected" style="display:none; text-align:center;">
       <h3>❌ คำขอไม่ได้รับการอนุมัติ</h3>
       <div class="sub" style="margin-bottom:16px;">ขออภัย คำขอจองของท่านไม่ได้รับการอนุมัติ กรุณาติดต่อร้านโดยตรงหรือส่งคำขอใหม่</div>
+      <a id="gateCallShopBtn2" href="tel:" class="btn-lg b-gold" style="width:100%; display:block; text-decoration:none; box-sizing:border-box; margin-bottom:10px;">📞 โทรติดต่อร้าน</a>
       <button class="btn-lg b-ghost" id="gateRejectedBackBtn" style="width:100%;">‹ กลับ</button>
+    </div>
+    <div id="gateStep2NotFound" style="display:none; text-align:center;">
+      <h3>🔍 ไม่พบข้อมูลการจอง</h3>
+      <div class="sub" style="margin-bottom:16px;">ไม่พบคำขอจองด้วยเบอร์โทรนี้ กรุณาติดต่อร้านโดยตรงเพื่อสอบถาม</div>
+      <a id="gateCallShopBtn3" href="tel:" class="btn-lg b-gold" style="width:100%; display:block; text-decoration:none; box-sizing:border-box; margin-bottom:10px;">📞 โทรติดต่อร้าน</a>
+      <button class="btn-lg b-ghost" id="gateNotFoundBackBtn" style="width:100%;">‹ กลับ</button>
     </div>
   </div>
 </div>
@@ -4075,13 +4089,22 @@ window.closeModalAndGoToMenu = function(modalId){
     }
   }
 };
-function openAccessGate(){
+let gateMode = 'reservation'; // 'reservation' = ปุ่มจองโต๊ะเดิม, 'order_ahead' = ปุ่มสั่งอาหารล่วงหน้าใหม่
+function openAccessGate(mode){
+  gateMode = mode || 'reservation';
   document.getElementById('gateStep1').style.display = 'block';
   document.getElementById('gateStep2Pending').style.display = 'none';
   document.getElementById('gateStep2Rejected').style.display = 'none';
+  document.getElementById('gateStep2NotFound').style.display = 'none';
   document.getElementById('gateName').value = '';
   document.getElementById('gatePhone').value = '';
   document.getElementById('gateStep1Err').textContent = '';
+  // เติมเบอร์ร้าน (จาก settings ที่ Admin กรอกได้) ให้ปุ่มโทรออกทุกจุด
+  const shopPhone = document.getElementById('si-phone')?.textContent?.replace(/\D/g,'') || '';
+  ['gateCallShopBtn1','gateCallShopBtn2','gateCallShopBtn3'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.href = 'tel:'+shopPhone;
+  });
   document.getElementById('accessGateModal').classList.add('open');
 }
 document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
@@ -4094,7 +4117,14 @@ document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
     // getDoc แบบระบุ ID เดียว (เบอร์โทร) — ปลอดภัยตาม Firestore rule เพราะเช็คจาก actual data จริง
     const snap = await getDoc(doc(db,'reservations',phone));
     if(!snap.exists()){
-      // ไม่เคยจองมาก่อนเลย — เปิดฟอร์มจองให้กรอกทันที (ใช้ฟอร์มจองเดิมที่มีอยู่แล้ว)
+      if(gateMode === 'order_ahead'){
+        // โหมดสั่งอาหารล่วงหน้า: ไม่พบการจอง → แจ้งไม่พบ + ปุ่มโทรหาพนักงาน (ไม่เปิดฟอร์มจองให้ ต่างจากปุ่มจองโต๊ะ)
+        errEl.textContent = '';
+        document.getElementById('gateStep1').style.display = 'none';
+        document.getElementById('gateStep2NotFound').style.display = 'block';
+        return;
+      }
+      // โหมดจองโต๊ะ (เดิม): ไม่เคยจองมาก่อนเลย — เปิดฟอร์มจองให้กรอกทันที (ใช้ฟอร์มจองเดิมที่มีอยู่แล้ว)
       errEl.textContent = '';
       document.getElementById('accessGateModal').classList.remove('open');
       openReservationFormDirectly();
@@ -4108,6 +4138,15 @@ document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
       errEl.textContent = '';
       gatePassedThisSession = true;
       document.getElementById('accessGateModal').classList.remove('open');
+      // ถ้ามาจากปุ่ม "สั่งอาหารล่วงหน้า" ให้แสดงชื่อ+เบอร์ของลูกค้าในหน้าเมนูด้วย (แทน/เพิ่มจากป้ายโต๊ะ)
+      if(gateMode === 'order_ahead'){
+        const badge = document.getElementById('custOrderAheadBadge');
+        if(badge){
+          badge.style.display = 'inline-block';
+          document.getElementById('custOrderAheadName').textContent = resv.name;
+          document.getElementById('custOrderAheadPhone').textContent = resv.phone;
+        }
+      }
       const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
       if(customerTab) customerTab.click();
       if(window.toast) toast('✓ ยืนยันตัวตนสำเร็จ ยินดีต้อนรับครับ');
@@ -4121,8 +4160,10 @@ document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
     }
   } catch(e){ errEl.textContent = 'ผิดพลาด: '+e.message; }
 });
-document.getElementById('gateBackBtn')?.addEventListener('click', () => openAccessGate());
-document.getElementById('gateRejectedBackBtn')?.addEventListener('click', () => openAccessGate());
+document.getElementById('gateBackBtn')?.addEventListener('click', () => openAccessGate(gateMode));
+document.getElementById('gateRejectedBackBtn')?.addEventListener('click', () => openAccessGate(gateMode));
+document.getElementById('gateNotFoundBackBtn')?.addEventListener('click', () => openAccessGate(gateMode));
+document.getElementById('btnOrderAheadEnter')?.addEventListener('click', () => openAccessGate('order_ahead'));
 
 // ปุ่มใน Hero เชื่อมกับ modal เดิมที่มีอยู่แล้ว (จองโต๊ะ/สมาชิกเข้าระบบ/สมัครสมาชิก) โดยแค่กระตุ้นปุ่มเดิมให้ทำงานแทน ไม่ต้องเขียน logic ใหม่ซ้ำ
 // ปุ่ม btnOpenReservation/btnOpenMemberLogin/btnOpenMemberSignup ตอนนี้อยู่ในหน้า Hero โดยตรงแล้ว
