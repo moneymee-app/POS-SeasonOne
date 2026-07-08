@@ -1310,16 +1310,18 @@
       <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1ZUV8wC7eaO0SGbA7pNzusAd1Hk6mXlNq&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">Set ปิ้งย่างรวม</div><div class="pr">฿1,090</div><button class="cust-add" data-price="1090">+ เพิ่มลงตะกร้า</button></div>
       <div class="cust-card"><div class="img" style="background-image:url('https://drive.google.com/thumbnail?id=1SFszLsEdSIvQwvGfuxURr1LK0ffH5gFq&sz=w400'); background-size:cover; background-position:center;"></div><div class="nm">เมอร์ไทน์ ค็อกเทล 🔞</div><div class="pr">฿160</div><button class="cust-add" data-price="160">+ เพิ่มลงตะกร้า</button></div>
     </div>
+    <div style="padding:0 16px 100px;">
+      <div id="custOrderHistorySection" style="display:none; margin-top:20px;">
+        <div class="lbl2" style="margin-bottom:10px;">📋 ออเดอร์ของฉัน</div>
+        <div id="custOrderHistoryList"></div>
+      </div>
+    </div>
   </div>
   <div class="float-stack">
     <button class="float-btn fb-call" onclick="callStaff()">🔔<small>เรียกพนง.</small></button>
     <button class="float-btn fb-pay" onclick="openPayModal(window.currentTable || 'A1','customer')">💳<small>ชำระเงิน</small></button>
   </div>
   <div class="cart-panel" id="custCartPanel" style="position:fixed; left:0; right:0; margin:0 auto; width:calc(100% - 32px); max-width:528px; bottom:84px; z-index:41;"></div>
-  <div id="orderAheadServeTimeBox" style="display:none; position:fixed; left:0; right:0; margin:0 auto; width:calc(100% - 32px); max-width:528px; bottom:132px; z-index:41; background:var(--paper); border:1px solid var(--gold); border-radius:12px; padding:10px 14px;">
-    <div style="font-size:11.5px; color:var(--muted); margin-bottom:6px;">🕐 เวลาที่ต้องการให้เสิร์ฟ</div>
-    <select id="orderAheadServeTime" style="width:100%;"></select>
-  </div>
   <div class="cust-cart-bar" id="custCartBar" style="display:none;">
     <div>ตะกร้า <b id="custCartCount">0</b> รายการ · <b id="custCartTotal">฿0</b></div>
     <div class="go" id="custCheckoutBtn" style="cursor:pointer;">สั่งเลย →</div>
@@ -2032,15 +2034,28 @@
   const CUSTCART = [];
   function renderCart(cart, panelId, countId, totalId){
     const p = document.getElementById(panelId);
+    const isCustomer = panelId === 'custCartPanel';
     if(!cart.length){ p.classList.remove('show'); }
     else{
-      p.innerHTML = cart.map((it,i)=>
+      // กล่องเลือกเวลาเสิร์ฟ — แสดงเฉพาะฝั่งลูกค้าที่สั่งอาหารล่วงหน้าเท่านั้น อยู่บนสุดของ popup ตะกร้าเดียวกัน (ไม่ลอยแยกอีกต่อไป)
+      const serveTimeHtml = (isCustomer && window.gateMode === 'order_ahead') ?
+        '<div style="background:rgba(200,168,75,.1); border:1px solid var(--gold); border-radius:8px; padding:8px 10px; margin-bottom:8px;">'+
+          '<div style="font-size:11.5px; color:var(--muted); margin-bottom:4px;">🕐 เวลาที่ต้องการให้เสิร์ฟ</div>'+
+          '<select id="orderAheadServeTime" style="width:100%;">'+
+            Array.from({length:24}, (_,h) => { const l=String(h).padStart(2,'0')+':00'; return '<option value="'+l+'"'+(l===window.orderAheadDefaultServeTime?' selected':'')+'>'+l+'</option>'; }).join('')+
+          '</select>'+
+        '</div>' : '';
+      p.innerHTML = serveTimeHtml + cart.map((it,i)=>
         '<div class="cart-row"><span class="cn">'+it.n+'</span>'+
         '<button class="qbtn" onclick="cartQty(\''+panelId+'\','+i+',-1)">−</button>'+
         '<span class="cq">'+it.q+'</span>'+
         '<button class="qbtn" onclick="cartQty(\''+panelId+'\','+i+',1)">＋</button>'+
         '<span style="min-width:56px;text-align:right;">฿'+(it.q*it.p).toLocaleString()+'</span>'+
-        '<button class="xbtn" onclick="cartDel(\''+panelId+'\','+i+')">✕</button></div>').join('');
+        '<button class="xbtn" onclick="cartDel(\''+panelId+'\','+i+')">✕</button></div>'+
+        (isCustomer ? '<input type="text" placeholder="หมายเหตุ (เช่น เผ็ดน้อย, ไม่ใส่ผัก)" value="'+(it.note||'')+'" '+
+          'style="width:100%; margin:4px 0 8px; padding:6px 10px; font-size:12px; background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:6px; color:var(--ink);" '+
+          'oninput="cartSetNote(\''+panelId+'\','+i+',this.value)">' : '')
+      ).join('');
       p.classList.add('show');
     }
     const c = cart.reduce((s,i)=>s+i.q,0), t = cart.reduce((s,i)=>s+i.q*i.p,0);
@@ -2049,6 +2064,7 @@
     return c;
   }
   function cartOf(panelId){ return panelId==='custCartPanel' ? CUSTCART : STAFFCART; }
+  function cartSetNote(panelId,i,note){ cartOf(panelId)[i].note = note; } // ไม่ต้อง cartRefresh เพราะจะทำให้ input เสีย focus ขณะพิมพ์
   function cartRefresh(panelId){
     if(panelId==='custCartPanel'){
       const c = renderCart(CUSTCART,'custCartPanel','custCartCount','custCartTotal');
@@ -2584,6 +2600,7 @@ async function restoreGateFromLocalStorage(){
         document.getElementById('custTableLabel').textContent = resv.zone;
       }
       showOrderAheadServeTimeBox(resv.slotTime);
+      if(window.startCustOrderHistoryListener) startCustOrderHistoryListener();
       const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
       if(customerTab) customerTab.click();
     } else {
@@ -4144,16 +4161,8 @@ renderCustomerPromoBanner();
 // ฟังก์ชันกลาง: ปิด modal แล้วถ้าตอนนี้อยู่หน้า Hero ให้สลับไปหน้าเมนูลูกค้าทันที (ไม่ว่าจะกดยกเลิกหรือทำสำเร็จก็ตาม)
 let gatePassedThisSession = false; // จำไว้ว่าผ่าน Gate สำเร็จแล้วในเซสชันนี้ ไม่ต้องกรอกซ้ำถ้ากดปุ่มอื่นอีก
 function showOrderAheadServeTimeBox(defaultSlotTime){
-  const box = document.getElementById('orderAheadServeTimeBox');
-  const sel = document.getElementById('orderAheadServeTime');
-  if(!box || !sel) return;
-  // ตัวเลือกทุกชั่วโมง 00:00-23:00 (ปรับได้ ไม่บังคับใช้แค่เวลาที่จองไว้เท่านั้น เผื่อลูกค้าอยากขยับเวลา)
-  sel.innerHTML = Array.from({length:24}, (_,h) => {
-    const label = String(h).padStart(2,'0')+':00';
-    return '<option value="'+label+'">'+label+'</option>';
-  }).join('');
-  if(defaultSlotTime) sel.value = defaultSlotTime;
-  box.style.display = 'block';
+  // ไม่แสดง UI แยกลอยอีกต่อไป (ย้ายไปรวมอยู่ในตะกร้าแทน ดู renderCart) — แค่เก็บค่าเริ่มต้นไว้ให้ renderCart ไปใช้ตอน render dropdown
+  window.orderAheadDefaultServeTime = defaultSlotTime || null;
 }
 window.closeModalAndGoToMenu = function(modalId){
   document.getElementById(modalId)?.classList.remove('open');
@@ -4172,6 +4181,7 @@ window.closeModalAndGoToMenu = function(modalId){
 let gateMode = 'reservation'; // 'reservation' = ปุ่มจองโต๊ะเดิม, 'order_ahead' = ปุ่มสั่งอาหารล่วงหน้าใหม่
 function openAccessGate(mode){
   gateMode = mode || 'reservation';
+  window.gateMode = gateMode; // expose ให้ script บล็อกแรก (renderCart) อ่านค่าได้ เพราะ let ในโมดูลนี้เข้าถึงจากนอกไม่ได้
   document.getElementById('gateStep1').style.display = 'block';
   document.getElementById('gateStep2Pending').style.display = 'none';
   document.getElementById('gateStep2Rejected').style.display = 'none';
@@ -4249,6 +4259,7 @@ document.getElementById('gateCheckBtn')?.addEventListener('click', async () => {
         }
         // แสดงกล่องเลือกเวลาเสิร์ฟ + เติมตัวเลือกเวลา โดยตั้งค่าเริ่มต้น = เวลาที่จองไว้ (resv.slotTime)
         showOrderAheadServeTimeBox(resv.slotTime);
+        if(window.startCustOrderHistoryListener) startCustOrderHistoryListener();
       }
       const customerTab = document.querySelector('.rs-tab[data-mode="customer"]');
       if(customerTab) customerTab.click();
@@ -5024,6 +5035,51 @@ function getStationOf(name){
 function isAllowedToOrder(){
   return urlParams.has('table') || urlParams.has('checkin') || gatePassedThisSession;
 }
+
+// ===================== ประวัติออเดอร์ของลูกค้า (real-time) + ปุ่มยกเลิก/แก้ไข =====================
+// ลูกค้ายกเลิกได้เองเฉพาะสถานะ 'new' (ครัวยังไม่กด "เริ่มทำ") — พอเป็น preparing ขึ้นไป ต้องเรียกพนักงานแทน
+let custOrderHistoryUnsub = null;
+function startCustOrderHistoryListener(){
+  if(custOrderHistoryUnsub) custOrderHistoryUnsub(); // เปลี่ยนโต๊ะ/สถานะแล้ว ต้องเลิกฟังอันเก่าก่อนเริ่มใหม่
+  const section = document.getElementById('custOrderHistorySection');
+  if(!section) return;
+  custOrderHistoryUnsub = onSnapshot(
+    query(collection(db,'orders'), where('table','==',currentTable), where('source','==','customer')),
+    (qs) => {
+      const orders = []; qs.forEach(d => orders.push({id:d.id, ...d.data()}));
+      // ไม่แสดงออเดอร์ที่ปิดบิลไปแล้ว (paid) หรือถูกยกเลิกไปแล้ว
+      const relevant = orders.filter(o => !['paid'].includes(o.status));
+      if(!relevant.length){ section.style.display = 'none'; return; }
+      relevant.sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
+      section.style.display = 'block';
+      const statusLabel = {pending_payment:'รอชำระเงิน', new:'รอครัวเริ่มทำ', preparing:'กำลังทำ', ready:'พร้อมเสิร์ฟ', served:'เสิร์ฟแล้ว', awaiting_confirm:'รอพนักงานยืนยันการจ่าย'};
+      const statusColor = {pending_payment:'var(--danger)', new:'var(--warn)', preparing:'var(--gold-soft)', ready:'var(--ok)', served:'var(--muted)', awaiting_confirm:'var(--ok)'};
+      document.getElementById('custOrderHistoryList').innerHTML = relevant.map(o => {
+        const itemsTxt = o.items.map(i=>i.name+' ×'+i.qty+(i.note?' ('+i.note+')':'')).join(', ');
+        const canCancel = o.status === 'new'; // เฉพาะ new เท่านั้นที่ยกเลิกเองได้ (ครัวยังไม่กด "เริ่มทำ")
+        const serveTimeTxt = o.scheduledServeTime ? '🕐 เสิร์ฟ '+o.scheduledServeTime+' · ' : '';
+        return '<div class="resv-card">'+
+          '<div class="resv-card-top">'+
+            '<div><div style="font-size:12px; color:var(--muted);">'+serveTimeTxt+'฿'+o.total.toLocaleString()+'</div>'+
+            '<div style="font-size:13px; margin-top:2px;">'+itemsTxt+'</div></div>'+
+            '<span class="status" style="background:transparent; border:1px solid '+statusColor[o.status]+'; color:'+statusColor[o.status]+';">'+(statusLabel[o.status]||o.status)+'</span>'+
+          '</div>'+
+          (canCancel ? '<div class="resv-card-actions"><button class="cust-order-cancel-btn" data-oid="'+o.id+'" style="background:rgba(228,72,58,.15); color:#FF8A73;">✕ ยกเลิกออเดอร์นี้</button></div>'
+            : (o.status !== 'pending_payment' ? '<div style="font-size:11.5px; color:var(--muted); margin-top:6px;">ครัวเริ่มทำแล้ว — หากต้องการแก้ไข กรุณากดเรียกพนักงาน</div>' : ''))+
+        '</div>';
+      }).join('');
+      document.querySelectorAll('.cust-order-cancel-btn').forEach(b => b.addEventListener('click', async () => {
+        if(!confirm('ยกเลิกออเดอร์นี้ใช่ไหม?')) return;
+        try { await deleteDoc(doc(db,'orders',b.dataset.oid)); if(window.toast) toast('✓ ยกเลิกออเดอร์แล้ว'); }
+        catch(e){ if(window.toast) toast('❌ ยกเลิกไม่สำเร็จ: '+e.message); }
+      }));
+    },
+    e => console.warn('custOrderHistory listener failed', e)
+  );
+}
+window.startCustOrderHistoryListener = startCustOrderHistoryListener;
+startCustOrderHistoryListener();
+
 document.getElementById('custCheckoutBtn')?.addEventListener('click', async () => {
   if(!CUSTCART.length) return;
   if(!isAllowedToOrder()){
