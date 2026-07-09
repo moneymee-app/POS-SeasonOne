@@ -2541,7 +2541,7 @@
 <script type="module">
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, getDocs, query, where, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, collection, getDocs, query, where, onSnapshot, serverTimestamp, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDXuK8sP5g3E9Avujm-gKP1p6K22t8mfUc",
@@ -5096,9 +5096,11 @@ document.getElementById('custCheckoutBtn')?.addEventListener('click', async () =
     if(gateMode === 'order_ahead' && (urlParams.has('table') === false && !checkinQrParam)){
       // สั่งอาหารล่วงหน้า: ต้องจ่ายเงินก่อนถึงจะเข้าครัว — สร้างเป็น pending_payment ก่อน ไม่เข้าครัวทันที
       const scheduledServeTime = document.getElementById('orderAheadServeTime').value || null;
+      // เก็บเบอร์โทรลูกค้าไว้ในออเดอร์ด้วย เพื่อให้ตอนปิดบิลรู้ว่าต้องล้างสถานะ "ผ่าน Gate แล้ว" ของเบอร์ไหน
+      const customerPhone = document.getElementById('custOrderAheadPhone')?.textContent?.trim() || null;
       await setDoc(doc(db,'orders',newId), {
         table: currentTable, items, total, status:'pending_payment', source:'customer', orderedBy,
-        scheduledServeTime, createdAt: serverTimestamp()
+        scheduledServeTime, customerPhone: (customerPhone && customerPhone !== '-') ? customerPhone : null, createdAt: serverTimestamp()
       });
       openOrderAheadPayModal(newId, total);
       return;
@@ -5485,6 +5487,8 @@ function renderPendingConfirm(orders){
         const method = relatedOrders[0].payMethod || 'โอน/สแกน';
         // หักสต็อควัตถุดิบอัตโนมัติตามสูตร BOM — จุดนี้ก็เป็นตอน "ปิดบิลสำเร็จ" เหมือนกัน (ยืนยันรับเงินจากหน้าตรวจสลิป)
         deductStockForOrders(relatedOrders);
+        // ล้างสถานะ "ผ่าน Gate แล้ว" ของลูกค้าที่สั่งล่วงหน้าไว้ในบิลนี้ (ถ้ามี) กันสถานะค้างหลังปิดบิล
+        clearGateStatusForClosedOrders(relatedOrders);
         try {
           await setDoc(doc(db,'payments','PAY'+Date.now()), {
             table, amount: totalAmount, method, status:'confirmed', confirmedBy, createdAt: serverTimestamp()
@@ -6004,6 +6008,15 @@ window.liveBillOf = (table) => {
   return Object.values(merged);
 };
 // ===================== หักสต็อควัตถุดิบอัตโนมัติ (ตอนปิดบิล/จ่ายเงินสำเร็จเท่านั้น ตามที่ TaBon ยืนยัน) =====================
+// ล้างสถานะ "ผ่าน Gate แล้ว" (orderStatus) ของทุกเบอร์โทรที่เกี่ยวข้องกับบิลที่เพิ่งปิด
+// เพื่อให้ลูกค้าต้องเช็คอิน/ผ่าน Gate ใหม่ในครั้งถัดไป (กันสถานะค้างตลอดไปหลังปิดบิลแล้ว)
+async function clearGateStatusForClosedOrders(orders){
+  try {
+    const phones = [...new Set(orders.map(o => o.customerPhone).filter(Boolean))];
+    if(!phones.length) return; // ไม่มีเบอร์โทรเกี่ยวข้องเลย (ออเดอร์ปกติในร้าน ไม่ใช่สั่งล่วงหน้า) ไม่ต้องทำอะไร
+    await Promise.all(phones.map(phone => updateDoc(doc(db,'reservations',phone), {orderStatus: deleteField()}).catch(e => console.warn('ล้าง orderStatus ของ '+phone+' ไม่สำเร็จ', e))));
+  } catch(e){ console.warn('clearGateStatusForClosedOrders failed', e); }
+}
 async function deductStockForOrders(orders){
   try {
     // รวมจำนวนแต่ละเมนูจากทุกออเดอร์ในบิลนี้ก่อน (กันเมนูเดียวกันสั่งหลายรอบ ต้อง query BOM ซ้ำ)
@@ -6066,6 +6079,8 @@ window.onBillFinished = async (payCtx) => {
       await Promise.all(orders.map(o => updateDoc(doc(db,'orders',o.id), {status:'paid', payMethod: payMethodTh, confirmedBy: actingUser, confirmedAt: serverTimestamp()})));
       // หักสต็อควัตถุดิบอัตโนมัติตามสูตร BOM — ทำหลังปิดบิลสำเร็จเท่านั้น (ตามที่ TaBon ยืนยัน กันออเดอร์ถูกยกเลิกก่อนแล้วสต็อคหักไปแล้ว)
       deductStockForOrders(orders);
+      // ล้างสถานะ "ผ่าน Gate แล้ว" ของลูกค้าที่สั่งล่วงหน้าไว้ในบิลนี้ (ถ้ามี) กันสถานะค้างหลังปิดบิล ต้องเช็คอิน/ผ่าน Gate ใหม่ครั้งถัดไป
+      clearGateStatusForClosedOrders(orders);
       // สร้าง payment record แยก (ใหม่) — เก็บเฉพาะตอนเงินเข้าจริงเท่านั้น ใช้สำหรับ sync เข้า Sheet แท็บ Payments
       const totalAmount = orders.reduce((s,o)=>s+(o.total||0),0);
       // บันทึกแต้มสะสม/ประวัติสมาชิก ถ้ามีการกรอกเบอร์สมาชิกไว้ (ไม่บังคับ ไม่มีก็ข้ามเงียบๆ)
